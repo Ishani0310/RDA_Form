@@ -17,7 +17,7 @@ import {
 export async function GET(request: NextRequest) {
   try {
     const clientIp = getClientIp(request);
-    const rateCheck = checkRateLimit(`draft-get-${clientIp}`, 40, 60000);
+    const rateCheck = checkRateLimit(`draft-get-${clientIp}`, 100, 60000);
 
     if (!rateCheck.allowed) {
       return NextResponse.json(
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const clientIp = getClientIp(request);
-    const rateCheck = checkRateLimit(`draft-post-${clientIp}`, 20, 60000);
+    const rateCheck = checkRateLimit(`draft-post-${clientIp}`, 120, 60000);
 
     if (!rateCheck.allowed) {
       return NextResponse.json(
