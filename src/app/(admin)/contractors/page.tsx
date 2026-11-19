@@ -384,30 +384,70 @@ export default function ContractorsPage() {
                         <div className="font-bold text-slate-900 group-hover:text-blue-900 transition-colors">
                           {c.businessName}
                         </div>
-                        <div className="text-[11px] text-slate-500 font-mono mt-0.5">
-                          BR: {c.businessRegistrationNumber}
-                        </div>
+                        {c.businessRegistrationNumber && c.businessRegistrationNumber !== "PENDING-BR" && c.businessRegistrationNumber !== "N/A" && (
+                          <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                            BR: {c.businessRegistrationNumber}
+                          </div>
+                        )}
                       </td>
                       <td className="px-5 py-3.5">
-                        <div className="font-mono font-medium text-slate-700">{c.registrationNumber}</div>
-                        <span
-                          className={`mt-1 inline-flex items-center px-2 py-0.5 rounded text-[10px] border ${getGradeBadge(
-                            c.cidaGrade
-                          )}`}
-                        >
-                          Grade {c.cidaGrade}
-                        </span>
+                        {c.registrationNumber && !c.registrationNumber.startsWith("DFT-") && !c.registrationNumber.startsWith("REG-") ? (
+                          <>
+                            <div className="font-mono font-medium text-slate-700">{c.registrationNumber}</div>
+                            {c.cidaGrade && c.cidaGrade !== "Pending" && (
+                              <span
+                                className={`mt-1 inline-flex items-center px-2 py-0.5 rounded text-[10px] border ${getGradeBadge(
+                                  c.cidaGrade
+                                )}`}
+                              >
+                                Grade {c.cidaGrade}
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-slate-400 font-medium text-xs">Not Registered</span>
+                        )}
                       </td>
-                      <td className="px-5 py-3.5 text-slate-700 font-medium">{c.primarySpeciality}</td>
-                      <td className="px-5 py-3.5 text-slate-700">
-                        <div className="font-semibold text-slate-800">{c.province}</div>
-                        <div className="text-[11px] text-slate-500 mt-0.5">{c.district} District</div>
+                      <td className="px-5 py-3.5 text-slate-700 font-medium">
+                        {c.primarySpeciality === "Non-Attendee" ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                            Non-Attendee
+                          </span>
+                        ) : c.primarySpeciality && c.primarySpeciality !== "General Civil Engineering" ? (
+                          c.primarySpeciality
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
                       </td>
                       <td className="px-5 py-3.5 text-slate-700">
-                        <div className="font-medium text-slate-900">{c.contactOfficer.name}</div>
-                        <div className="text-[11px] text-slate-500 font-mono mt-0.5">
-                          {c.contactOfficer.phone}
-                        </div>
+                        {c.district && c.district !== "Unassigned" && c.district !== "Unassigned District" ? (
+                          <>
+                            <div className="font-semibold text-slate-800">{c.province}</div>
+                            <div className="text-[11px] text-slate-500 mt-0.5">{c.district} District</div>
+                          </>
+                        ) : c.province && c.province !== "Western Province" ? (
+                          <div className="font-semibold text-slate-800">{c.province}</div>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-3.5 text-slate-700">
+                        {c.contactOfficer?.name && c.contactOfficer.name !== "Authorized Representative" && c.contactOfficer.name !== "Not Designated" && (
+                          <div className="font-medium text-slate-900">{c.contactOfficer.name}</div>
+                        )}
+                        {c.contactOfficer?.phone && c.contactOfficer.phone !== "+94 11 000 0000" && c.contactOfficer.phone !== "N/A" && (
+                          <div className="text-[11px] text-slate-600 font-mono mt-0.5">
+                            {c.contactOfficer.phone}
+                          </div>
+                        )}
+                        {c.contactOfficer?.email && c.contactOfficer.email !== "contact@contractor.lk" && c.contactOfficer.email !== "contact@rda.gov.lk" && c.contactOfficer.email !== "N/A" && (
+                          <div className="text-[11px] text-slate-400 font-mono">
+                            {c.contactOfficer.email}
+                          </div>
+                        )}
+                        {!c.contactOfficer?.name && !c.contactOfficer?.phone && !c.contactOfficer?.email && (
+                          <span className="text-slate-400">—</span>
+                        )}
                       </td>
                       <td className="px-5 py-3.5">
                         <span
@@ -483,171 +523,283 @@ export default function ContractorsPage() {
       </div>
 
       {/* Contractor Profile Slide-Over / Modal */}
-      {profileModalOpen && selectedContractor && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-fadeIn">
-            {/* Header */}
-            <div className="px-6 py-5 bg-[#0b1f3a] text-white flex items-center justify-between sticky top-0 z-10">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                  <Building2 className="w-5 h-5" />
+      {profileModalOpen && selectedContractor && (() => {
+        const hasCida = Boolean(
+          selectedContractor.cidaGrade &&
+          selectedContractor.cidaGrade !== "Pending" &&
+          selectedContractor.cidaGrade !== "Not Registered" &&
+          selectedContractor.cidaGrade !== "Not registered with CIDA"
+        );
+        const hasBr = Boolean(
+          selectedContractor.businessRegistrationNumber &&
+          selectedContractor.businessRegistrationNumber !== "PENDING-BR" &&
+          selectedContractor.businessRegistrationNumber !== "N/A" &&
+          selectedContractor.businessRegistrationNumber !== "Not Provided"
+        );
+        const hasReg = Boolean(
+          selectedContractor.registrationNumber &&
+          !selectedContractor.registrationNumber.startsWith("DFT-") &&
+          !selectedContractor.registrationNumber.startsWith("REG-") &&
+          selectedContractor.registrationNumber !== "Not Registered" &&
+          selectedContractor.registrationNumber !== "PENDING"
+        );
+        const isNonAttendee = selectedContractor.primarySpeciality === "Non-Attendee";
+
+        const hasDistrict = Boolean(
+          selectedContractor.district &&
+          selectedContractor.district !== "Unassigned" &&
+          selectedContractor.district !== "Unassigned District" &&
+          selectedContractor.district !== "Not Specified"
+        );
+        const hasSpeciality = Boolean(
+          selectedContractor.primarySpeciality &&
+          selectedContractor.primarySpeciality !== "Non-Attendee" &&
+          selectedContractor.primarySpeciality !== "General Civil Engineering" &&
+          selectedContractor.primarySpeciality !== "Not Specified"
+        );
+        const hasProvince = Boolean(
+          selectedContractor.province &&
+          selectedContractor.province !== "Not Specified" &&
+          (!isNonAttendee || hasDistrict)
+        );
+        const showJurisdiction = hasProvince || hasDistrict || hasSpeciality;
+
+        const hasOfficerName = Boolean(
+          selectedContractor.contactOfficer?.name &&
+          selectedContractor.contactOfficer.name !== "Authorized Representative" &&
+          selectedContractor.contactOfficer.name !== "Not Designated" &&
+          selectedContractor.contactOfficer.name !== "Not Specified"
+        );
+        const hasDesignation = Boolean(
+          selectedContractor.contactOfficer?.designation &&
+          selectedContractor.contactOfficer.designation !== "Authorized Officer" &&
+          selectedContractor.contactOfficer.designation !== "Authorized Representative" &&
+          selectedContractor.contactOfficer.designation !== "Not Specified"
+        );
+        const hasPhone = Boolean(
+          selectedContractor.contactOfficer?.phone &&
+          selectedContractor.contactOfficer.phone !== "+94 11 000 0000" &&
+          selectedContractor.contactOfficer.phone !== "N/A" &&
+          selectedContractor.contactOfficer.phone !== "Not Provided"
+        );
+        const hasEmail = Boolean(
+          selectedContractor.contactOfficer?.email &&
+          selectedContractor.contactOfficer.email !== "contact@contractor.lk" &&
+          selectedContractor.contactOfficer.email !== "contact@rda.gov.lk" &&
+          selectedContractor.contactOfficer.email !== "N/A" &&
+          selectedContractor.contactOfficer.email !== "Not Provided"
+        );
+        const showContact = hasOfficerName || hasDesignation || hasPhone || hasEmail;
+
+        return (
+          <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-fadeIn">
+              {/* Header */}
+              <div className="px-6 py-5 bg-[#0b1f3a] text-white flex items-center justify-between sticky top-0 z-10">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                    <Building2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold tracking-tight leading-tight">
+                      {selectedContractor.businessName}
+                    </h3>
+                    {hasReg && (
+                      <p className="text-xs text-amber-300/80 font-mono mt-0.5">
+                        Registration: {selectedContractor.registrationNumber}
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-base font-bold tracking-tight leading-tight">
-                    {selectedContractor.businessName}
-                  </h3>
-                  <p className="text-xs text-amber-300/80 font-mono mt-0.5">
-                    Registration: {selectedContractor.registrationNumber}
-                  </p>
-                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setProfileModalOpen(false)}
+                  className="text-slate-400 hover:text-white transition-colors"
+                  aria-label="Close modal"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setProfileModalOpen(false)}
-                className="text-slate-400 hover:text-white transition-colors"
-                aria-label="Close modal"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+              {/* Body */}
+              <div className="p-6 space-y-6 text-xs">
+                {/* Status and Grade Bar */}
+                <div className="flex flex-wrap gap-3">
+                  {hasCida && (
+                    <div className="flex-1 min-w-[140px] p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                        CIDA Classification
+                      </span>
+                      <div className="mt-1 flex items-center gap-2">
+                        <span className="text-base font-black text-blue-950">
+                          Grade {selectedContractor.cidaGrade}
+                        </span>
+                      </div>
+                    </div>
+                  )}
 
-            {/* Body */}
-            <div className="p-6 space-y-6 text-xs">
-              {/* Status and Grade Bar */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                    CIDA Classification
-                  </span>
-                  <div className="mt-1 flex items-center gap-2">
-                    <span className="text-base font-black text-blue-950">
-                      Grade {selectedContractor.cidaGrade}
+                  {isNonAttendee && (
+                    <div className="flex-1 min-w-[160px] p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                        Workshop Attendance
+                      </span>
+                      <div className="mt-1">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                          Non-Attendee (Declined)
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex-1 min-w-[140px] p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                      Registry Review Status
                     </span>
+                    <div className="mt-1">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${getStatusBadge(
+                          selectedContractor.status
+                        )}`}
+                      >
+                        {selectedContractor.status.replace("_", " ")}
+                      </span>
+                    </div>
                   </div>
+
+                  {hasBr && (
+                    <div className="flex-1 min-w-[140px] p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                        Business Registration
+                      </span>
+                      <div className="mt-1 font-mono font-bold text-slate-800">
+                        {selectedContractor.businessRegistrationNumber}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                    Registry Review Status
+                {/* Geographic and Technical Jurisdiction (Only if filled) */}
+                {showJurisdiction && (
+                  <div className="p-4 rounded-xl border border-slate-200 space-y-3">
+                    <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b border-slate-100">
+                      <MapPin className="w-3.5 h-3.5 text-blue-900" />
+                      <span>Jurisdiction &amp; Engineering Scope</span>
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {hasProvince && (
+                        <div>
+                          <span className="text-slate-500 font-medium">Administrative Province:</span>
+                          <p className="font-bold text-slate-800 mt-0.5">
+                            {selectedContractor.province}
+                          </p>
+                        </div>
+                      )}
+                      {hasDistrict && (
+                        <div>
+                          <span className="text-slate-500 font-medium">District Station:</span>
+                          <p className="font-bold text-slate-800 mt-0.5">
+                            {selectedContractor.district} District
+                          </p>
+                        </div>
+                      )}
+                      {hasSpeciality && (
+                        <div className="sm:col-span-2">
+                          <span className="text-slate-500 font-medium">Primary Technical Speciality:</span>
+                          <p className="font-semibold text-slate-800 mt-0.5">
+                            {selectedContractor.primarySpeciality}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Contact Details (Only filled fields) */}
+                {showContact && (
+                  <div className="p-4 rounded-xl border border-slate-200 space-y-3">
+                    <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b border-slate-100">
+                      <User className="w-3.5 h-3.5 text-blue-900" />
+                      <span>{hasOfficerName || hasDesignation ? "Authorized Contact Representative" : "Contact Details"}</span>
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {hasOfficerName && (
+                        <div>
+                          <span className="text-slate-500 font-medium">Officer Name:</span>
+                          <p className="font-bold text-slate-800 mt-0.5">
+                            {selectedContractor.contactOfficer.name}
+                          </p>
+                        </div>
+                      )}
+                      {hasDesignation && (
+                        <div>
+                          <span className="text-slate-500 font-medium">Designation:</span>
+                          <p className="font-semibold text-slate-800 mt-0.5">
+                            {selectedContractor.contactOfficer.designation}
+                          </p>
+                        </div>
+                      )}
+                      {hasPhone && (
+                        <div>
+                          <span className="text-slate-500 font-medium">Official Contact Number:</span>
+                          <p className="font-mono text-slate-800 mt-0.5 flex items-center gap-1.5">
+                            <Phone className="w-3 h-3 text-slate-400" />
+                            <span>{selectedContractor.contactOfficer.phone}</span>
+                          </p>
+                        </div>
+                      )}
+                      {hasEmail && (
+                        <div>
+                          <span className="text-slate-500 font-medium">Official Electronic Mail:</span>
+                          <p className="font-mono text-slate-800 mt-0.5 flex items-center gap-1.5">
+                            <Mail className="w-3 h-3 text-slate-400" />
+                            <span>{selectedContractor.contactOfficer.email}</span>
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Dynamic Questionnaire Architecture Notice (Only for Contractors) */}
+                {!isNonAttendee && (
+                  <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 space-y-1.5">
+                    <div className="flex items-center gap-1.5 font-bold">
+                      <Lock className="w-3.5 h-3.5 text-amber-700" />
+                      <span>Questionnaire Criteria Status: Locked Pending Ministerial Gazette</span>
+                    </div>
+                    <p className="text-[11px] text-amber-800 leading-relaxed">
+                      As per instructions from the Road Development Authority Directorate of Planning &amp; Procurement, official questionnaire parameters are awaiting committee ratification. Dynamic questionnaire filings will integrate directly under this contractor record once officially gazetted.
+                    </p>
+                  </div>
+                )}
+
+                {/* Timestamps */}
+                <div className="pt-2 text-[10px] text-slate-400 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1 border-t border-slate-100">
+                  <span>
+                    Registered in System:{" "}
+                    {selectedContractor.createdAt
+                      ? new Date(selectedContractor.createdAt).toLocaleDateString("en-GB")
+                      : "Recorded"}
                   </span>
-                  <div className="mt-1">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${getStatusBadge(
-                        selectedContractor.status
-                      )}`}
-                    >
-                      {selectedContractor.status.replace("_", " ")}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                    Business Registration
-                  </span>
-                  <div className="mt-1 font-mono font-bold text-slate-800">
-                    {selectedContractor.businessRegistrationNumber}
-                  </div>
+                  <span>Database Node: Sri Lanka National Central Registry</span>
                 </div>
               </div>
 
-              {/* Geographic and Technical Jurisdiction */}
-              <div className="p-4 rounded-xl border border-slate-200 space-y-3">
-                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b border-slate-100">
-                  <MapPin className="w-3.5 h-3.5 text-blue-900" />
-                  <span>Jurisdiction &amp; Engineering Scope</span>
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <span className="text-slate-500 font-medium">Administrative Province:</span>
-                    <p className="font-bold text-slate-800 mt-0.5">{selectedContractor.province}</p>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 font-medium">District Station:</span>
-                    <p className="font-bold text-slate-800 mt-0.5">{selectedContractor.district} District</p>
-                  </div>
-                  <div className="sm:col-span-2">
-                    <span className="text-slate-500 font-medium">Primary Technical Speciality:</span>
-                    <p className="font-semibold text-slate-800 mt-0.5">
-                      {selectedContractor.primarySpeciality}
-                    </p>
-                  </div>
-                </div>
+              {/* Footer */}
+              <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end">
+                <button
+                  type="button"
+                  onClick={() => setProfileModalOpen(false)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-100 transition-colors shadow-sm"
+                >
+                  Close Profile
+                </button>
               </div>
-
-              {/* Authorized Contact Officer */}
-              <div className="p-4 rounded-xl border border-slate-200 space-y-3">
-                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b border-slate-100">
-                  <User className="w-3.5 h-3.5 text-blue-900" />
-                  <span>Authorized Contact Representative</span>
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <span className="text-slate-500 font-medium">Officer Name:</span>
-                    <p className="font-bold text-slate-800 mt-0.5">
-                      {selectedContractor.contactOfficer.name}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 font-medium">Designation:</span>
-                    <p className="font-semibold text-slate-800 mt-0.5">
-                      {selectedContractor.contactOfficer.designation}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 font-medium">Official Contact Number:</span>
-                    <p className="font-mono text-slate-800 mt-0.5 flex items-center gap-1.5">
-                      <Phone className="w-3 h-3 text-slate-400" />
-                      <span>{selectedContractor.contactOfficer.phone}</span>
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 font-medium">Official Electronic Mail:</span>
-                    <p className="font-mono text-slate-800 mt-0.5 flex items-center gap-1.5">
-                      <Mail className="w-3 h-3 text-slate-400" />
-                      <span>{selectedContractor.contactOfficer.email}</span>
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Dynamic Questionnaire Architecture Notice */}
-              <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 space-y-1.5">
-                <div className="flex items-center gap-1.5 font-bold">
-                  <Lock className="w-3.5 h-3.5 text-amber-700" />
-                  <span>Questionnaire Criteria Status: Locked Pending Ministerial Gazette</span>
-                </div>
-                <p className="text-[11px] text-amber-800 leading-relaxed">
-                  As per instructions from the Road Development Authority Directorate of Planning &amp; Procurement, official questionnaire parameters are awaiting committee ratification. Dynamic questionnaire filings will integrate directly under this contractor record once officially gazetted.
-                </p>
-              </div>
-
-              {/* Timestamps */}
-              <div className="pt-2 text-[10px] text-slate-400 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1 border-t border-slate-100">
-                <span>
-                  Registered in System:{" "}
-                  {selectedContractor.createdAt
-                    ? new Date(selectedContractor.createdAt).toLocaleDateString("en-GB")
-                    : "Recorded"}
-                </span>
-                <span>Database Node: Sri Lanka National Central Registry</span>
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end">
-              <button
-                type="button"
-                onClick={() => setProfileModalOpen(false)}
-                className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-100 transition-colors shadow-sm"
-              >
-                Close Profile
-              </button>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

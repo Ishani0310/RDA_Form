@@ -526,14 +526,14 @@ function RegisterForm() {
       const savePayload: Record<string, unknown> = {
         questionnaireData: formData,
         businessName: orgName || "Registered Entity",
-        registrationNumber: formData.ictadRegistrationNumber || undefined,
-        cidaGrade: formData.cidaGrade || undefined,
-        province: formData.supplierDetails?.province || "Western Province",
-        district: formData.supplierDetails?.district || undefined,
+        registrationNumber: formData.ictadRegistrationNumber?.trim() || undefined,
+        cidaGrade: formData.cidaGrade?.trim() || undefined,
+        province: formData.supplierDetails?.province?.trim() || (formData as any).province?.trim() || undefined,
+        district: formData.supplierDetails?.district?.trim() || (formData as any).district?.trim() || undefined,
         contactOfficer: {
-          name: formData.participant1?.fullName || "Authorized Representative",
-          phone: formData.contactNumber || "+94 11 000 0000",
-          email: formData.email || "contact@rda.gov.lk",
+          name: formData.participant1?.fullName?.trim() || undefined,
+          phone: formData.contactNumber?.trim() || undefined,
+          email: formData.email?.trim() || undefined,
         },
       };
       if (activeResumeToken) savePayload.resumeToken = activeResumeToken;

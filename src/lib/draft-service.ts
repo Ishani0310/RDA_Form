@@ -187,16 +187,16 @@ export async function saveOrUpdateDraft(
     contractor = await Contractor.create({
       registrationNumber: effectiveRegNo,
       businessName: effectiveBusinessName,
-      businessRegistrationNumber: payload.businessRegistrationNumber?.trim() || "PENDING-BR",
+      businessRegistrationNumber: payload.businessRegistrationNumber?.trim() || "",
       cidaGrade: ((payload.cidaGrade || qData.cidaGrade) as any) || "Pending",
-      primarySpeciality: payload.primarySpeciality?.trim() || "General Civil Engineering",
+      primarySpeciality: payload.primarySpeciality?.trim() || (qData.willParticipate === "No" ? "Non-Attendee" : ""),
       province: (province || "Western Province") as any,
-      district: district || payload.district?.trim() || "Unassigned",
+      district: district || payload.district?.trim() || "",
       contactOfficer: {
-        name: payload.contactOfficer?.name?.trim() || qData.participant1?.fullName?.trim() || "Authorized Representative",
-        designation: payload.contactOfficer?.designation?.trim() || qData.participant1?.designation?.trim() || "Authorized Officer",
-        phone: payload.contactOfficer?.phone?.trim() || qData.contactNumber?.trim() || "+94 11 000 0000",
-        email: payload.contactOfficer?.email?.trim().toLowerCase() || qData.email?.trim().toLowerCase() || "contact@contractor.lk",
+        name: payload.contactOfficer?.name?.trim() || qData.participant1?.fullName?.trim() || "",
+        designation: payload.contactOfficer?.designation?.trim() || qData.participant1?.designation?.trim() || "",
+        phone: payload.contactOfficer?.phone?.trim() || qData.contactNumber?.trim() || "",
+        email: payload.contactOfficer?.email?.trim().toLowerCase() || qData.email?.trim().toLowerCase() || "",
       },
       status: "Draft",
       isDemoRecord: false,
@@ -446,21 +446,20 @@ export async function submitFinalDeclaration(
       if (normalizedQ.areasOfSpecialty?.length) {
         contractor.primarySpeciality = normalizedQ.areasOfSpecialty.join(", ");
       }
+    } else if (normalizedQ.willParticipate === "No") {
+      contractor.primarySpeciality = "Non-Attendee";
     }
   }
 
   // Mandatory fields fallback for non-questionnaire or partial profiles
   if (!contractor.businessName) contractor.businessName = rawQ.organizationName || "Registered Organization";
   if (!contractor.registrationNumber) contractor.registrationNumber = rawQ.ictadRegistrationNumber || `REG-${Date.now().toString().slice(-6)}`;
-  if (!contractor.province) contractor.province = "Western Province";
-  if (!contractor.contactOfficer?.name || !contractor.contactOfficer?.phone || !contractor.contactOfficer?.email) {
-    contractor.contactOfficer = {
-      name: rawQ.participant1?.fullName || contractor.contactOfficer?.name || "Authorized Representative",
-      designation: rawQ.participant1?.designation || contractor.contactOfficer?.designation || "Authorized Officer",
-      phone: rawQ.contactNumber || contractor.contactOfficer?.phone || "+94 11 000 0000",
-      email: rawQ.email || contractor.contactOfficer?.email || "contact@rda.gov.lk",
-    };
-  }
+  if (!contractor.province) contractor.province = (rawQ.supplierDetails?.province || "Western Province") as any;
+  if (!contractor.contactOfficer) contractor.contactOfficer = {};
+  if (rawQ.participant1?.fullName) contractor.contactOfficer.name = rawQ.participant1.fullName.trim();
+  if (rawQ.participant1?.designation) contractor.contactOfficer.designation = rawQ.participant1.designation.trim();
+  if (rawQ.contactNumber) contractor.contactOfficer.phone = rawQ.contactNumber.trim();
+  if (rawQ.email) contractor.contactOfficer.email = rawQ.email.trim().toLowerCase();
 
   // Generate official submission reference: RDA/SUB/YYYY/XXXXX
   const randomSuffix = crypto.randomBytes(3).toString("hex").toUpperCase();
