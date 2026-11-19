@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { getCurrentOfficerSession } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Contractor } from "@/models/Contractor";
+import { Submission } from "@/models/Submission";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -46,6 +47,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       );
     }
 
+    const submission = await Submission.findOne({ contractor: contractor._id })
+      .select("questionnaireData.willParticipate")
+      .lean();
+
+    const willParticipateRaw =
+      ((submission?.questionnaireData as any)?.willParticipate as string) ||
+      ((contractor.metadata as any)?.willParticipate as string) ||
+      (contractor.primarySpeciality === "Non-Attendee" ? "No" : "Yes");
+
     return NextResponse.json({
       success: true,
       contractor: {
@@ -63,6 +73,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           phone: contractor.contactOfficer?.phone && contractor.contactOfficer.phone !== "+94 11 000 0000" && contractor.contactOfficer.phone !== "N/A" ? contractor.contactOfficer.phone : "",
           email: contractor.contactOfficer?.email && contractor.contactOfficer.email !== "contact@contractor.lk" && contractor.contactOfficer.email !== "contact@rda.gov.lk" && contractor.contactOfficer.email !== "N/A" ? contractor.contactOfficer.email : "",
         },
+        willParticipate: willParticipateRaw === "No" ? "No" : "Yes",
         status: contractor.status,
         metadata: contractor.metadata || {},
         isDemoRecord: contractor.isDemoRecord,

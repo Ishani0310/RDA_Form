@@ -40,6 +40,7 @@ interface ContractorItem {
     phone: string;
     email: string;
   };
+  willParticipate?: "Yes" | "No" | string;
   status: "Draft" | "Pending_Review" | "Verified" | "Action_Required" | "Suspended";
   createdAt: string | null;
   updatedAt: string | null;
@@ -361,119 +362,101 @@ export default function ContractorsPage() {
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50/75 border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                   <tr>
-                    <th className="px-5 py-3">Contractor / Firm Name</th>
-                    <th className="px-5 py-3">CIDA Reg &amp; Grade</th>
-                    <th className="px-5 py-3">Primary Speciality</th>
-                    <th className="px-5 py-3">Jurisdiction (Province/District)</th>
-                    <th className="px-5 py-3">Contact Officer</th>
-                    <th className="px-5 py-3">Status</th>
+                    <th className="px-5 py-3">Organization / Company / Institution Name</th>
+                    <th className="px-5 py-3">Contact Number</th>
+                    <th className="px-5 py-3">Email Address</th>
+                    <th className="px-5 py-3 text-center">Participate or Not</th>
                     <th className="px-5 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {contractors.map((c) => (
-                    <tr
-                      key={c.id}
-                      onClick={() => {
-                        setSelectedContractor(c);
-                        setProfileModalOpen(true);
-                      }}
-                      className="hover:bg-slate-50/75 transition-colors cursor-pointer group"
-                    >
-                      <td className="px-5 py-3.5">
-                        <div className="font-bold text-slate-900 group-hover:text-blue-900 transition-colors">
-                          {c.businessName}
-                        </div>
-                        {c.businessRegistrationNumber && c.businessRegistrationNumber !== "PENDING-BR" && c.businessRegistrationNumber !== "N/A" && (
-                          <div className="text-[11px] text-slate-500 font-mono mt-0.5">
-                            BR: {c.businessRegistrationNumber}
+                  {contractors.map((c) => {
+                    const isParticipating =
+                      c.willParticipate === "Yes" ||
+                      (c.willParticipate !== "No" && c.primarySpeciality !== "Non-Attendee");
+
+                    return (
+                      <tr
+                        key={c.id}
+                        onClick={() => {
+                          setSelectedContractor(c);
+                          setProfileModalOpen(true);
+                        }}
+                        className="hover:bg-slate-50/75 transition-colors cursor-pointer group"
+                      >
+                        {/* 1. Organization / Company / Institution Name */}
+                        <td className="px-5 py-3.5">
+                          <div className="font-bold text-slate-900 group-hover:text-blue-900 transition-colors text-sm">
+                            {c.businessName}
                           </div>
-                        )}
-                      </td>
-                      <td className="px-5 py-3.5">
-                        {c.registrationNumber && !c.registrationNumber.startsWith("DFT-") && !c.registrationNumber.startsWith("REG-") ? (
-                          <>
-                            <div className="font-mono font-medium text-slate-700">{c.registrationNumber}</div>
-                            {c.cidaGrade && c.cidaGrade !== "Pending" && (
-                              <span
-                                className={`mt-1 inline-flex items-center px-2 py-0.5 rounded text-[10px] border ${getGradeBadge(
-                                  c.cidaGrade
-                                )}`}
-                              >
-                                Grade {c.cidaGrade}
-                              </span>
+                          {c.registrationNumber &&
+                            !c.registrationNumber.startsWith("DFT-") &&
+                            !c.registrationNumber.startsWith("REG-") &&
+                            c.registrationNumber !== "Not Registered" && (
+                              <div className="text-[11px] text-slate-400 font-mono mt-0.5">
+                                Reg: {c.registrationNumber}
+                              </div>
                             )}
-                          </>
-                        ) : (
-                          <span className="text-slate-400 font-medium text-xs">Not Registered</span>
-                        )}
-                      </td>
-                      <td className="px-5 py-3.5 text-slate-700 font-medium">
-                        {c.primarySpeciality === "Non-Attendee" ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-                            Non-Attendee
-                          </span>
-                        ) : c.primarySpeciality && c.primarySpeciality !== "General Civil Engineering" ? (
-                          c.primarySpeciality
-                        ) : (
-                          <span className="text-slate-400">—</span>
-                        )}
-                      </td>
-                      <td className="px-5 py-3.5 text-slate-700">
-                        {c.district && c.district !== "Unassigned" && c.district !== "Unassigned District" ? (
-                          <>
-                            <div className="font-semibold text-slate-800">{c.province}</div>
-                            <div className="text-[11px] text-slate-500 mt-0.5">{c.district} District</div>
-                          </>
-                        ) : c.province && c.province !== "Western Province" ? (
-                          <div className="font-semibold text-slate-800">{c.province}</div>
-                        ) : (
-                          <span className="text-slate-400">—</span>
-                        )}
-                      </td>
-                      <td className="px-5 py-3.5 text-slate-700">
-                        {c.contactOfficer?.name && c.contactOfficer.name !== "Authorized Representative" && c.contactOfficer.name !== "Not Designated" && (
-                          <div className="font-medium text-slate-900">{c.contactOfficer.name}</div>
-                        )}
-                        {c.contactOfficer?.phone && c.contactOfficer.phone !== "+94 11 000 0000" && c.contactOfficer.phone !== "N/A" && (
-                          <div className="text-[11px] text-slate-600 font-mono mt-0.5">
-                            {c.contactOfficer.phone}
-                          </div>
-                        )}
-                        {c.contactOfficer?.email && c.contactOfficer.email !== "contact@contractor.lk" && c.contactOfficer.email !== "contact@rda.gov.lk" && c.contactOfficer.email !== "N/A" && (
-                          <div className="text-[11px] text-slate-400 font-mono">
-                            {c.contactOfficer.email}
-                          </div>
-                        )}
-                        {!c.contactOfficer?.name && !c.contactOfficer?.phone && !c.contactOfficer?.email && (
-                          <span className="text-slate-400">—</span>
-                        )}
-                      </td>
-                      <td className="px-5 py-3.5">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${getStatusBadge(
-                            c.status
-                          )}`}
-                        >
-                          {c.status.replace("_", " ")}
-                        </span>
-                      </td>
-                      <td className="px-5 py-3.5 text-right">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedContractor(c);
-                            setProfileModalOpen(true);
-                          }}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-blue-900 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition-all"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          <span>View Details</span>
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+
+                        {/* 2. Contact Number */}
+                        <td className="px-5 py-3.5 text-slate-700">
+                          {c.contactOfficer?.phone &&
+                          c.contactOfficer.phone !== "+94 11 000 0000" &&
+                          c.contactOfficer.phone !== "N/A" ? (
+                            <span className="font-mono text-slate-800 font-medium text-xs">
+                              {c.contactOfficer.phone}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400">—</span>
+                          )}
+                        </td>
+
+                        {/* 3. Email Address */}
+                        <td className="px-5 py-3.5 text-slate-700">
+                          {c.contactOfficer?.email &&
+                          c.contactOfficer.email !== "contact@contractor.lk" &&
+                          c.contactOfficer.email !== "contact@rda.gov.lk" &&
+                          c.contactOfficer.email !== "N/A" ? (
+                            <span className="font-mono text-slate-600 text-xs">
+                              {c.contactOfficer.email}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400">—</span>
+                          )}
+                        </td>
+
+                        {/* 4. Participate or Not */}
+                        <td className="px-5 py-3.5 text-center">
+                          {isParticipating ? (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              Yes
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                              No
+                            </span>
+                          )}
+                        </td>
+
+                        {/* 5. Actions (View Details) */}
+                        <td className="px-5 py-3.5 text-right">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedContractor(c);
+                              setProfileModalOpen(true);
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-900 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition-all shadow-sm"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>View Details</span>
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -543,7 +526,7 @@ export default function ContractorsPage() {
           selectedContractor.registrationNumber !== "Not Registered" &&
           selectedContractor.registrationNumber !== "PENDING"
         );
-        const isNonAttendee = selectedContractor.primarySpeciality === "Non-Attendee";
+        const isNonAttendee = selectedContractor.willParticipate === "No" || selectedContractor.primarySpeciality === "Non-Attendee";
 
         const hasDistrict = Boolean(
           selectedContractor.district &&
@@ -639,18 +622,23 @@ export default function ContractorsPage() {
                     </div>
                   )}
 
-                  {isNonAttendee && (
-                    <div className="flex-1 min-w-[160px] p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                        Workshop Attendance
-                      </span>
-                      <div className="mt-1">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                          Non-Attendee (Declined)
+                  {/* Workshop Attendance */}
+                  <div className="flex-1 min-w-[160px] p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                      Workshop Attendance
+                    </span>
+                    <div className="mt-1">
+                      {isNonAttendee ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                          No (Declined 07 Dec 2026)
                         </span>
-                      </div>
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          Yes (Participating on 07 Dec 2026)
+                        </span>
+                      )}
                     </div>
-                  )}
+                  </div>
 
                   <div className="flex-1 min-w-[140px] p-3.5 rounded-xl bg-slate-50 border border-slate-200">
                     <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">

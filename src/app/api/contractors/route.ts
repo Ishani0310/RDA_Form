@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentOfficerSession } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Contractor, IContractor } from "@/models/Contractor";
+import { Submission } from "@/models/Submission";
 import { recordActivityLog } from "@/lib/audit";
 
 // Whitelisted CIDA grades from gazetted standards
@@ -117,26 +118,46 @@ export async function GET(request: NextRequest) {
       .limit(limit)
       .lean();
 
-    const formattedContractors = contractors.map((c) => ({
-      id: c._id.toString(),
-      registrationNumber: c.registrationNumber,
-      businessName: c.businessName,
-      businessRegistrationNumber: c.businessRegistrationNumber && c.businessRegistrationNumber !== "PENDING-BR" && c.businessRegistrationNumber !== "N/A" ? c.businessRegistrationNumber : "",
-      cidaGrade: c.cidaGrade || "",
-      primarySpeciality: c.primarySpeciality || "",
-      province: c.province || "",
-      district: c.district && c.district !== "Unassigned" && c.district !== "Unassigned District" ? c.district : "",
-      contactOfficer: {
-        name: c.contactOfficer?.name && c.contactOfficer.name !== "Authorized Representative" && c.contactOfficer.name !== "Not Designated" ? c.contactOfficer.name : "",
-        designation: c.contactOfficer?.designation && c.contactOfficer.designation !== "Authorized Officer" && c.contactOfficer.designation !== "Authorized Representative" ? c.contactOfficer.designation : "",
-        phone: c.contactOfficer?.phone && c.contactOfficer.phone !== "+94 11 000 0000" && c.contactOfficer.phone !== "N/A" ? c.contactOfficer.phone : "",
-        email: c.contactOfficer?.email && c.contactOfficer.email !== "contact@contractor.lk" && c.contactOfficer.email !== "contact@rda.gov.lk" && c.contactOfficer.email !== "N/A" ? c.contactOfficer.email : "",
-      },
-      status: c.status,
-      isDemoRecord: c.isDemoRecord,
-      createdAt: c.createdAt ? c.createdAt.toISOString() : null,
-      updatedAt: c.updatedAt ? c.updatedAt.toISOString() : null,
-    }));
+    const contractorIds = contractors.map((c) => c._id);
+    const submissions = await Submission.find({ contractor: { $in: contractorIds } })
+      .select("contractor questionnaireData.willParticipate")
+      .lean();
+
+    const subMap = new Map<string, string>();
+    for (const s of submissions) {
+      if (s.contractor) {
+        subMap.set(s.contractor.toString(), ((s.questionnaireData as any)?.willParticipate as string) || "");
+      }
+    }
+
+    const formattedContractors = contractors.map((c) => {
+      const willParticipateRaw =
+        subMap.get(c._id.toString()) ||
+        ((c.metadata as any)?.willParticipate as string) ||
+        (c.primarySpeciality === "Non-Attendee" ? "No" : "Yes");
+
+      return {
+        id: c._id.toString(),
+        registrationNumber: c.registrationNumber,
+        businessName: c.businessName,
+        businessRegistrationNumber: c.businessRegistrationNumber && c.businessRegistrationNumber !== "PENDING-BR" && c.businessRegistrationNumber !== "N/A" ? c.businessRegistrationNumber : "",
+        cidaGrade: c.cidaGrade || "",
+        primarySpeciality: c.primarySpeciality || "",
+        province: c.province || "",
+        district: c.district && c.district !== "Unassigned" && c.district !== "Unassigned District" ? c.district : "",
+        contactOfficer: {
+          name: c.contactOfficer?.name && c.contactOfficer.name !== "Authorized Representative" && c.contactOfficer.name !== "Not Designated" ? c.contactOfficer.name : "",
+          designation: c.contactOfficer?.designation && c.contactOfficer.designation !== "Authorized Officer" && c.contactOfficer.designation !== "Authorized Representative" ? c.contactOfficer.designation : "",
+          phone: c.contactOfficer?.phone && c.contactOfficer.phone !== "+94 11 000 0000" && c.contactOfficer.phone !== "N/A" ? c.contactOfficer.phone : "",
+          email: c.contactOfficer?.email && c.contactOfficer.email !== "contact@contractor.lk" && c.contactOfficer.email !== "contact@rda.gov.lk" && c.contactOfficer.email !== "N/A" ? c.contactOfficer.email : "",
+        },
+        willParticipate: willParticipateRaw === "No" ? "No" : "Yes",
+        status: c.status,
+        isDemoRecord: c.isDemoRecord,
+        createdAt: c.createdAt ? c.createdAt.toISOString() : null,
+        updatedAt: c.updatedAt ? c.updatedAt.toISOString() : null,
+      };
+    });
 
     return NextResponse.json({
       success: true,
