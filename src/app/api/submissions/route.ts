@@ -118,7 +118,21 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    const totalCount = await Submission.countDocuments(query);
+    const baseQueryNoStatus = { ...query };
+    delete baseQueryNoStatus.status;
+
+    const [totalCount, submittedCount, draftCount] = await Promise.all([
+      Submission.countDocuments(query),
+      Submission.countDocuments({
+        ...baseQueryNoStatus,
+        status: { $in: ["Submitted", "Under_Review", "Verified", "Action_Required", "Rejected"] },
+      }),
+      Submission.countDocuments({
+        ...baseQueryNoStatus,
+        status: "Draft",
+      }),
+    ]);
+
     const totalPages = Math.ceil(totalCount / limit) || 1;
 
     const submissions = await Submission.find(query)
@@ -129,29 +143,49 @@ export async function GET(request: NextRequest) {
       .limit(limit)
       .lean();
 
-    const formatted = submissions.map((s: any) => ({
-      id: s._id.toString(),
-      ref: s.submissionReference,
-      contractor: s.contractor?.businessName || s.questionnaireData?.organizationName || "Unknown Entity",
-      regNo: s.contractor?.registrationNumber || "N/A",
-      grade: s.contractor?.cidaGrade || "Pending",
-      submissionType: s.submissionType || "Annual_Capacity_Declaration",
-      provincialOffice: s.provincialOffice,
-      status: s.status,
-      schemaVersion: s.schemaVersion,
-      formId: s.formId || "RDA-ICDP-CONTRACTOR-Q",
-      formSlug: s.formSlug || "contractor",
-      questionnaireId: s.questionnaireId?.toString(),
-      questionnaireVersion: s.questionnaireVersion || s.schemaVersion,
-      questionnaireData: s.questionnaireData || null,
-      submittedAt: s.createdAt ? new Date(s.createdAt).toLocaleDateString("en-GB") : "Pending",
-      reviewedBy: s.reviewedBy?.fullName || "Awaiting Review",
-      reviewNotes: s.reviewNotes || null,
-    }));
+    const formatted = submissions.map((s: any) => {
+      const isDraft = s.status === "Draft";
+      const createdDate = s.createdAt ? new Date(s.createdAt).toLocaleDateString("en-GB") : "—";
+      const updatedDate = s.updatedAt ? new Date(s.updatedAt).toLocaleDateString("en-GB") : createdDate;
+      const finalSubmissionDate = !isDraft
+        ? s.submittedAt
+          ? new Date(s.submittedAt).toLocaleDateString("en-GB")
+          : s.createdAt
+          ? new Date(s.createdAt).toLocaleDateString("en-GB")
+          : "Submitted"
+        : null;
+
+      return {
+        id: s._id.toString(),
+        ref: s.submissionReference,
+        contractor: s.contractor?.businessName || s.questionnaireData?.organizationName || "Unknown Entity",
+        regNo: s.contractor?.registrationNumber || "N/A",
+        grade: s.contractor?.cidaGrade || "Pending",
+        submissionType: s.submissionType || "Annual_Capacity_Declaration",
+        provincialOffice: s.provincialOffice,
+        status: s.status,
+        schemaVersion: s.schemaVersion,
+        formId: s.formId || "RDA-ICDP-CONTRACTOR-Q",
+        formSlug: s.formSlug || "contractor",
+        questionnaireId: s.questionnaireId?.toString(),
+        questionnaireVersion: s.questionnaireVersion || s.schemaVersion,
+        questionnaireData: s.questionnaireData || null,
+        createdAt: createdDate,
+        updatedAt: updatedDate,
+        submittedAt: finalSubmissionDate,
+        reviewedBy: s.reviewedBy?.fullName || "Awaiting Review",
+        reviewNotes: s.reviewNotes || null,
+      };
+    });
 
     return NextResponse.json({
       success: true,
       data: formatted,
+      counts: {
+        all: totalCount,
+        submitted: submittedCount,
+        draft: draftCount,
+      },
       pagination: {
         page,
         limit,

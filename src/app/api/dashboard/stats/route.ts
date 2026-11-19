@@ -215,13 +215,12 @@ export async function GET(request: NextRequest) {
 
     // -------------------------------------------------------------------------
     // CARD 8: Total Draft Registrations
-    // Currently active, unsubmitted draft registrations.
-    // Do not count expired, revoked or already submitted draft tokens.
+    // Currently active, unsubmitted draft registrations (status === "Draft").
+    // Excludes finalized submissions.
     // -------------------------------------------------------------------------
-    const now = new Date();
-    const activeDraftTokensCount = await DraftToken.countDocuments({
-      isRevoked: false,
-      expiresAt: { $gt: now },
+    const activeDraftTokensCount = await Submission.countDocuments({
+      ...submissionBaseQuery,
+      status: "Draft",
     });
 
     // -------------------------------------------------------------------------

@@ -15,6 +15,7 @@ export interface ISubmission extends Document {
   reviewedBy?: mongoose.Types.ObjectId;
   reviewNotes?: string;
   reviewedAt?: Date;
+  submittedAt?: Date;
   schemaVersion: string;
   formId?: string;
   formSlug?: string;
@@ -85,6 +86,10 @@ const SubmissionSchema = new Schema<ISubmission>(
     },
     reviewedAt: {
       type: Date,
+    },
+    submittedAt: {
+      type: Date,
+      index: true,
     },
     schemaVersion: {
       type: String,

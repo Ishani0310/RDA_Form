@@ -36,12 +36,20 @@ interface FormattedSubmission {
   grade: string;
   submissionType: string;
   provincialOffice: string;
-  status: "draft" | "submitted" | "under_review" | "approved" | "rejected";
+  status: string;
   schemaVersion?: string;
   questionnaireData?: any;
-  submittedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
+  submittedAt?: string | null;
   reviewedBy: string;
   reviewNotes: string | null;
+}
+
+interface SubmissionsCounts {
+  all: number;
+  submitted: number;
+  draft: number;
 }
 
 interface PaginationMeta {
@@ -781,6 +789,7 @@ function SubmissionsContent() {
 
   // Selected for quick detail modal
   const [selectedSub, setSelectedSub] = useState<FormattedSubmission | null>(null);
+  const [counts, setCounts] = useState<SubmissionsCounts>({ all: 0, submitted: 0, draft: 0 });
 
   const fetchSubmissions = useCallback(async () => {
     try {
@@ -808,6 +817,7 @@ function SubmissionsContent() {
       if (data.success) {
         setSubmissions(data.data || []);
         if (data.pagination) setPagination(data.pagination);
+        if (data.counts) setCounts(data.counts);
 
         // Auto-select modal if ref was requested
         if (initialRef && Array.isArray(data.data)) {
@@ -942,36 +952,36 @@ function SubmissionsContent() {
     switch (s?.toLowerCase()) {
       case "submitted":
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-100 text-blue-800">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-900 border border-blue-200">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
-            Submitted
+            SUBMITTED
           </span>
         );
       case "under_review":
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 text-purple-900 border border-purple-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-purple-600"></span>
             Under Review
           </span>
         );
       case "verified":
       case "approved":
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-200">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
             Verified
           </span>
         );
       case "draft":
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-700">
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-            Draft Progress
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse"></span>
+            DRAFT (Incomplete)
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-100 text-rose-800">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-100 text-rose-800">
             <span className="w-1.5 h-1.5 rounded-full bg-rose-600"></span>
             {s || "Action Required"}
           </span>
@@ -1069,32 +1079,95 @@ function SubmissionsContent() {
       {/* Summary KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm">
-          <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Total Filings</p>
-          <h3 className="text-2xl font-black text-slate-900 mt-1">{pagination.totalCount}</h3>
-          <span className="text-[11px] text-slate-500 font-medium">Island-wide records</span>
+          <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Total Registrations</p>
+          <h3 className="text-2xl font-black text-slate-900 mt-1">{counts.all}</h3>
+          <span className="text-[11px] text-slate-500 font-medium">All recorded entities</span>
         </div>
 
         <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm">
-          <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Active Queue</p>
-          <h3 className="text-2xl font-black text-blue-900 mt-1">
-            {submissions.filter((s) => s.status === "submitted" || s.status === "under_review").length}
-          </h3>
-          <span className="text-[11px] text-blue-600 font-medium">Pending engineer review</span>
+          <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Submitted Filings</p>
+          <h3 className="text-2xl font-black text-blue-900 mt-1">{counts.submitted}</h3>
+          <span className="text-[11px] text-blue-600 font-medium">Completed registrations</span>
         </div>
 
         <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm">
-          <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Verified Filings</p>
+          <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Saved Drafts</p>
+          <h3 className="text-2xl font-black text-amber-700 mt-1">{counts.draft}</h3>
+          <span className="text-[11px] text-amber-600 font-medium">Incomplete registrations</span>
+        </div>
+
+        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm">
+          <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Active Review Queue</p>
           <h3 className="text-2xl font-black text-emerald-600 mt-1">
-            {submissions.filter((s) => s.status === "approved").length}
+            {submissions.filter((s) => s.status.toLowerCase() === "submitted" || s.status.toLowerCase() === "under_review").length}
           </h3>
-          <span className="text-[11px] text-emerald-600 font-medium">Cleared for tenders</span>
+          <span className="text-[11px] text-emerald-600 font-medium">Pending engineer review</span>
         </div>
+      </div>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm">
-          <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Filter Results</p>
-          <h3 className="text-2xl font-black text-slate-800 mt-1">{submissions.length}</h3>
-          <span className="text-[11px] text-slate-500 font-medium">Showing on page {pagination.page}</span>
-        </div>
+      {/* Primary Lifecycle Views: All, Submitted, Drafts */}
+      <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+        <button
+          type="button"
+          onClick={() => {
+            setStatus("All Statuses");
+            setPage(1);
+          }}
+          className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            status === "All Statuses"
+              ? "bg-blue-950 text-white shadow-sm"
+              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+          }`}
+        >
+          <span>All Registrations</span>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+            status === "All Statuses" ? "bg-blue-800 text-blue-100" : "bg-slate-200 text-slate-700"
+          }`}>
+            {counts.all}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setStatus("submitted");
+            setPage(1);
+          }}
+          className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            status === "submitted"
+              ? "bg-blue-900 text-white shadow-sm"
+              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+          }`}
+        >
+          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+          <span>Submitted</span>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+            status === "submitted" ? "bg-blue-800 text-blue-100" : "bg-slate-200 text-slate-700"
+          }`}>
+            {counts.submitted}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setStatus("draft");
+            setPage(1);
+          }}
+          className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            status === "draft"
+              ? "bg-amber-700 text-white shadow-sm"
+              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+          }`}
+        >
+          <Clock className="w-3.5 h-3.5 text-amber-300" />
+          <span>Drafts</span>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+            status === "draft" ? "bg-amber-800 text-amber-100" : "bg-slate-200 text-slate-700"
+          }`}>
+            {counts.draft}
+          </span>
+        </button>
       </div>
 
       {/* Error Banner */}
@@ -1221,21 +1294,21 @@ function SubmissionsContent() {
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50/75 border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                 <tr>
-                  <th className="px-5 py-3">Reference No</th>
-                  <th className="px-5 py-3">Organization / Firm</th>
-                  <th className="px-5 py-3">Category</th>
-                  <th className="px-5 py-3">Attendance</th>
-                  <th className="px-5 py-3">Provincial Office</th>
-                  <th className="px-5 py-3">Filed At</th>
-                  <th className="px-5 py-3">Review Status</th>
-                  <th className="px-5 py-3 text-right">Actions</th>
+                  <th className="px-4 py-3">Reference No</th>
+                  <th className="px-4 py-3">Organization / Firm</th>
+                  <th className="px-4 py-3">Category</th>
+                  <th className="px-4 py-3">Registration Status</th>
+                  <th className="px-4 py-3">Created Date</th>
+                  <th className="px-4 py-3">Last Updated</th>
+                  <th className="px-4 py-3">Final Submission</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {submissions.map((s) => (
                   <tr key={s.id} className="hover:bg-slate-50/75 transition-colors">
-                    <td className="px-5 py-3.5 font-mono font-bold text-blue-950">{s.ref}</td>
-                    <td className="px-5 py-3.5">
+                    <td className="px-4 py-3.5 font-mono font-bold text-blue-950">{s.ref}</td>
+                    <td className="px-4 py-3.5">
                       <p className="font-bold text-slate-900">{s.contractor}</p>
                       {(() => {
                         const ictad = s.questionnaireData?.ictadRegistrationNumber;
@@ -1250,36 +1323,20 @@ function SubmissionsContent() {
                         return null;
                       })()}
                     </td>
-                    <td className="px-5 py-3.5">{getCategoryBadge(s)}</td>
-                    <td className="px-5 py-3.5">
-                      {s.questionnaireData?.willParticipate === "No" ? (
-                        <span className="text-[11px] font-semibold text-slate-500 flex items-center gap-1">
-                          <UserX className="w-3.5 h-3.5" /> No (Declined)
-                        </span>
+                    <td className="px-4 py-3.5">{getCategoryBadge(s)}</td>
+                    <td className="px-4 py-3.5">{getStatusBadge(s.status)}</td>
+                    <td className="px-4 py-3.5 text-slate-600 font-mono text-[11px]">{s.createdAt || "—"}</td>
+                    <td className="px-4 py-3.5 text-slate-600 font-mono text-[11px]">{s.updatedAt || s.createdAt || "—"}</td>
+                    <td className="px-4 py-3.5">
+                      {s.submittedAt ? (
+                        <span className="font-bold text-emerald-800 font-mono text-[11px]">{s.submittedAt}</span>
                       ) : (
-                        <span className="text-[11px] font-semibold text-emerald-700 flex items-center gap-1">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                          Yes ({s.questionnaireData?.participant2?.fullName?.trim() ? "2 Attendees" : "1 Attendee"})
+                        <span className="inline-flex items-center gap-1 text-[11px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200/80 font-semibold">
+                          <Clock className="w-3 h-3 text-amber-500" /> Draft (Pending)
                         </span>
                       )}
                     </td>
-                    <td className="px-5 py-3.5 font-medium text-slate-700">
-                      {(() => {
-                        const supProv = s.questionnaireData?.supplierDetails?.province;
-                        const conProv = s.questionnaireData?.province;
-                        const realProv =
-                          supProv ||
-                          (conProv && conProv !== "Western Province" ? conProv : null) ||
-                          (s.questionnaireData?.participantCategory === "Supplier" ? s.provincialOffice : null);
-                        if (realProv) {
-                          return <span className="font-semibold text-slate-800">{realProv}</span>;
-                        }
-                        return <span className="text-slate-400">—</span>;
-                      })()}
-                    </td>
-                    <td className="px-5 py-3.5 text-slate-600">{s.submittedAt}</td>
-                    <td className="px-5 py-3.5">{getStatusBadge(s.status)}</td>
-                    <td className="px-5 py-3.5 text-right">
+                    <td className="px-4 py-3.5 text-right">
                       <div className="flex items-center justify-end gap-1.5">
                         <button
                           type="button"
@@ -1398,6 +1455,37 @@ function SubmissionsContent() {
               <div className="flex items-center gap-2">
                 <span className="text-slate-500">Status:</span>
                 {getStatusBadge(selectedSub.status)}
+              </div>
+            </div>
+
+            {/* Registration Lifecycle & Audit Trail */}
+            <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 space-y-2">
+              <span className="font-bold text-slate-900 uppercase text-[11px] tracking-wide block">
+                Registration Lifecycle &amp; Audit Trail
+              </span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
+                <div>
+                  <span className="text-slate-500 text-[10px] uppercase font-bold">Reference Number</span>
+                  <p className="font-bold font-mono text-blue-950 text-xs">{selectedSub.ref}</p>
+                </div>
+                <div>
+                  <span className="text-slate-500 text-[10px] uppercase font-bold">Registration Status</span>
+                  <div className="mt-0.5">{getStatusBadge(selectedSub.status)}</div>
+                </div>
+                <div>
+                  <span className="text-slate-500 text-[10px] uppercase font-bold">Created Date</span>
+                  <p className="font-mono text-slate-800 text-[11px]">{selectedSub.createdAt || "—"}</p>
+                </div>
+                <div>
+                  <span className="text-slate-500 text-[10px] uppercase font-bold">Final Submission Date</span>
+                  <p className="font-mono text-[11px]">
+                    {selectedSub.submittedAt ? (
+                      <span className="font-bold text-emerald-700">{selectedSub.submittedAt}</span>
+                    ) : (
+                      <span className="text-amber-700 font-medium italic">Not Submitted (Draft)</span>
+                    )}
+                  </p>
+                </div>
               </div>
             </div>
 

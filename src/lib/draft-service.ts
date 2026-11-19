@@ -46,6 +46,48 @@ export function isValidTokenFormat(token: string): boolean {
 }
 
 /**
+ * Generate permanent RDA ICDP registration reference number.
+ * Format: RDA-ICDP-YYYY-XXXXX (e.g. RDA-ICDP-2026-00125)
+ * Generated when the registration is first saved as a draft,
+ * and retained permanently through resume and final submission.
+ */
+export async function generatePermanentRegistrationReference(
+  year: number = new Date().getFullYear()
+): Promise<string> {
+  const prefix = `RDA-ICDP-${year}-`;
+
+  // Find the highest sequential reference number matching prefix
+  const highestSub = await Submission.findOne(
+    { submissionReference: { $regex: `^${prefix}\\d{5}$` } },
+    { submissionReference: 1 },
+    { sort: { submissionReference: -1 } }
+  ).lean();
+
+  let nextSeq = 1;
+  if (highestSub?.submissionReference) {
+    const parts = highestSub.submissionReference.split("-");
+    const numPart = parseInt(parts[parts.length - 1], 10);
+    if (!isNaN(numPart)) {
+      nextSeq = numPart + 1;
+    }
+  } else {
+    // Fallback: total submissions count + 1
+    const count = await Submission.countDocuments();
+    nextSeq = count + 1;
+  }
+
+  // Ensure absolute uniqueness
+  while (true) {
+    const candidate = `${prefix}${String(nextSeq).padStart(5, "0")}`;
+    const exists = await Submission.exists({ submissionReference: candidate });
+    if (!exists) {
+      return candidate;
+    }
+    nextSeq++;
+  }
+}
+
+/**
  * Initialize a new draft or update an existing progress draft using a secure resume token
  */
 export async function saveOrUpdateDraft(
@@ -136,6 +178,10 @@ export async function saveOrUpdateDraft(
       if (payload.questionnaireData) {
         submission.questionnaireData = normalizeQuestionnaireData(payload.questionnaireData) as unknown as Record<string, unknown>;
       }
+      // Status remains Draft on progress saves; only final submission transitions to Submitted
+      if (submission.status !== "Submitted") {
+        submission.status = "Draft";
+      }
       await submission.save();
     }
 
@@ -145,7 +191,7 @@ export async function saveOrUpdateDraft(
 
     return {
       token: existingToken,
-      submissionReference: submission?.submissionReference || "RDA/DFT/DRAFT",
+      submissionReference: submission?.submissionReference || "RDA-ICDP-DRAFT",
       expiresAt: draftTokenDoc.expiresAt.toISOString(),
       isNew: false,
       contractor: contractor ? {
@@ -203,9 +249,8 @@ export async function saveOrUpdateDraft(
     });
   }
 
-  // Generate unique draft submission reference
-  const randomSuffix = crypto.randomBytes(3).toString("hex").toUpperCase();
-  const draftRef = `RDA/DFT/${new Date().getFullYear()}/${randomSuffix}`;
+  // Generate permanent registration reference number (retained through full lifecycle)
+  const permanentRef = await generatePermanentRegistrationReference(new Date().getFullYear());
 
   // Check active published questionnaire
   const targetFormIdentifier = (payload.formId || payload.formSlug || DEFAULT_QUESTIONNAIRE_CODE).trim();
@@ -218,7 +263,7 @@ export async function saveOrUpdateDraft(
   const effectiveFormSlug = activePublished?.slug || (payload.formSlug || "contractor");
 
   const submission = await Submission.create({
-    submissionReference: draftRef,
+    submissionReference: permanentRef,
     contractor: contractor._id,
     submissionType: "Annual_Capacity_Declaration",
     provincialOffice: (payload.province || "Western Province").trim(),
@@ -251,7 +296,7 @@ export async function saveOrUpdateDraft(
 
   return {
     token: rawToken,
-    submissionReference: draftRef,
+    submissionReference: permanentRef,
     expiresAt: expiresAt.toISOString(),
     isNew: true,
     contractor: {
@@ -264,7 +309,7 @@ export async function saveOrUpdateDraft(
     },
     submission: {
       id: submission._id.toString(),
-      reference: draftRef,
+      reference: permanentRef,
       status: submission.status,
     },
   };
@@ -387,6 +432,10 @@ export async function submitFinalDeclaration(
     throw new Error("Draft records not found in database.");
   }
 
+  if (submission.status === "Submitted") {
+    throw new Error("This registration has already been successfully submitted. Duplicate submissions are strictly prevented.");
+  }
+
   const targetFormCode = submission.formId || DEFAULT_QUESTIONNAIRE_CODE;
 
   // Normalize & validate official questionnaire if populated
@@ -461,16 +510,14 @@ export async function submitFinalDeclaration(
   if (rawQ.contactNumber) contractor.contactOfficer.phone = rawQ.contactNumber.trim();
   if (rawQ.email) contractor.contactOfficer.email = rawQ.email.trim().toLowerCase();
 
-  // Generate official submission reference: RDA/SUB/YYYY/XXXXX
-  const randomSuffix = crypto.randomBytes(3).toString("hex").toUpperCase();
-  const officialSubmissionRef = `RDA/SUB/${new Date().getFullYear()}/${randomSuffix}`;
-
   const submittedAt = new Date();
 
-  // Transition submission
+  // Transition submission: update status to Submitted and preserve permanent registration reference
   submission.status = "Submitted";
-  submission.submissionReference = officialSubmissionRef;
+  submission.submittedAt = submittedAt;
   await submission.save();
+
+  const officialSubmissionRef = submission.submissionReference;
 
   // Transition contractor
   contractor.status = "Pending_Review";
