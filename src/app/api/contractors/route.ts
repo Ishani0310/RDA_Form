@@ -120,38 +120,89 @@ export async function GET(request: NextRequest) {
 
     const contractorIds = contractors.map((c) => c._id);
     const submissions = await Submission.find({ contractor: { $in: contractorIds } })
-      .select("contractor questionnaireData.willParticipate")
+      .select("contractor questionnaireData")
       .lean();
 
-    const subMap = new Map<string, string>();
+    const subMap = new Map<string, any>();
     for (const s of submissions) {
       if (s.contractor) {
-        subMap.set(s.contractor.toString(), ((s.questionnaireData as any)?.willParticipate as string) || "");
+        subMap.set(s.contractor.toString(), s.questionnaireData || {});
       }
     }
 
     const formattedContractors = contractors.map((c) => {
+      const q = subMap.get(c._id.toString()) || {};
       const willParticipateRaw =
-        subMap.get(c._id.toString()) ||
+        q.willParticipate ||
         ((c.metadata as any)?.willParticipate as string) ||
         (c.primarySpeciality === "Non-Attendee" ? "No" : "Yes");
 
+      const participantCategory =
+        q.participantCategory ||
+        (willParticipateRaw === "No"
+          ? "Non-Attendee"
+          : c.primarySpeciality === "Non-Attendee"
+          ? "Non-Attendee"
+          : c.primarySpeciality === "Government Stakeholder"
+          ? "Government Officer"
+          : "");
+
       return {
         id: c._id.toString(),
-        registrationNumber: c.registrationNumber,
-        businessName: c.businessName,
-        businessRegistrationNumber: c.businessRegistrationNumber && c.businessRegistrationNumber !== "PENDING-BR" && c.businessRegistrationNumber !== "N/A" ? c.businessRegistrationNumber : "",
-        cidaGrade: c.cidaGrade || "",
+        registrationNumber: q.ictadRegistrationNumber || c.registrationNumber,
+        businessName: q.organizationName || c.businessName,
+        businessRegistrationNumber:
+          c.businessRegistrationNumber &&
+          c.businessRegistrationNumber !== "PENDING-BR" &&
+          c.businessRegistrationNumber !== "N/A"
+            ? c.businessRegistrationNumber
+            : "",
+        cidaGrade: q.cidaGrade || c.cidaGrade || "",
         primarySpeciality: c.primarySpeciality || "",
-        province: c.province || "",
-        district: c.district && c.district !== "Unassigned" && c.district !== "Unassigned District" ? c.district : "",
+        province:
+          q.supplierDetails?.province ||
+          (c.province && c.province !== "Western Province" ? c.province : ""),
+        district:
+          q.supplierDetails?.district ||
+          (c.district && c.district !== "Unassigned" && c.district !== "Unassigned District"
+            ? c.district
+            : ""),
         contactOfficer: {
-          name: c.contactOfficer?.name && c.contactOfficer.name !== "Authorized Representative" && c.contactOfficer.name !== "Not Designated" ? c.contactOfficer.name : "",
-          designation: c.contactOfficer?.designation && c.contactOfficer.designation !== "Authorized Officer" && c.contactOfficer.designation !== "Authorized Representative" ? c.contactOfficer.designation : "",
-          phone: c.contactOfficer?.phone && c.contactOfficer.phone !== "+94 11 000 0000" && c.contactOfficer.phone !== "N/A" ? c.contactOfficer.phone : "",
-          email: c.contactOfficer?.email && c.contactOfficer.email !== "contact@contractor.lk" && c.contactOfficer.email !== "contact@rda.gov.lk" && c.contactOfficer.email !== "N/A" ? c.contactOfficer.email : "",
+          name:
+            q.participant1?.fullName ||
+            (c.contactOfficer?.name &&
+            c.contactOfficer.name !== "Authorized Representative" &&
+            c.contactOfficer.name !== "Not Designated"
+              ? c.contactOfficer.name
+              : ""),
+          designation:
+            q.participant1?.designation ||
+            (c.contactOfficer?.designation &&
+            c.contactOfficer.designation !== "Authorized Officer" &&
+            c.contactOfficer.designation !== "Authorized Representative"
+              ? c.contactOfficer.designation
+              : ""),
+          phone:
+            q.contactNumber ||
+            q.participant1?.mobileNumber ||
+            (c.contactOfficer?.phone &&
+            c.contactOfficer.phone !== "+94 11 000 0000" &&
+            c.contactOfficer.phone !== "N/A"
+              ? c.contactOfficer.phone
+              : ""),
+          email:
+            q.email ||
+            q.participant1?.emailAddress ||
+            (c.contactOfficer?.email &&
+            c.contactOfficer.email !== "contact@contractor.lk" &&
+            c.contactOfficer.email !== "contact@rda.gov.lk" &&
+            c.contactOfficer.email !== "N/A"
+              ? c.contactOfficer.email
+              : ""),
         },
         willParticipate: willParticipateRaw === "No" ? "No" : "Yes",
+        participantCategory,
+        questionnaireData: q,
         status: c.status,
         isDemoRecord: c.isDemoRecord,
         createdAt: c.createdAt ? c.createdAt.toISOString() : null,

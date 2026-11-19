@@ -23,6 +23,7 @@ import {
   Lock,
   Award,
   FileText,
+  Briefcase,
 } from "lucide-react";
 
 interface ContractorItem {
@@ -41,6 +42,8 @@ interface ContractorItem {
     email: string;
   };
   willParticipate?: "Yes" | "No" | string;
+  participantCategory?: string;
+  questionnaireData?: Record<string, any>;
   status: "Draft" | "Pending_Review" | "Verified" | "Action_Required" | "Suspended";
   createdAt: string | null;
   updatedAt: string | null;
@@ -505,74 +508,117 @@ export default function ContractorsPage() {
         )}
       </div>
 
-      {/* Contractor Profile Slide-Over / Modal */}
+      {/* Contractor / Registered Entity Profile Slide-Over / Modal */}
       {profileModalOpen && selectedContractor && (() => {
-        const hasCida = Boolean(
-          selectedContractor.cidaGrade &&
-          selectedContractor.cidaGrade !== "Pending" &&
-          selectedContractor.cidaGrade !== "Not Registered" &&
-          selectedContractor.cidaGrade !== "Not registered with CIDA"
-        );
-        const hasBr = Boolean(
-          selectedContractor.businessRegistrationNumber &&
-          selectedContractor.businessRegistrationNumber !== "PENDING-BR" &&
-          selectedContractor.businessRegistrationNumber !== "N/A" &&
-          selectedContractor.businessRegistrationNumber !== "Not Provided"
-        );
+        const q = selectedContractor.questionnaireData || {};
+        const willParticipate =
+          selectedContractor.willParticipate ||
+          q.willParticipate ||
+          (selectedContractor.primarySpeciality === "Non-Attendee" ? "No" : "Yes");
+        const isNonAttendee = willParticipate === "No" || selectedContractor.primarySpeciality === "Non-Attendee";
+
+        const category =
+          selectedContractor.participantCategory ||
+          q.participantCategory ||
+          (isNonAttendee
+            ? "Non-Attendee"
+            : selectedContractor.primarySpeciality === "Government Stakeholder"
+            ? "Government Officer"
+            : "");
+
+        const isGovOfficer = category === "Government Officer";
+        const isSupplier = category === "Supplier";
+        const isContractor =
+          category === "Contractor" ||
+          (!isGovOfficer &&
+            !isSupplier &&
+            !isNonAttendee &&
+            Boolean(q.cidaGrade || selectedContractor.cidaGrade || (q.areasOfSpecialty && q.areasOfSpecialty.length)));
+
+        // Registration details
+        const regNumber = q.ictadRegistrationNumber || selectedContractor.registrationNumber;
         const hasReg = Boolean(
-          selectedContractor.registrationNumber &&
-          !selectedContractor.registrationNumber.startsWith("DFT-") &&
-          !selectedContractor.registrationNumber.startsWith("REG-") &&
-          selectedContractor.registrationNumber !== "Not Registered" &&
-          selectedContractor.registrationNumber !== "PENDING"
+          regNumber &&
+            !regNumber.startsWith("DFT-") &&
+            !regNumber.startsWith("REG-") &&
+            regNumber !== "Not Registered" &&
+            regNumber !== "PENDING"
         );
-        const isNonAttendee = selectedContractor.willParticipate === "No" || selectedContractor.primarySpeciality === "Non-Attendee";
 
-        const hasDistrict = Boolean(
-          selectedContractor.district &&
-          selectedContractor.district !== "Unassigned" &&
-          selectedContractor.district !== "Unassigned District" &&
-          selectedContractor.district !== "Not Specified"
+        const cidaGrade = q.cidaGrade || selectedContractor.cidaGrade;
+        const hasCida = Boolean(
+          isContractor &&
+            cidaGrade &&
+            cidaGrade !== "Pending" &&
+            cidaGrade !== "Not Registered" &&
+            cidaGrade !== "Not registered with CIDA"
         );
-        const hasSpeciality = Boolean(
-          selectedContractor.primarySpeciality &&
-          selectedContractor.primarySpeciality !== "Non-Attendee" &&
+
+        const brNumber = selectedContractor.businessRegistrationNumber;
+        const hasBr = Boolean(
+          brNumber &&
+            brNumber !== "PENDING-BR" &&
+            brNumber !== "N/A" &&
+            brNumber !== "Not Provided"
+        );
+
+        // Primary general contact details
+        const primaryPhone = q.contactNumber || selectedContractor.contactOfficer?.phone;
+        const hasPrimaryPhone = Boolean(
+          primaryPhone &&
+            primaryPhone !== "+94 11 000 0000" &&
+            primaryPhone !== "N/A" &&
+            primaryPhone !== "Not Provided"
+        );
+
+        const primaryEmail = q.email || selectedContractor.contactOfficer?.email;
+        const hasPrimaryEmail = Boolean(
+          primaryEmail &&
+            primaryEmail !== "contact@contractor.lk" &&
+            primaryEmail !== "contact@rda.gov.lk" &&
+            primaryEmail !== "N/A" &&
+            primaryEmail !== "Not Provided"
+        );
+
+        // Attendees (Participant 1 and Participant 2)
+        const p1 = q.participant1 || (selectedContractor.contactOfficer?.name ? {
+          fullName: selectedContractor.contactOfficer.name,
+          designation: selectedContractor.contactOfficer.designation,
+          mobileNumber: selectedContractor.contactOfficer.phone,
+          emailAddress: selectedContractor.contactOfficer.email,
+        } : null);
+        const hasP1 = Boolean(p1 && p1.fullName && p1.fullName !== "Authorized Representative" && p1.fullName !== "Not Designated");
+
+        const p2 = q.participant2;
+        const hasP2 = Boolean(p2 && p2.fullName && p2.fullName.trim());
+
+        // Supplier specific fields
+        const supplierDetails = q.supplierDetails || {};
+        const hasSupplierDetails = Boolean(
+          isSupplier && (
+            supplierDetails.companyName ||
+            supplierDetails.locationAddress ||
+            supplierDetails.province ||
+            supplierDetails.district ||
+            (supplierDetails.materialsSupplied && supplierDetails.materialsSupplied.length > 0)
+          )
+        );
+
+        // Contractor specific fields
+        const specialties =
+          q.areasOfSpecialty ||
+          (selectedContractor.primarySpeciality &&
           selectedContractor.primarySpeciality !== "General Civil Engineering" &&
-          selectedContractor.primarySpeciality !== "Not Specified"
-        );
-        const hasProvince = Boolean(
-          selectedContractor.province &&
-          selectedContractor.province !== "Not Specified" &&
-          (!isNonAttendee || hasDistrict)
-        );
-        const showJurisdiction = hasProvince || hasDistrict || hasSpeciality;
-
-        const hasOfficerName = Boolean(
-          selectedContractor.contactOfficer?.name &&
-          selectedContractor.contactOfficer.name !== "Authorized Representative" &&
-          selectedContractor.contactOfficer.name !== "Not Designated" &&
-          selectedContractor.contactOfficer.name !== "Not Specified"
-        );
-        const hasDesignation = Boolean(
-          selectedContractor.contactOfficer?.designation &&
-          selectedContractor.contactOfficer.designation !== "Authorized Officer" &&
-          selectedContractor.contactOfficer.designation !== "Authorized Representative" &&
-          selectedContractor.contactOfficer.designation !== "Not Specified"
-        );
-        const hasPhone = Boolean(
-          selectedContractor.contactOfficer?.phone &&
-          selectedContractor.contactOfficer.phone !== "+94 11 000 0000" &&
-          selectedContractor.contactOfficer.phone !== "N/A" &&
-          selectedContractor.contactOfficer.phone !== "Not Provided"
-        );
-        const hasEmail = Boolean(
-          selectedContractor.contactOfficer?.email &&
-          selectedContractor.contactOfficer.email !== "contact@contractor.lk" &&
-          selectedContractor.contactOfficer.email !== "contact@rda.gov.lk" &&
-          selectedContractor.contactOfficer.email !== "N/A" &&
-          selectedContractor.contactOfficer.email !== "Not Provided"
-        );
-        const showContact = hasOfficerName || hasDesignation || hasPhone || hasEmail;
+          selectedContractor.primarySpeciality !== "Government Stakeholder" &&
+          selectedContractor.primarySpeciality !== "Non-Attendee"
+            ? [selectedContractor.primarySpeciality]
+            : []);
+        const hasSpecialties = Array.isArray(specialties) && specialties.length > 0;
+        const hasExperience = Boolean(q.generalExperience && q.generalExperience !== "N/A");
+        const hasOngoingContracts = q.hasOngoingContracts === "Yes";
+        const ongoingContractsList = Array.isArray(q.ongoingContracts)
+          ? q.ongoingContracts.filter((oc: any) => oc && (oc.contractName || oc.projectName))
+          : [];
 
         return (
           <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
@@ -584,12 +630,19 @@ export default function ContractorsPage() {
                     <Building2 className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold tracking-tight leading-tight">
-                      {selectedContractor.businessName}
-                    </h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base font-bold tracking-tight leading-tight">
+                        {q.organizationName || selectedContractor.businessName}
+                      </h3>
+                      {category && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                          {category}
+                        </span>
+                      )}
+                    </div>
                     {hasReg && (
                       <p className="text-xs text-amber-300/80 font-mono mt-0.5">
-                        Registration: {selectedContractor.registrationNumber}
+                        Registration: {regNumber}
                       </p>
                     )}
                   </div>
@@ -607,21 +660,8 @@ export default function ContractorsPage() {
 
               {/* Body */}
               <div className="p-6 space-y-6 text-xs">
-                {/* Status and Grade Bar */}
+                {/* Top Status & Attendance Bar */}
                 <div className="flex flex-wrap gap-3">
-                  {hasCida && (
-                    <div className="flex-1 min-w-[140px] p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                        CIDA Classification
-                      </span>
-                      <div className="mt-1 flex items-center gap-2">
-                        <span className="text-base font-black text-blue-950">
-                          Grade {selectedContractor.cidaGrade}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
                   {/* Workshop Attendance */}
                   <div className="flex-1 min-w-[160px] p-3.5 rounded-xl bg-slate-50 border border-slate-200">
                     <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
@@ -640,6 +680,21 @@ export default function ContractorsPage() {
                     </div>
                   </div>
 
+                  {/* Category Pill */}
+                  {!isNonAttendee && category && (
+                    <div className="flex-1 min-w-[140px] p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                        Participant Category
+                      </span>
+                      <div className="mt-1">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-800 border border-blue-200">
+                          {category}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Registry Review Status */}
                   <div className="flex-1 min-w-[140px] p-3.5 rounded-xl bg-slate-50 border border-slate-200">
                     <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                       Registry Review Status
@@ -655,93 +710,56 @@ export default function ContractorsPage() {
                     </div>
                   </div>
 
+                  {/* CIDA Classification (Contractors only, if registered) */}
+                  {hasCida && (
+                    <div className="flex-1 min-w-[140px] p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                        CIDA Classification
+                      </span>
+                      <div className="mt-1 flex items-center gap-2">
+                        <span className="text-base font-black text-blue-950">
+                          Grade {cidaGrade}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Business Registration (if filled) */}
                   {hasBr && (
                     <div className="flex-1 min-w-[140px] p-3.5 rounded-xl bg-slate-50 border border-slate-200">
                       <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                         Business Registration
                       </span>
                       <div className="mt-1 font-mono font-bold text-slate-800">
-                        {selectedContractor.businessRegistrationNumber}
+                        {brNumber}
                       </div>
                     </div>
                   )}
                 </div>
 
-                {/* Geographic and Technical Jurisdiction (Only if filled) */}
-                {showJurisdiction && (
-                  <div className="p-4 rounded-xl border border-slate-200 space-y-3">
+                {/* Primary Organization Contact (if filled) */}
+                {(hasPrimaryPhone || hasPrimaryEmail) && (
+                  <div className="p-4 rounded-xl border border-slate-200 space-y-2.5">
                     <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b border-slate-100">
-                      <MapPin className="w-3.5 h-3.5 text-blue-900" />
-                      <span>Jurisdiction &amp; Engineering Scope</span>
+                      <Phone className="w-3.5 h-3.5 text-blue-900" />
+                      <span>Official Contact Details</span>
                     </h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {hasProvince && (
+                      {hasPrimaryPhone && (
                         <div>
-                          <span className="text-slate-500 font-medium">Administrative Province:</span>
-                          <p className="font-bold text-slate-800 mt-0.5">
-                            {selectedContractor.province}
-                          </p>
-                        </div>
-                      )}
-                      {hasDistrict && (
-                        <div>
-                          <span className="text-slate-500 font-medium">District Station:</span>
-                          <p className="font-bold text-slate-800 mt-0.5">
-                            {selectedContractor.district} District
-                          </p>
-                        </div>
-                      )}
-                      {hasSpeciality && (
-                        <div className="sm:col-span-2">
-                          <span className="text-slate-500 font-medium">Primary Technical Speciality:</span>
-                          <p className="font-semibold text-slate-800 mt-0.5">
-                            {selectedContractor.primarySpeciality}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Contact Details (Only filled fields) */}
-                {showContact && (
-                  <div className="p-4 rounded-xl border border-slate-200 space-y-3">
-                    <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b border-slate-100">
-                      <User className="w-3.5 h-3.5 text-blue-900" />
-                      <span>{hasOfficerName || hasDesignation ? "Authorized Contact Representative" : "Contact Details"}</span>
-                    </h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {hasOfficerName && (
-                        <div>
-                          <span className="text-slate-500 font-medium">Officer Name:</span>
-                          <p className="font-bold text-slate-800 mt-0.5">
-                            {selectedContractor.contactOfficer.name}
-                          </p>
-                        </div>
-                      )}
-                      {hasDesignation && (
-                        <div>
-                          <span className="text-slate-500 font-medium">Designation:</span>
-                          <p className="font-semibold text-slate-800 mt-0.5">
-                            {selectedContractor.contactOfficer.designation}
-                          </p>
-                        </div>
-                      )}
-                      {hasPhone && (
-                        <div>
-                          <span className="text-slate-500 font-medium">Official Contact Number:</span>
-                          <p className="font-mono text-slate-800 mt-0.5 flex items-center gap-1.5">
+                          <span className="text-slate-500 font-medium">Contact Number:</span>
+                          <p className="font-mono font-semibold text-slate-800 mt-0.5 flex items-center gap-1.5">
                             <Phone className="w-3 h-3 text-slate-400" />
-                            <span>{selectedContractor.contactOfficer.phone}</span>
+                            <span>{primaryPhone}</span>
                           </p>
                         </div>
                       )}
-                      {hasEmail && (
+                      {hasPrimaryEmail && (
                         <div>
-                          <span className="text-slate-500 font-medium">Official Electronic Mail:</span>
-                          <p className="font-mono text-slate-800 mt-0.5 flex items-center gap-1.5">
+                          <span className="text-slate-500 font-medium">Electronic Mail:</span>
+                          <p className="font-mono font-semibold text-slate-800 mt-0.5 flex items-center gap-1.5">
                             <Mail className="w-3 h-3 text-slate-400" />
-                            <span>{selectedContractor.contactOfficer.email}</span>
+                            <span>{primaryEmail}</span>
                           </p>
                         </div>
                       )}
@@ -749,8 +767,296 @@ export default function ContractorsPage() {
                   </div>
                 )}
 
-                {/* Dynamic Questionnaire Architecture Notice (Only for Contractors) */}
-                {!isNonAttendee && (
+                {/* NON-ATTENDEE NOTICE (if willParticipate === "No") */}
+                {isNonAttendee && (
+                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 space-y-1">
+                    <p className="font-bold text-xs text-slate-800">Non-Attendee Registration Record</p>
+                    <p className="text-[11px] text-slate-600 leading-relaxed">
+                      The entity indicated that they will not be participating in the workshop on 07 December 2026. Only verified organizational contact information is recorded in the central directory.
+                    </p>
+                  </div>
+                )}
+
+                {/* GOVERNMENT OFFICER ATTENDEES */}
+                {isGovOfficer && (hasP1 || hasP2) && (
+                  <div className="p-4 rounded-xl border border-slate-200 space-y-3 bg-slate-50/50">
+                    <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b border-slate-200">
+                      <User className="w-3.5 h-3.5 text-blue-900" />
+                      <span>Registered Government Attendees</span>
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {hasP1 && (
+                        <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                          <span className="text-[10px] font-bold text-blue-900 uppercase tracking-wide">
+                            Official Representative (Participant 1)
+                          </span>
+                          <p className="font-bold text-slate-900 text-sm">{p1.fullName}</p>
+                          {p1.designation && (
+                            <p className="text-slate-600 text-xs font-medium">{p1.designation}</p>
+                          )}
+                          <div className="pt-1.5 space-y-0.5 text-[11px] text-slate-500 font-mono">
+                            {p1.mobileNumber && <div>Phone: {p1.mobileNumber}</div>}
+                            {p1.emailAddress && <div>Email: {p1.emailAddress}</div>}
+                          </div>
+                        </div>
+                      )}
+                      {hasP2 && (
+                        <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                          <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wide">
+                            Second Officer (Participant 2)
+                          </span>
+                          <p className="font-bold text-slate-900 text-sm">{p2.fullName}</p>
+                          {p2.designation && (
+                            <p className="text-slate-600 text-xs font-medium">{p2.designation}</p>
+                          )}
+                          <div className="pt-1.5 space-y-0.5 text-[11px] text-slate-500 font-mono">
+                            {p2.mobileNumber && <div>Phone: {p2.mobileNumber}</div>}
+                            {p2.emailAddress && <div>Email: {p2.emailAddress}</div>}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* SUPPLIER DETAILS */}
+                {isSupplier && hasSupplierDetails && (
+                  <div className="p-4 rounded-xl border border-purple-200 bg-purple-50/30 space-y-3">
+                    <h4 className="text-xs font-bold text-purple-950 uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b border-purple-200/60">
+                      <Building2 className="w-3.5 h-3.5 text-purple-800" />
+                      <span>Supplier Production &amp; Material Capacity</span>
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {supplierDetails.companyName && (
+                        <div>
+                          <span className="text-slate-500 font-medium">Company Name:</span>
+                          <p className="font-bold text-slate-900 mt-0.5">{supplierDetails.companyName}</p>
+                        </div>
+                      )}
+                      {(supplierDetails.province || supplierDetails.district) && (
+                        <div>
+                          <span className="text-slate-500 font-medium">Province &amp; District:</span>
+                          <p className="font-bold text-slate-900 mt-0.5">
+                            {[supplierDetails.province, supplierDetails.district ? `${supplierDetails.district} District` : null].filter(Boolean).join(" • ")}
+                          </p>
+                        </div>
+                      )}
+                      {supplierDetails.locationAddress && (
+                        <div className="sm:col-span-2">
+                          <span className="text-slate-500 font-medium">Physical Location / Address:</span>
+                          <p className="font-medium text-slate-800 mt-0.5">{supplierDetails.locationAddress}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {supplierDetails.materialsSupplied && supplierDetails.materialsSupplied.length > 0 && (
+                      <div className="pt-2 border-t border-purple-200/60">
+                        <span className="text-slate-500 font-medium text-[11px]">Supplied Materials:</span>
+                        <div className="flex flex-wrap gap-1.5 mt-1">
+                          {supplierDetails.materialsSupplied.map((m: string) => (
+                            <span key={m} className="px-2 py-0.5 rounded bg-purple-100 text-purple-900 text-[11px] font-semibold">
+                              {m === "Other" && supplierDetails.materialsOther
+                                ? `Other (${supplierDetails.materialsOther})`
+                                : m}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* SUPPLIER REPRESENTATIVES */}
+                {isSupplier && (hasP1 || hasP2) && (
+                  <div className="p-4 rounded-xl border border-slate-200 space-y-3 bg-slate-50/50">
+                    <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b border-slate-200">
+                      <User className="w-3.5 h-3.5 text-blue-900" />
+                      <span>Supplier Representative(s)</span>
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {hasP1 && (
+                        <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                          <span className="text-[10px] font-bold text-purple-900 uppercase tracking-wide">
+                            Representative (Participant 1)
+                          </span>
+                          <p className="font-bold text-slate-900 text-sm">{p1.fullName}</p>
+                          {p1.designation && <p className="text-slate-600 text-xs font-medium">{p1.designation}</p>}
+                          <div className="pt-1.5 space-y-0.5 text-[11px] text-slate-500 font-mono">
+                            {p1.mobileNumber && <div>Phone: {p1.mobileNumber}</div>}
+                            {p1.emailAddress && <div>Email: {p1.emailAddress}</div>}
+                          </div>
+                        </div>
+                      )}
+                      {hasP2 && (
+                        <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                          <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wide">
+                            Second Representative (Participant 2)
+                          </span>
+                          <p className="font-bold text-slate-900 text-sm">{p2.fullName}</p>
+                          {p2.designation && <p className="text-slate-600 text-xs font-medium">{p2.designation}</p>}
+                          <div className="pt-1.5 space-y-0.5 text-[11px] text-slate-500 font-mono">
+                            {p2.mobileNumber && <div>Phone: {p2.mobileNumber}</div>}
+                            {p2.emailAddress && <div>Email: {p2.emailAddress}</div>}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* CONTRACTOR CAPACITY & SPECIALTIES */}
+                {isContractor && (hasSpecialties || hasExperience || q.hasOngoingContracts) && (
+                  <div className="p-4 rounded-xl border border-slate-200 space-y-3">
+                    <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b border-slate-100">
+                      <ShieldCheck className="w-3.5 h-3.5 text-blue-900" />
+                      <span>Contractor Capacity &amp; Experience</span>
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {hasExperience && (
+                        <div>
+                          <span className="text-slate-500 font-medium">General Construction Experience:</span>
+                          <p className="font-bold text-slate-900 mt-0.5">{q.generalExperience}</p>
+                        </div>
+                      )}
+                      {q.hasOngoingContracts && (
+                        <div>
+                          <span className="text-slate-500 font-medium">Ongoing RDA Contracts:</span>
+                          <p className="font-bold text-slate-900 mt-0.5">{q.hasOngoingContracts}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {hasSpecialties && (
+                      <div className="pt-2 border-t border-slate-100">
+                        <span className="text-slate-500 font-medium text-[11px]">Areas of Technical Specialty:</span>
+                        <div className="flex flex-wrap gap-1.5 mt-1">
+                          {specialties.map((s: string) => (
+                            <span key={s} className="px-2 py-0.5 rounded bg-blue-100/80 text-blue-900 text-[11px] font-semibold">
+                              {s}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* CONTRACTOR ONGOING WORKS */}
+                {isContractor && hasOngoingContracts && ongoingContractsList.length > 0 && (
+                  <div className="p-4 rounded-xl border border-blue-200 bg-blue-50/40 space-y-3">
+                    <h4 className="text-xs font-bold text-blue-950 uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b border-blue-200/60">
+                      <Briefcase className="w-3.5 h-3.5 text-blue-900" />
+                      <span>Ongoing Works &amp; Outstanding Commitments</span>
+                    </h4>
+
+                    {q.totalOutstandingValueLkrMillion !== undefined && q.totalOutstandingValueLkrMillion !== null && (
+                      <div className="p-2.5 bg-white rounded-lg border border-slate-200 flex justify-between items-center text-xs">
+                        <span className="text-slate-600 font-medium">Total Value of Outstanding Works:</span>
+                        <span className="font-mono font-bold text-blue-950">
+                          LKR {Number(q.totalOutstandingValueLkrMillion).toLocaleString()} Million
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="space-y-1.5 pt-1">
+                      {ongoingContractsList.map((oc: any, idx: number) => (
+                        <div key={idx} className="p-2.5 bg-white rounded-lg border border-slate-200 text-xs space-y-1">
+                          <div className="flex justify-between items-center">
+                            <span className="font-bold text-slate-900">Project {idx + 1}: {oc.contractName || oc.projectName}</span>
+                            {oc.contractValueLkrMillion && (
+                              <span className="font-mono font-bold text-slate-800">
+                                LKR {oc.contractValueLkrMillion}M
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[11px] text-slate-500 flex flex-wrap gap-3">
+                            {oc.clientEmployer && <span>Client: {oc.clientEmployer}</span>}
+                            {oc.expectedCompletionDate && <span>Completion: {oc.expectedCompletionDate}</span>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* CONTRACTOR REPRESENTATIVES */}
+                {isContractor && (hasP1 || hasP2) && (
+                  <div className="p-4 rounded-xl border border-slate-200 space-y-3 bg-slate-50/50">
+                    <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b border-slate-200">
+                      <User className="w-3.5 h-3.5 text-blue-900" />
+                      <span>Authorized Contractor Representative(s)</span>
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {hasP1 && (
+                        <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                          <span className="text-[10px] font-bold text-blue-900 uppercase tracking-wide">
+                            Primary Representative (Participant 1)
+                          </span>
+                          <p className="font-bold text-slate-900 text-sm">{p1.fullName}</p>
+                          {p1.designation && <p className="text-slate-600 text-xs font-medium">{p1.designation}</p>}
+                          <div className="pt-1.5 space-y-0.5 text-[11px] text-slate-500 font-mono">
+                            {p1.mobileNumber && <div>Phone: {p1.mobileNumber}</div>}
+                            {p1.emailAddress && <div>Email: {p1.emailAddress}</div>}
+                          </div>
+                        </div>
+                      )}
+                      {hasP2 && (
+                        <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                          <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wide">
+                            Second Representative (Participant 2)
+                          </span>
+                          <p className="font-bold text-slate-900 text-sm">{p2.fullName}</p>
+                          {p2.designation && <p className="text-slate-600 text-xs font-medium">{p2.designation}</p>}
+                          <div className="pt-1.5 space-y-0.5 text-[11px] text-slate-500 font-mono">
+                            {p2.mobileNumber && <div>Phone: {p2.mobileNumber}</div>}
+                            {p2.emailAddress && <div>Email: {p2.emailAddress}</div>}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* GENERAL ATTENDEES FALLBACK (if category unselected but attendee) */}
+                {!isNonAttendee && !isGovOfficer && !isSupplier && !isContractor && (hasP1 || hasP2) && (
+                  <div className="p-4 rounded-xl border border-slate-200 space-y-3 bg-slate-50/50">
+                    <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b border-slate-200">
+                      <User className="w-3.5 h-3.5 text-blue-900" />
+                      <span>Registered Attendees</span>
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {hasP1 && (
+                        <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                          <span className="text-[10px] font-bold text-blue-900 uppercase tracking-wide">
+                            Participant 1
+                          </span>
+                          <p className="font-bold text-slate-900 text-sm">{p1.fullName}</p>
+                          {p1.designation && <p className="text-slate-600 text-xs font-medium">{p1.designation}</p>}
+                          <div className="pt-1.5 space-y-0.5 text-[11px] text-slate-500 font-mono">
+                            {p1.mobileNumber && <div>Phone: {p1.mobileNumber}</div>}
+                            {p1.emailAddress && <div>Email: {p1.emailAddress}</div>}
+                          </div>
+                        </div>
+                      )}
+                      {hasP2 && (
+                        <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                          <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wide">
+                            Participant 2
+                          </span>
+                          <p className="font-bold text-slate-900 text-sm">{p2.fullName}</p>
+                          {p2.designation && <p className="text-slate-600 text-xs font-medium">{p2.designation}</p>}
+                          <div className="pt-1.5 space-y-0.5 text-[11px] text-slate-500 font-mono">
+                            {p2.mobileNumber && <div>Phone: {p2.mobileNumber}</div>}
+                            {p2.emailAddress && <div>Email: {p2.emailAddress}</div>}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Dynamic Questionnaire Notice (Only for Contractors) */}
+                {isContractor && (
                   <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 space-y-1.5">
                     <div className="flex items-center gap-1.5 font-bold">
                       <Lock className="w-3.5 h-3.5 text-amber-700" />
