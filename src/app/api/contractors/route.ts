@@ -75,6 +75,8 @@ export async function GET(request: NextRequest) {
     const province = searchParams.get("province") || "";
     const grade = searchParams.get("grade") || "";
     const status = searchParams.get("status") || "";
+    const attendance = searchParams.get("attendance") || "";
+    const category = searchParams.get("category") || "";
 
     // 3. Connect to Database
     await connectToDatabase();
@@ -94,17 +96,91 @@ export async function GET(request: NextRequest) {
       query.status = status;
     }
 
+    if (attendance === "No") {
+      const nonAttendeeSubs = await Submission.find({
+        "questionnaireData.willParticipate": "No",
+      })
+        .select("contractor")
+        .lean();
+      const nonAttIds = nonAttendeeSubs.map((s) => s.contractor).filter(Boolean);
+      query.$or = [
+        { primarySpeciality: "Non-Attendee" },
+        { _id: { $in: nonAttIds } },
+      ];
+    } else if (attendance === "Yes") {
+      const nonAttendeeSubs = await Submission.find({
+        "questionnaireData.willParticipate": "No",
+      })
+        .select("contractor")
+        .lean();
+      const nonAttIds = nonAttendeeSubs.map((s) => s.contractor).filter(Boolean);
+      query.primarySpeciality = { $ne: "Non-Attendee" };
+      if (nonAttIds.length > 0) {
+        query._id = { $nin: nonAttIds };
+      }
+    }
+
+    if (category) {
+      if (category === "Non-Attendee") {
+        const nonAttendeeSubs = await Submission.find({
+          "questionnaireData.willParticipate": "No",
+        })
+          .select("contractor")
+          .lean();
+        const nonAttIds = nonAttendeeSubs.map((s) => s.contractor).filter(Boolean);
+        query.$or = [
+          { primarySpeciality: "Non-Attendee" },
+          { _id: { $in: nonAttIds } },
+        ];
+      } else if (category === "Government Officer") {
+        const govSubs = await Submission.find({
+          "questionnaireData.participantCategory": "Government Officer",
+        })
+          .select("contractor")
+          .lean();
+        const govIds = govSubs.map((s) => s.contractor).filter(Boolean);
+        query.$or = [
+          { primarySpeciality: "Government Stakeholder" },
+          { _id: { $in: govIds } },
+        ];
+      } else if (category === "Supplier") {
+        const supSubs = await Submission.find({
+          "questionnaireData.participantCategory": "Supplier",
+        })
+          .select("contractor")
+          .lean();
+        const supIds = supSubs.map((s) => s.contractor).filter(Boolean);
+        query._id = { $in: supIds };
+      } else if (category === "Contractor") {
+        const conSubs = await Submission.find({
+          "questionnaireData.participantCategory": "Contractor",
+        })
+          .select("contractor")
+          .lean();
+        const conIds = conSubs.map((s) => s.contractor).filter(Boolean);
+        query.$or = [
+          { _id: { $in: conIds } },
+          { cidaGrade: { $in: VALID_CIDA_GRADES.filter((g) => g !== "Pending") } },
+        ];
+      }
+    }
+
     if (search) {
       const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      query.$or = [
+      const searchOr = [
         { businessName: { $regex: escapedSearch, $options: "i" } },
+        { "contactOfficer.phone": { $regex: escapedSearch, $options: "i" } },
+        { "contactOfficer.email": { $regex: escapedSearch, $options: "i" } },
+        { "contactOfficer.name": { $regex: escapedSearch, $options: "i" } },
         { registrationNumber: { $regex: escapedSearch, $options: "i" } },
         { businessRegistrationNumber: { $regex: escapedSearch, $options: "i" } },
-        { primarySpeciality: { $regex: escapedSearch, $options: "i" } },
-        { district: { $regex: escapedSearch, $options: "i" } },
-        { "contactOfficer.name": { $regex: escapedSearch, $options: "i" } },
-        { "contactOfficer.email": { $regex: escapedSearch, $options: "i" } },
       ];
+      if (query.$or) {
+        query.$and = [{ $or: query.$or }, { $or: searchOr }];
+        delete query.$or;
+      } else {
+        query.$or = searchOr;
+      }
     }
 
     // 5. Execute Count & Paginated Fetch

@@ -58,38 +58,22 @@ interface PaginationMeta {
   hasNextPage: boolean;
 }
 
-const CIDA_GRADES = [
-  "CS1",
-  "CS2",
-  "C1",
-  "C2",
-  "C3",
-  "C4",
-  "C5",
-  "C6",
-  "C7",
-  "C8",
-  "C9",
-  "Specialist",
-  "Pending",
+const ATTENDANCE_OPTIONS = [
+  { value: "Yes", label: "Yes (Participating)" },
+  { value: "No", label: "No (Non-Attendee)" },
 ];
 
-const PROVINCES = [
-  "Western Province",
-  "Central Province",
-  "Southern Province",
-  "Northern Province",
-  "Eastern Province",
-  "North Western Province",
-  "North Central Province",
-  "Uva Province",
-  "Sabaragamuwa Province",
+const CATEGORY_OPTIONS = [
+  { value: "Contractor", label: "Contractor" },
+  { value: "Supplier", label: "Supplier" },
+  { value: "Government Officer", label: "Government Officer" },
+  { value: "Non-Attendee", label: "Non-Attendee" },
 ];
 
 const STATUSES = [
-  { value: "Draft", label: "Draft Filing" },
   { value: "Pending_Review", label: "Pending Review" },
   { value: "Verified", label: "Verified & Approved" },
+  { value: "Draft", label: "Draft Filing" },
   { value: "Action_Required", label: "Action Required" },
   { value: "Suspended", label: "Suspended" },
 ];
@@ -102,8 +86,8 @@ export default function ContractorsPage() {
   // Search & Filters
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [selectedGrade, setSelectedGrade] = useState("");
-  const [selectedProvince, setSelectedProvince] = useState("");
+  const [selectedAttendance, setSelectedAttendance] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
@@ -138,8 +122,8 @@ export default function ContractorsPage() {
       params.set("page", page.toString());
       params.set("limit", limit.toString());
       if (debouncedSearch) params.set("search", debouncedSearch);
-      if (selectedGrade) params.set("grade", selectedGrade);
-      if (selectedProvince) params.set("province", selectedProvince);
+      if (selectedAttendance) params.set("attendance", selectedAttendance);
+      if (selectedCategory) params.set("category", selectedCategory);
       if (selectedStatus) params.set("status", selectedStatus);
 
       const res = await fetch(`/api/contractors?${params.toString()}`);
@@ -151,14 +135,14 @@ export default function ContractorsPage() {
           setPagination(result.pagination);
         }
       } else {
-        setError(result.message || "Failed to query contractor registry.");
+        setError(result.message || "Failed to query registry records.");
       }
     } catch {
-      setError("Network communication failure. Could not reach contractor registry service.");
+      setError("Network communication failure. Could not reach registry service.");
     } finally {
       setLoading(false);
     }
-  }, [page, limit, debouncedSearch, selectedGrade, selectedProvince, selectedStatus]);
+  }, [page, limit, debouncedSearch, selectedAttendance, selectedCategory, selectedStatus]);
 
   useEffect(() => {
     fetchContractors();
@@ -202,7 +186,7 @@ export default function ContractorsPage() {
             </h1>
           </div>
           <p className="text-xs sm:text-sm text-slate-600 mt-1">
-            Centralized registry of engineering contractors evaluated under CIDA classifications for Road Development Authority projects.
+            Centralized directory of registered organizations, contractors, suppliers, and participants for Road Development Authority initiatives.
           </p>
         </div>
 
@@ -256,7 +240,7 @@ export default function ContractorsPage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by firm name, CIDA reg, or contact..."
+            placeholder="Search by organization name, contact number, or email..."
             className="w-full pl-9 pr-4 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 focus:border-transparent transition-all"
           />
           {search && (
@@ -270,38 +254,41 @@ export default function ContractorsPage() {
         </div>
 
         <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+          {/* Participation Filter */}
           <select
-            value={selectedGrade}
+            value={selectedAttendance}
             onChange={(e) => {
-              setSelectedGrade(e.target.value);
+              setSelectedAttendance(e.target.value);
               setPage(1);
             }}
             className="px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-800"
           >
-            <option value="">All CIDA Grades</option>
-            {CIDA_GRADES.map((g) => (
-              <option key={g} value={g}>
-                Grade {g}
+            <option value="">All Participation</option>
+            {ATTENDANCE_OPTIONS.map((a) => (
+              <option key={a.value} value={a.value}>
+                {a.label}
               </option>
             ))}
           </select>
 
+          {/* Category Filter */}
           <select
-            value={selectedProvince}
+            value={selectedCategory}
             onChange={(e) => {
-              setSelectedProvince(e.target.value);
+              setSelectedCategory(e.target.value);
               setPage(1);
             }}
             className="px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-800"
           >
-            <option value="">All 9 Provinces</option>
-            {PROVINCES.map((p) => (
-              <option key={p} value={p}>
-                {p}
+            <option value="">All Categories</option>
+            {CATEGORY_OPTIONS.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
               </option>
             ))}
           </select>
 
+          {/* Status Filter */}
           <select
             value={selectedStatus}
             onChange={(e) => {
@@ -318,12 +305,12 @@ export default function ContractorsPage() {
             ))}
           </select>
 
-          {(selectedGrade || selectedProvince || selectedStatus || search) && (
+          {(selectedAttendance || selectedCategory || selectedStatus || search) && (
             <button
               type="button"
               onClick={() => {
-                setSelectedGrade("");
-                setSelectedProvince("");
+                setSelectedAttendance("");
+                setSelectedCategory("");
                 setSelectedStatus("");
                 setSearch("");
                 setPage(1);
@@ -338,12 +325,12 @@ export default function ContractorsPage() {
         </div>
       </div>
 
-      {/* Contractors Table or Clean Empty State */}
+      {/* Directory Table or Clean Empty State */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
         {loading ? (
           <div className="py-24 flex flex-col items-center justify-center text-slate-400 gap-3">
             <RefreshCw className="w-8 h-8 text-blue-900 animate-spin" />
-            <p className="text-xs font-semibold text-slate-600">Querying live MongoDB contractor registry...</p>
+            <p className="text-xs font-semibold text-slate-600">Querying live database records...</p>
           </div>
         ) : contractors.length === 0 ? (
           <div className="py-20 px-6 flex flex-col items-center justify-center text-center text-slate-400 gap-3">
@@ -351,11 +338,11 @@ export default function ContractorsPage() {
               <Inbox className="w-10 h-10" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-slate-800">No Contractor Records Found</h3>
+              <h3 className="text-sm font-bold text-slate-800">No Records Found</h3>
               <p className="text-xs text-slate-500 mt-1 max-w-md">
-                {debouncedSearch || selectedGrade || selectedProvince || selectedStatus
-                  ? "No contractors matched your specific search filters. Try clearing filters to view all entries."
-                  : "There are currently no contractor records in the national database. Incoming registrations and official intakes will populate here."}
+                {debouncedSearch || selectedAttendance || selectedCategory || selectedStatus
+                  ? "No records matched your specific search filters. Try clearing filters to view all entries."
+                  : "There are currently no records in the national database. Incoming registrations and official intakes will populate here."}
               </p>
             </div>
           </div>
