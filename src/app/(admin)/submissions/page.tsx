@@ -105,6 +105,28 @@ function generateSubmissionHtml(sub: FormattedSubmission): string {
   const isGovOfficer = q.participantCategory === "Government Officer";
   const willAttend = q.willParticipate === "Yes";
 
+  const rawReg =
+    q.ictadRegistrationNumber ||
+    (sub.regNo &&
+    !sub.regNo.startsWith("DFT-") &&
+    !sub.regNo.startsWith("REG-") &&
+    sub.regNo !== "N/A" &&
+    sub.regNo !== "Not Registered"
+      ? sub.regNo
+      : null);
+
+  const realProv =
+    q.supplierDetails?.province ||
+    (q.province && q.province !== "Western Province" ? q.province : null) ||
+    (q.participantCategory === "Supplier" ? sub.provincialOffice : null);
+
+  const realDist =
+    q.supplierDetails?.district ||
+    (q.district && q.district !== "Unassigned District" ? q.district : null);
+
+  const provDistStr = [realProv, realDist].filter(Boolean).join(" • ");
+  const contactStr = [q.contactNumber, q.email].filter(Boolean).join(" • ");
+
   // Financial statements rows if present
   let financialRows = "";
   if (q.financialStatements) {
@@ -442,7 +464,7 @@ function generateSubmissionHtml(sub: FormattedSubmission): string {
       </div>
       <div>
         <div class="field-label">Provincial Jurisdiction</div>
-        <div class="field-value">${escapeHtml(sub.provincialOffice)}</div>
+        <div class="field-value">${escapeHtml(realProv || "—")}</div>
       </div>
       <div>
         <div class="field-label">Review Status</div>
@@ -461,7 +483,7 @@ function generateSubmissionHtml(sub: FormattedSubmission): string {
           </div>
           <div>
             <div class="field-label">Business / ICTAD Reg No</div>
-            <div class="field-value font-mono">${escapeHtml(q.ictadRegistrationNumber || sub.regNo || "N/A")}</div>
+            <div class="field-value font-mono">${escapeHtml(rawReg || "—")}</div>
           </div>
           <div>
             <div class="field-label">Stakeholder Category</div>
@@ -469,15 +491,15 @@ function generateSubmissionHtml(sub: FormattedSubmission): string {
           </div>
           <div>
             <div class="field-label">Workshop Attendance (07 Dec 2026)</div>
-            <div class="field-value" style="font-weight: bold;">${escapeHtml(q.willParticipate || "N/A")}</div>
+            <div class="field-value" style="font-weight: bold;">${escapeHtml(q.willParticipate || "—")}</div>
           </div>
           <div>
             <div class="field-label">Province &amp; District</div>
-            <div class="field-value">${escapeHtml(q.province || sub.provincialOffice || "N/A")} &bull; ${escapeHtml(q.district || "N/A")}</div>
+            <div class="field-value">${escapeHtml(provDistStr || "—")}</div>
           </div>
           <div>
             <div class="field-label">Official Contact Number &amp; Email</div>
-            <div class="field-value">${escapeHtml(q.contactNumber || "N/A")} &bull; ${escapeHtml(q.email || "N/A")}</div>
+            <div class="field-value">${escapeHtml(contactStr || "—")}</div>
           </div>
         </div>
       </div>
@@ -637,7 +659,7 @@ function generateSubmissionHtml(sub: FormattedSubmission): string {
           </div>
           <div>
             <div class="field-label">Plant Location &amp; Address</div>
-            <div class="field-value">${escapeHtml(q.supplierDetails?.locationAddress || "N/A")} (${escapeHtml(q.supplierDetails?.province || "N/A")}, ${escapeHtml(q.supplierDetails?.district || "N/A")})</div>
+            <div class="field-value">${escapeHtml([q.supplierDetails?.locationAddress, [q.supplierDetails?.province, q.supplierDetails?.district].filter(Boolean).join(", ")].filter(Boolean).join(" — ") || "—")}</div>
           </div>
         </div>
         ${q.supplierDetails?.materialsSupplied ? `
@@ -869,15 +891,29 @@ function SubmissionsContent() {
 
     const rows = submissions.map((s) => {
       const q = s.questionnaireData || {};
+      const reg =
+        q.ictadRegistrationNumber ||
+        (s.regNo &&
+        !s.regNo.startsWith("DFT-") &&
+        !s.regNo.startsWith("REG-") &&
+        s.regNo !== "N/A" &&
+        s.regNo !== "Not Registered"
+          ? s.regNo
+          : "");
+      const prov =
+        q.supplierDetails?.province ||
+        (q.province && q.province !== "Western Province" ? q.province : "") ||
+        (q.participantCategory === "Supplier" ? s.provincialOffice : "");
+      const dist = q.supplierDetails?.district || (q.district && q.district !== "Unassigned District" ? q.district : "");
       return [
         s.ref,
         s.contractor,
         q.participantCategory || "General",
-        q.willParticipate || "N/A",
-        q.ictadRegistrationNumber || s.regNo || "",
-        q.cidaGrade || s.grade || "",
-        s.provincialOffice || q.province || "",
-        q.district || "",
+        q.willParticipate || "",
+        reg,
+        q.cidaGrade || (s.grade && s.grade !== "Pending" && s.grade !== "N/A" ? s.grade : ""),
+        prov,
+        dist,
         q.contactNumber || "",
         q.email || "",
         q.participant1?.fullName || "",
@@ -1201,11 +1237,18 @@ function SubmissionsContent() {
                     <td className="px-5 py-3.5 font-mono font-bold text-blue-950">{s.ref}</td>
                     <td className="px-5 py-3.5">
                       <p className="font-bold text-slate-900">{s.contractor}</p>
-                      <p className="text-[11px] text-slate-500 font-mono">
-                        {s.questionnaireData?.ictadRegistrationNumber
-                          ? `ICTAD: ${s.questionnaireData.ictadRegistrationNumber}`
-                          : s.regNo ? `Reg: ${s.regNo}` : ""}
-                      </p>
+                      {(() => {
+                        const ictad = s.questionnaireData?.ictadRegistrationNumber;
+                        const hasRealReg =
+                          s.regNo &&
+                          !s.regNo.startsWith("DFT-") &&
+                          !s.regNo.startsWith("REG-") &&
+                          s.regNo !== "N/A" &&
+                          s.regNo !== "Not Registered";
+                        if (ictad) return <p className="text-[11px] text-slate-500 font-mono mt-0.5">ICTAD: {ictad}</p>;
+                        if (hasRealReg) return <p className="text-[11px] text-slate-500 font-mono mt-0.5">Reg: {s.regNo}</p>;
+                        return null;
+                      })()}
                     </td>
                     <td className="px-5 py-3.5">{getCategoryBadge(s)}</td>
                     <td className="px-5 py-3.5">
@@ -1220,7 +1263,20 @@ function SubmissionsContent() {
                         </span>
                       )}
                     </td>
-                    <td className="px-5 py-3.5 font-medium text-slate-700">{s.provincialOffice}</td>
+                    <td className="px-5 py-3.5 font-medium text-slate-700">
+                      {(() => {
+                        const supProv = s.questionnaireData?.supplierDetails?.province;
+                        const conProv = s.questionnaireData?.province;
+                        const realProv =
+                          supProv ||
+                          (conProv && conProv !== "Western Province" ? conProv : null) ||
+                          (s.questionnaireData?.participantCategory === "Supplier" ? s.provincialOffice : null);
+                        if (realProv) {
+                          return <span className="font-semibold text-slate-800">{realProv}</span>;
+                        }
+                        return <span className="text-slate-400">—</span>;
+                      })()}
+                    </td>
                     <td className="px-5 py-3.5 text-slate-600">{s.submittedAt}</td>
                     <td className="px-5 py-3.5">{getStatusBadge(s.status)}</td>
                     <td className="px-5 py-3.5 text-right">
@@ -1317,9 +1373,27 @@ function SubmissionsContent() {
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
               <div>
                 <p className="font-bold text-slate-900 text-sm">{selectedSub.contractor}</p>
-                <p className="text-slate-500 font-mono mt-0.5">
-                  Reg No: {selectedSub.regNo} &bull; CIDA Grade: {selectedSub.grade}
-                </p>
+                {(() => {
+                  const ictad = selectedSub.questionnaireData?.ictadRegistrationNumber;
+                  const hasRealReg =
+                    selectedSub.regNo &&
+                    !selectedSub.regNo.startsWith("DFT-") &&
+                    !selectedSub.regNo.startsWith("REG-") &&
+                    selectedSub.regNo !== "N/A" &&
+                    selectedSub.regNo !== "Not Registered";
+                  const hasGrade =
+                    selectedSub.grade &&
+                    selectedSub.grade !== "Pending" &&
+                    selectedSub.grade !== "N/A";
+                  if (!ictad && !hasRealReg && !hasGrade) return null;
+                  return (
+                    <p className="text-slate-500 font-mono mt-0.5">
+                      {ictad ? `ICTAD: ${ictad}` : hasRealReg ? `Reg No: ${selectedSub.regNo}` : ""}
+                      {(ictad || hasRealReg) && hasGrade ? " • " : ""}
+                      {hasGrade ? `CIDA Grade: ${selectedSub.grade}` : ""}
+                    </p>
+                  );
+                })()}
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-slate-500">Status:</span>
@@ -1335,19 +1409,39 @@ function SubmissionsContent() {
                   <span className="font-bold text-blue-950 uppercase text-[11px] tracking-wide">
                     Workshop Attendance &amp; Category
                   </span>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
                     <div>
                       <span className="text-slate-500 text-[10px] uppercase font-bold">Attending 07 Dec 2026</span>
-                      <p className="font-bold text-slate-800">{selectedSub.questionnaireData.willParticipate || "N/A"}</p>
+                      <p className="font-bold text-slate-800">
+                        {selectedSub.questionnaireData.willParticipate === "No"
+                          ? "No (Declined)"
+                          : "Yes (Participating)"}
+                      </p>
                     </div>
-                    <div>
-                      <span className="text-slate-500 text-[10px] uppercase font-bold">Category</span>
-                      <p className="font-bold text-blue-900">{selectedSub.questionnaireData.participantCategory || "N/A"}</p>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 text-[10px] uppercase font-bold">Primary Contact</span>
-                      <p className="font-mono text-slate-800">{selectedSub.questionnaireData.contactNumber || "N/A"}</p>
-                    </div>
+                    {selectedSub.questionnaireData.participantCategory && (
+                      <div>
+                        <span className="text-slate-500 text-[10px] uppercase font-bold">Category</span>
+                        <p className="font-bold text-blue-900">
+                          {selectedSub.questionnaireData.participantCategory}
+                        </p>
+                      </div>
+                    )}
+                    {selectedSub.questionnaireData.contactNumber && (
+                      <div>
+                        <span className="text-slate-500 text-[10px] uppercase font-bold">Primary Contact</span>
+                        <p className="font-mono text-slate-800">
+                          {selectedSub.questionnaireData.contactNumber}
+                        </p>
+                      </div>
+                    )}
+                    {selectedSub.questionnaireData.email && (
+                      <div>
+                        <span className="text-slate-500 text-[10px] uppercase font-bold">Official Email</span>
+                        <p className="font-mono text-slate-800">
+                          {selectedSub.questionnaireData.email}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1416,15 +1510,26 @@ function SubmissionsContent() {
                           {selectedSub.questionnaireData.supplierDetails?.companyName || selectedSub.contractor}
                         </p>
                       </div>
-                      <div>
-                        <span className="text-slate-500 text-[10px] uppercase font-bold">Location &amp; Province</span>
-                        <p className="font-medium text-slate-800">
-                          {selectedSub.questionnaireData.supplierDetails?.province || "N/A"} &bull; {selectedSub.questionnaireData.supplierDetails?.district || "N/A"}
-                        </p>
-                        <p className="text-[11px] text-slate-500 mt-0.5">
-                          {selectedSub.questionnaireData.supplierDetails?.locationAddress || ""}
-                        </p>
-                      </div>
+                      {(selectedSub.questionnaireData.supplierDetails?.province ||
+                        selectedSub.questionnaireData.supplierDetails?.district ||
+                        selectedSub.questionnaireData.supplierDetails?.locationAddress) && (
+                        <div>
+                          <span className="text-slate-500 text-[10px] uppercase font-bold">Location &amp; Province</span>
+                          <p className="font-medium text-slate-800">
+                            {[
+                              selectedSub.questionnaireData.supplierDetails?.province,
+                              selectedSub.questionnaireData.supplierDetails?.district,
+                            ]
+                              .filter(Boolean)
+                              .join(" • ")}
+                          </p>
+                          {selectedSub.questionnaireData.supplierDetails?.locationAddress && (
+                            <p className="text-[11px] text-slate-500 mt-0.5">
+                              {selectedSub.questionnaireData.supplierDetails.locationAddress}
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Materials Supplied */}
@@ -1489,22 +1594,30 @@ function SubmissionsContent() {
                         Contractor Capacity &amp; Experience
                       </span>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
-                        <div>
-                          <span className="text-slate-500 text-[10px] uppercase font-bold">ICTAD Reg No</span>
-                          <p className="font-bold font-mono text-slate-800">{selectedSub.questionnaireData.ictadRegistrationNumber || "N/A"}</p>
-                        </div>
-                        <div>
-                          <span className="text-slate-500 text-[10px] uppercase font-bold">CIDA Grade</span>
-                          <p className="font-bold text-slate-800">{selectedSub.questionnaireData.cidaGrade || "N/A"}</p>
-                        </div>
-                        <div>
-                          <span className="text-slate-500 text-[10px] uppercase font-bold">Experience</span>
-                          <p className="font-semibold text-slate-800">{selectedSub.questionnaireData.generalExperience || "N/A"}</p>
-                        </div>
-                        <div>
-                          <span className="text-slate-500 text-[10px] uppercase font-bold">Ongoing Contracts</span>
-                          <p className="font-semibold text-slate-800">{selectedSub.questionnaireData.hasOngoingContracts || "N/A"}</p>
-                        </div>
+                        {selectedSub.questionnaireData.ictadRegistrationNumber && (
+                          <div>
+                            <span className="text-slate-500 text-[10px] uppercase font-bold">ICTAD Reg No</span>
+                            <p className="font-bold font-mono text-slate-800">{selectedSub.questionnaireData.ictadRegistrationNumber}</p>
+                          </div>
+                        )}
+                        {selectedSub.questionnaireData.cidaGrade && (
+                          <div>
+                            <span className="text-slate-500 text-[10px] uppercase font-bold">CIDA Grade</span>
+                            <p className="font-bold text-slate-800">{selectedSub.questionnaireData.cidaGrade}</p>
+                          </div>
+                        )}
+                        {selectedSub.questionnaireData.generalExperience && (
+                          <div>
+                            <span className="text-slate-500 text-[10px] uppercase font-bold">Experience</span>
+                            <p className="font-semibold text-slate-800">{selectedSub.questionnaireData.generalExperience}</p>
+                          </div>
+                        )}
+                        {selectedSub.questionnaireData.hasOngoingContracts && (
+                          <div>
+                            <span className="text-slate-500 text-[10px] uppercase font-bold">Ongoing Contracts</span>
+                            <p className="font-semibold text-slate-800">{selectedSub.questionnaireData.hasOngoingContracts}</p>
+                          </div>
+                        )}
                       </div>
                       {selectedSub.questionnaireData.areasOfSpecialty && (
                         <div className="pt-2">
@@ -1570,25 +1683,24 @@ function SubmissionsContent() {
                         </span>
                         <div className="space-y-2 pt-1">
                           {selectedSub.questionnaireData.similarWorks.map((cw: any, idx: number) => {
-                            if (!cw || (!cw.contractName && idx > 0)) return null;
-                            const isNA = cw.contractName?.trim().toUpperCase() === "N/A";
+                            if (!cw || !cw.contractName || cw.contractName.trim().toUpperCase() === "N/A" || !cw.contractName.trim()) return null;
                             return (
                               <div key={idx} className="p-2.5 bg-white rounded-lg border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
                                 <div>
                                   <span className="font-bold text-blue-950">Contract {idx + 1}: </span>
-                                  <span className="font-medium text-slate-800">{cw.contractName || "N/A"}</span>
-                                  {!isNA && cw.contractType && (
+                                  <span className="font-medium text-slate-800">{cw.contractName}</span>
+                                  {cw.contractType && (
                                     <span className="ml-2 text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
                                       {cw.contractType}
                                     </span>
                                   )}
                                 </div>
-                                {!isNA && cw.contractAmount && (
+                                {cw.contractAmount ? (
                                   <div className="text-right shrink-0">
                                     <span className="font-mono font-bold text-slate-900">LKR {Number(cw.contractAmount).toLocaleString()}</span>
-                                    <p className="text-[10px] text-slate-500">{cw.completionStatus || "Status N/A"}</p>
+                                    {cw.completionStatus && <p className="text-[10px] text-slate-500">{cw.completionStatus}</p>}
                                   </div>
-                                )}
+                                ) : null}
                               </div>
                             );
                           })}
