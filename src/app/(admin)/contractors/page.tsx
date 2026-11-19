@@ -24,6 +24,7 @@ import {
   Award,
   FileText,
   Briefcase,
+  Printer,
 } from "lucide-react";
 
 interface ContractorItem {
@@ -172,6 +173,430 @@ export default function ContractorsPage() {
       return "bg-blue-100 text-blue-900 border-blue-300 font-bold";
     }
     return "bg-slate-100 text-slate-800 border-slate-300 font-semibold";
+  };
+
+  const handleDownloadProfile = (c: ContractorItem) => {
+    const escapeHtml = (str: string | number | null | undefined): string => {
+      if (str === null || str === undefined) return "";
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    };
+
+    const q = c.questionnaireData || {};
+    const willParticipate =
+      c.willParticipate ||
+      q.willParticipate ||
+      (c.primarySpeciality === "Non-Attendee" ? "No" : "Yes");
+    const isNonAttendee = willParticipate === "No" || c.primarySpeciality === "Non-Attendee";
+
+    const category =
+      c.participantCategory ||
+      q.participantCategory ||
+      (isNonAttendee
+        ? "Non-Attendee"
+        : c.primarySpeciality === "Government Stakeholder"
+        ? "Government Officer"
+        : "");
+
+    const isGovOfficer = category === "Government Officer";
+    const isSupplier = category === "Supplier";
+    const isContractor =
+      category === "Contractor" ||
+      (!isGovOfficer &&
+        !isSupplier &&
+        !isNonAttendee &&
+        Boolean(q.cidaGrade || c.cidaGrade));
+
+    const p1 = q.participant1 || (c.contactOfficer?.name ? {
+      fullName: c.contactOfficer.name,
+      designation: c.contactOfficer.designation,
+      mobileNumber: c.contactOfficer.phone,
+      emailAddress: c.contactOfficer.email,
+    } : null);
+    const hasP1 = Boolean(p1 && p1.fullName && p1.fullName !== "Authorized Representative" && p1.fullName !== "Not Designated");
+
+    const p2 = q.participant2;
+    const hasP2 = Boolean(p2 && p2.fullName && p2.fullName.trim());
+
+    const supplierDetails = q.supplierDetails || {};
+    const specialties =
+      q.areasOfSpecialty ||
+      (c.primarySpeciality &&
+      c.primarySpeciality !== "General Civil Engineering" &&
+      c.primarySpeciality !== "Government Stakeholder" &&
+      c.primarySpeciality !== "Non-Attendee"
+        ? [c.primarySpeciality]
+        : []);
+    const ongoingContractsList = Array.isArray(q.ongoingContracts)
+      ? q.ongoingContracts.filter((oc: any) => oc && (oc.contractName || oc.projectName))
+      : [];
+
+    const regNumber = q.ictadRegistrationNumber || c.registrationNumber;
+    const hasReg = Boolean(
+      regNumber &&
+        !regNumber.startsWith("DFT-") &&
+        !regNumber.startsWith("REG-") &&
+        regNumber !== "Not Registered" &&
+        regNumber !== "PENDING"
+    );
+    const cidaGrade = q.cidaGrade || c.cidaGrade;
+    const hasCida = Boolean(isContractor && cidaGrade && cidaGrade !== "Pending" && cidaGrade !== "Not Registered");
+    const brNumber = c.businessRegistrationNumber;
+    const hasBr = Boolean(brNumber && brNumber !== "PENDING-BR" && brNumber !== "N/A" && brNumber !== "Not Provided");
+
+    const primaryPhone = q.contactNumber || c.contactOfficer?.phone;
+    const hasPhone = Boolean(primaryPhone && primaryPhone !== "+94 11 000 0000" && primaryPhone !== "N/A" && primaryPhone !== "Not Provided");
+    const primaryEmail = q.email || c.contactOfficer?.email;
+    const hasEmail = Boolean(primaryEmail && primaryEmail !== "contact@contractor.lk" && primaryEmail !== "contact@rda.gov.lk" && primaryEmail !== "N/A" && primaryEmail !== "Not Provided");
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>RDA Official Record - ${escapeHtml(q.organizationName || c.businessName)}</title>
+  <style>
+    @page { size: A4 portrait; margin: 12mm 15mm; }
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color: #0f172a; margin: 0; padding: 0; background: #fff; font-size: 9pt; line-height: 1.45; }
+    .print-bar { background: #0b1f3a; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+    .print-btn { background: #d97706; color: white; border: none; padding: 7px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; }
+    .close-btn { background: rgba(255,255,255,0.2); color: white; border: none; padding: 7px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; }
+    @media print {
+      .no-print { display: none !important; }
+      body { padding: 0; }
+    }
+    .doc-container { padding: 15px 20px; max-width: 800px; margin: 0 auto; }
+    .header-table { width: 100%; border-bottom: 2px solid #0b1f3a; padding-bottom: 8px; margin-bottom: 12px; }
+    .gov-title { font-size: 13pt; font-weight: 800; color: #0b1f3a; text-transform: uppercase; }
+    .gov-sub { font-size: 8pt; color: #64748b; margin-top: 2px; }
+    .doc-title { font-size: 11pt; font-weight: 700; color: #7B1113; margin-top: 4px; }
+    .meta-box { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 12px; margin-bottom: 12px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    .field-label { font-size: 7.5pt; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 2px; }
+    .field-value { font-size: 9pt; font-weight: 600; color: #0f172a; }
+    .section-card { border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+    .section-head { background: #0b1f3a; color: white; padding: 5px 10px; font-size: 8.5pt; font-weight: 700; text-transform: uppercase; }
+    .section-body { padding: 10px 12px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 8pt; font-weight: 700; }
+    .badge-yes { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+    .badge-no { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }
+    .tag { display: inline-block; padding: 2px 6px; background: #e0f2fe; color: #0369a1; border-radius: 4px; font-size: 8pt; font-weight: 600; margin: 2px; }
+    table.data-table { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 8.5pt; }
+    table.data-table th, table.data-table td { border: 1px solid #cbd5e1; padding: 5px 8px; text-align: left; }
+    table.data-table th { background: #f1f5f9; font-weight: 700; color: #334155; }
+    .footer-stamp { border-top: 1px dashed #cbd5e1; margin-top: 15px; padding-top: 8px; font-size: 7.5pt; color: #64748b; display: flex; justify-content: space-between; }
+  </style>
+</head>
+<body>
+  <div class="no-print print-bar">
+    <div>
+      <strong style="font-size: 13px;">Official Record: ${escapeHtml(q.organizationName || c.businessName)}</strong>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+      <button class="close-btn" onclick="window.close()">Close</button>
+    </div>
+  </div>
+
+  <div class="doc-container">
+    <table class="header-table">
+      <tr>
+        <td style="vertical-align: top;">
+          <div class="gov-title">Road Development Authority (RDA) - Sri Lanka</div>
+          <div class="gov-sub">Ministry of Transport &amp; Highways &bull; Central Stakeholder &amp; Contractor Directory</div>
+          <div class="doc-title">Official Registry Record &bull; ${escapeHtml(q.organizationName || c.businessName)}</div>
+        </td>
+      </tr>
+    </table>
+
+    <div class="meta-box">
+      <div>
+        <div class="field-label">Workshop Attendance</div>
+        <div class="field-value">${isNonAttendee ? '<span class="badge badge-no">No (Declined)</span>' : '<span class="badge badge-yes">Yes (Participating)</span>'}</div>
+      </div>
+      <div>
+        <div class="field-label">Category</div>
+        <div class="field-value font-bold" style="color: #0b1f3a;">${escapeHtml(category || "General")}</div>
+      </div>
+      <div>
+        <div class="field-label">Review Status</div>
+        <div class="field-value">${escapeHtml(c.status.replace("_", " "))}</div>
+      </div>
+      <div>
+        <div class="field-label">Record Date</div>
+        <div class="field-value">${c.createdAt ? new Date(c.createdAt).toLocaleDateString("en-GB") : "Recorded"}</div>
+      </div>
+    </div>
+
+    <!-- 1. Entity Information -->
+    <div class="section-card">
+      <div class="section-head">1. Entity &amp; Official Contact Information</div>
+      <div class="section-body">
+        <div class="grid-2">
+          <div>
+            <div class="field-label">Organization / Firm Name</div>
+            <div class="field-value font-bold">${escapeHtml(q.organizationName || c.businessName)}</div>
+          </div>
+          ${hasReg ? `
+          <div>
+            <div class="field-label">Registration / ICTAD No</div>
+            <div class="field-value font-mono">${escapeHtml(regNumber)}</div>
+          </div>
+          ` : ""}
+          ${hasBr ? `
+          <div>
+            <div class="field-label">Business Registration (BR) No</div>
+            <div class="field-value font-mono">${escapeHtml(brNumber)}</div>
+          </div>
+          ` : ""}
+          ${hasCida ? `
+          <div>
+            <div class="field-label">CIDA Classification</div>
+            <div class="field-value font-bold" style="color: #0b1f3a;">Grade ${escapeHtml(cidaGrade)}</div>
+          </div>
+          ` : ""}
+          ${hasPhone ? `
+          <div>
+            <div class="field-label">Official Contact Phone</div>
+            <div class="field-value font-mono">${escapeHtml(primaryPhone)}</div>
+          </div>
+          ` : ""}
+          ${hasEmail ? `
+          <div>
+            <div class="field-label">Official Electronic Mail</div>
+            <div class="field-value font-mono">${escapeHtml(primaryEmail)}</div>
+          </div>
+          ` : ""}
+        </div>
+      </div>
+    </div>
+
+    ${isNonAttendee ? `
+    <div class="section-card">
+      <div class="section-head">2. Workshop Attendance Status</div>
+      <div class="section-body">
+        <p style="margin: 0; color: #64748b; font-size: 8.5pt;">The organization has recorded a non-attendance filing for the workshop on 07 December 2026. Official organizational and contact details are logged in the Central Registry directory.</p>
+      </div>
+    </div>
+    ` : ""}
+
+    <!-- Government Officer Attendees -->
+    ${isGovOfficer && (hasP1 || hasP2) ? `
+    <div class="section-card">
+      <div class="section-head">2. Nominated Government Attendees</div>
+      <div class="section-body">
+        <div class="grid-2">
+          ${hasP1 ? `
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 6px 8px;">
+            <div class="field-label">Official Representative (Participant 1)</div>
+            <div class="field-value">${escapeHtml(p1.fullName)}</div>
+            <div style="font-size: 8pt; color: #475569; margin-top: 2px;">
+              ${p1.designation ? `Designation: <strong>${escapeHtml(p1.designation)}</strong> &bull; ` : ""}
+              ${p1.mobileNumber ? `Phone: <strong>${escapeHtml(p1.mobileNumber)}</strong>` : ""}
+              ${p1.emailAddress ? ` &bull; Email: <strong>${escapeHtml(p1.emailAddress)}</strong>` : ""}
+            </div>
+          </div>
+          ` : ""}
+          ${hasP2 ? `
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 6px 8px;">
+            <div class="field-label">Second Officer (Participant 2)</div>
+            <div class="field-value">${escapeHtml(p2.fullName)}</div>
+            <div style="font-size: 8pt; color: #475569; margin-top: 2px;">
+              ${p2.designation ? `Designation: <strong>${escapeHtml(p2.designation)}</strong> &bull; ` : ""}
+              ${p2.mobileNumber ? `Phone: <strong>${escapeHtml(p2.mobileNumber)}</strong>` : ""}
+              ${p2.emailAddress ? ` &bull; Email: <strong>${escapeHtml(p2.emailAddress)}</strong>` : ""}
+            </div>
+          </div>
+          ` : ""}
+        </div>
+      </div>
+    </div>
+    ` : ""}
+
+    <!-- Supplier Details -->
+    ${isSupplier ? `
+    <div class="section-card">
+      <div class="section-head">2. Supplier Production &amp; Material Capacity</div>
+      <div class="section-body">
+        <div class="grid-2">
+          ${supplierDetails.companyName ? `
+          <div>
+            <div class="field-label">Company Name</div>
+            <div class="field-value font-bold">${escapeHtml(supplierDetails.companyName)}</div>
+          </div>
+          ` : ""}
+          ${supplierDetails.province || supplierDetails.district ? `
+          <div>
+            <div class="field-label">Province &amp; District</div>
+            <div class="field-value">${escapeHtml([supplierDetails.province, supplierDetails.district ? `${supplierDetails.district} District` : null].filter(Boolean).join(" • "))}</div>
+          </div>
+          ` : ""}
+          ${supplierDetails.locationAddress ? `
+          <div style="grid-column: span 2;">
+            <div class="field-label">Physical Location Address</div>
+            <div class="field-value">${escapeHtml(supplierDetails.locationAddress)}</div>
+          </div>
+          ` : ""}
+        </div>
+        ${supplierDetails.materialsSupplied && supplierDetails.materialsSupplied.length > 0 ? `
+        <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e2e8f0;">
+          <div class="field-label">Supplied Materials:</div>
+          <div>
+            ${supplierDetails.materialsSupplied.map((m: string) => `<span class="tag">${escapeHtml(m === "Other" && supplierDetails.materialsOther ? `Other (${supplierDetails.materialsOther})` : m)}</span>`).join("")}
+          </div>
+        </div>
+        ` : ""}
+      </div>
+    </div>
+
+    ${hasP1 || hasP2 ? `
+    <div class="section-card">
+      <div class="section-head">3. Supplier Representatives</div>
+      <div class="section-body">
+        <div class="grid-2">
+          ${hasP1 ? `
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 6px 8px;">
+            <div class="field-label">Representative (Participant 1)</div>
+            <div class="field-value">${escapeHtml(p1.fullName)}</div>
+            <div style="font-size: 8pt; color: #475569; margin-top: 2px;">
+              ${p1.designation ? `Designation: <strong>${escapeHtml(p1.designation)}</strong> &bull; ` : ""}
+              ${p1.mobileNumber ? `Phone: <strong>${escapeHtml(p1.mobileNumber)}</strong>` : ""}
+              ${p1.emailAddress ? ` &bull; Email: <strong>${escapeHtml(p1.emailAddress)}</strong>` : ""}
+            </div>
+          </div>
+          ` : ""}
+          ${hasP2 ? `
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 6px 8px;">
+            <div class="field-label">Representative (Participant 2)</div>
+            <div class="field-value">${escapeHtml(p2.fullName)}</div>
+            <div style="font-size: 8pt; color: #475569; margin-top: 2px;">
+              ${p2.designation ? `Designation: <strong>${escapeHtml(p2.designation)}</strong> &bull; ` : ""}
+              ${p2.mobileNumber ? `Phone: <strong>${escapeHtml(p2.mobileNumber)}</strong>` : ""}
+              ${p2.emailAddress ? ` &bull; Email: <strong>${escapeHtml(p2.emailAddress)}</strong>` : ""}
+            </div>
+          </div>
+          ` : ""}
+        </div>
+      </div>
+    </div>
+    ` : ""}
+    ` : ""}
+
+    <!-- Contractor Details -->
+    ${isContractor ? `
+    ${specialties.length > 0 || q.generalExperience || q.hasOngoingContracts ? `
+    <div class="section-card">
+      <div class="section-head">2. Contractor Capacity &amp; Experience</div>
+      <div class="section-body">
+        <div class="grid-2">
+          ${q.generalExperience ? `
+          <div>
+            <div class="field-label">General Construction Experience</div>
+            <div class="field-value font-bold">${escapeHtml(q.generalExperience)}</div>
+          </div>
+          ` : ""}
+          ${q.hasOngoingContracts ? `
+          <div>
+            <div class="field-label">Ongoing RDA Contracts</div>
+            <div class="field-value">${escapeHtml(q.hasOngoingContracts)}</div>
+          </div>
+          ` : ""}
+        </div>
+        ${specialties.length > 0 ? `
+        <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e2e8f0;">
+          <div class="field-label">Areas of Technical Specialty:</div>
+          <div>
+            ${specialties.map((s: string) => `<span class="tag">${escapeHtml(s)}</span>`).join("")}
+          </div>
+        </div>
+        ` : ""}
+      </div>
+    </div>
+    ` : ""}
+
+    ${ongoingContractsList.length > 0 ? `
+    <div class="section-card">
+      <div class="section-head">3. Ongoing Contracts</div>
+      <div class="section-body">
+        ${q.totalOutstandingValueLkrMillion !== undefined && q.totalOutstandingValueLkrMillion !== null ? `
+        <div style="margin-bottom: 8px; font-weight: bold; font-size: 9pt;">
+          Total Value of Outstanding Works: LKR ${Number(q.totalOutstandingValueLkrMillion).toLocaleString()} Million
+        </div>
+        ` : ""}
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Project / Contract Name</th>
+              <th>Value</th>
+              <th>Client / Employer</th>
+              <th>Target Completion</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${ongoingContractsList.map((oc: any, idx: number) => `
+            <tr>
+              <td>${idx + 1}</td>
+              <td style="font-weight: 600;">${escapeHtml(oc.contractName || oc.projectName)}</td>
+              <td>${oc.contractValueLkrMillion ? `LKR ${escapeHtml(oc.contractValueLkrMillion)}M` : "—"}</td>
+              <td>${escapeHtml(oc.clientEmployer || "—")}</td>
+              <td>${escapeHtml(oc.expectedCompletionDate || "—")}</td>
+            </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    ` : ""}
+
+    ${hasP1 || hasP2 ? `
+    <div class="section-card">
+      <div class="section-head">4. Authorized Contractor Representatives</div>
+      <div class="section-body">
+        <div class="grid-2">
+          ${hasP1 ? `
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 6px 8px;">
+            <div class="field-label">Primary Representative (Participant 1)</div>
+            <div class="field-value">${escapeHtml(p1.fullName)}</div>
+            <div style="font-size: 8pt; color: #475569; margin-top: 2px;">
+              ${p1.designation ? `Designation: <strong>${escapeHtml(p1.designation)}</strong> &bull; ` : ""}
+              ${p1.mobileNumber ? `Phone: <strong>${escapeHtml(p1.mobileNumber)}</strong>` : ""}
+              ${p1.emailAddress ? ` &bull; Email: <strong>${escapeHtml(p1.emailAddress)}</strong>` : ""}
+            </div>
+          </div>
+          ` : ""}
+          ${hasP2 ? `
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 6px 8px;">
+            <div class="field-label">Second Representative (Participant 2)</div>
+            <div class="field-value">${escapeHtml(p2.fullName)}</div>
+            <div style="font-size: 8pt; color: #475569; margin-top: 2px;">
+              ${p2.designation ? `Designation: <strong>${escapeHtml(p2.designation)}</strong> &bull; ` : ""}
+              ${p2.mobileNumber ? `Phone: <strong>${escapeHtml(p2.mobileNumber)}</strong>` : ""}
+              ${p2.emailAddress ? ` &bull; Email: <strong>${escapeHtml(p2.emailAddress)}</strong>` : ""}
+            </div>
+          </div>
+          ` : ""}
+        </div>
+      </div>
+    </div>
+    ` : ""}
+    ` : ""}
+
+    <div class="footer-stamp">
+      <span>Database Node: Sri Lanka National Central Registry &bull; RDA ICDP</span>
+      <span>Printed / Exported: ${new Date().toLocaleString("en-GB")}</span>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
   };
 
   return (
@@ -635,14 +1060,26 @@ export default function ContractorsPage() {
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => setProfileModalOpen(false)}
-                  className="text-slate-400 hover:text-white transition-colors"
-                  aria-label="Close modal"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleDownloadProfile(selectedContractor)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-amber-600 hover:bg-amber-500 rounded-lg shadow-sm transition-all"
+                    title="Download Official Record / Print PDF"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download PDF</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setProfileModalOpen(false)}
+                    className="text-slate-400 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10"
+                    aria-label="Close modal"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
 
               {/* Body */}
@@ -1068,7 +1505,16 @@ export default function ContractorsPage() {
               </div>
 
               {/* Footer */}
-              <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end">
+              <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => handleDownloadProfile(selectedContractor)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-sm transition-all"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download / Print PDF Record</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => setProfileModalOpen(false)}
