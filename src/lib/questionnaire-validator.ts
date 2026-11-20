@@ -84,6 +84,12 @@ export function validateQuestionnaireSubmission(
   if (!data.participant1?.mobileNumber?.trim()) {
     errors["participant1.mobileNumber"] = "Participant Mobile Number is required.";
   }
+  if (data.participant1?.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.participant1.email.trim())) {
+    errors["participant1.email"] = "Please enter a valid email address for Participant 1.";
+  }
+  if (data.participant2?.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.participant2.email.trim())) {
+    errors["participant2.email"] = "Please enter a valid email address for Participant 2.";
+  }
   if (!data.participant1?.designation?.trim()) {
     errors["participant1.designation"] = "Participant Designation is required.";
   }
@@ -425,11 +431,13 @@ export function normalizeQuestionnaireData(
     participant1: {
       fullName: String(p1.fullName || "").trim(),
       mobileNumber: String(p1.mobileNumber || "").trim(),
+      email: String(p1.email || "").trim().toLowerCase(),
       designation: String(p1.designation || "").trim(),
     },
     participant2: {
       fullName: String(p2.fullName || "").trim(),
       mobileNumber: String(p2.mobileNumber || "").trim(),
+      email: String(p2.email || "").trim().toLowerCase(),
       designation: String(p2.designation || "").trim(),
     },
     supplierDetails,

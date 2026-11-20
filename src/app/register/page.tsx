@@ -131,8 +131,8 @@ function createInitialFormData(): OfficialQuestionnaireData {
     email: "",
     willParticipate: "",
     participantCategory: "",
-    participant1: { fullName: "", mobileNumber: "", designation: "" },
-    participant2: { fullName: "", mobileNumber: "", designation: "" },
+    participant1: { fullName: "", mobileNumber: "", email: "", designation: "" },
+    participant2: { fullName: "", mobileNumber: "", email: "", designation: "" },
     supplierDetails: createEmptySupplierDetails(),
     ictadRegistrationNumber: "",
     areasOfSpecialty: [],
@@ -436,9 +436,11 @@ function RegisterForm() {
         "participantCategory",
         "participant1.fullName",
         "participant1.mobileNumber",
+        "participant1.email",
         "participant1.designation",
         "participant2.fullName",
         "participant2.mobileNumber",
+        "participant2.email",
         "participant2.designation",
         "supplierDetails.companyName",
         "supplierDetails.materialsSupplied",
@@ -641,9 +643,10 @@ function RegisterForm() {
           participant1: q.participant1 || {
             fullName: c.contactOfficer?.name || "",
             mobileNumber: c.contactOfficer?.phone || "",
+            email: c.contactOfficer?.email || "",
             designation: c.contactOfficer?.designation || "",
           },
-          participant2: q.participant2 || { fullName: "", mobileNumber: "", designation: "" },
+          participant2: q.participant2 || { fullName: "", mobileNumber: "", email: "", designation: "" },
           supplierDetails: q.supplierDetails || createEmptySupplierDetails(),
           ictadRegistrationNumber: q.ictadRegistrationNumber || c.registrationNumber || "",
           areasOfSpecialty: Array.isArray(q.areasOfSpecialty) ? q.areasOfSpecialty : [],
@@ -748,8 +751,8 @@ function RegisterForm() {
         district: formData.supplierDetails?.district?.trim() || undefined,
         contactOfficer: {
           name: formData.participant1?.fullName?.trim() || "Authorized Representative",
-          phone: formData.contactNumber?.trim() || "+94 11 000 0000",
-          email: formData.email?.trim() || "contact@rda.gov.lk",
+          phone: formData.participant1?.mobileNumber?.trim() || formData.contactNumber?.trim() || "+94 11 000 0000",
+          email: formData.participant1?.email?.trim() || formData.email?.trim() || "contact@rda.gov.lk",
         },
       };
 
@@ -1075,8 +1078,8 @@ function RegisterForm() {
         district: formData.supplierDetails?.district?.trim() || (formData as any).district?.trim() || undefined,
         contactOfficer: {
           name: formData.participant1?.fullName?.trim() || orgName || "Authorized Representative",
-          phone: formData.contactNumber?.trim() || undefined,
-          email: formData.email?.trim() || undefined,
+          phone: formData.participant1?.mobileNumber?.trim() || formData.contactNumber?.trim() || undefined,
+          email: formData.participant1?.email?.trim() || formData.email?.trim() || undefined,
         },
       };
       if (currentDraftToken) savePayload.resumeToken = currentDraftToken;
@@ -1556,8 +1559,8 @@ function RegisterForm() {
                   email: "",
                   willParticipate: "",
                   participantCategory: "",
-                  participant1: { fullName: "", mobileNumber: "", designation: "" },
-                  participant2: { fullName: "", mobileNumber: "", designation: "" },
+                  participant1: { fullName: "", mobileNumber: "", email: "", designation: "" },
+                  participant2: { fullName: "", mobileNumber: "", email: "", designation: "" },
                   supplierDetails: createEmptySupplierDetails(),
                   ictadRegistrationNumber: "",
                   areasOfSpecialty: [],
@@ -2169,7 +2172,7 @@ function RegisterForm() {
                         <span className="text-[11px] font-bold text-blue-900 uppercase">
                           Participant 1 (Required)
                         </span>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                           <div>
                             <label className="block font-semibold text-slate-700 mb-1">Full Name *</label>
                             <input
@@ -2180,7 +2183,7 @@ function RegisterForm() {
                                 setFormData({
                                   ...formData,
                                   participant1: {
-                                    ...(formData.participant1 || { fullName: "", mobileNumber: "", designation: "" }),
+                                    ...(formData.participant1 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
                                     fullName: e.target.value,
                                   },
                                 })
@@ -2199,13 +2202,32 @@ function RegisterForm() {
                                 setFormData({
                                   ...formData,
                                   participant1: {
-                                    ...(formData.participant1 || { fullName: "", mobileNumber: "", designation: "" }),
+                                    ...(formData.participant1 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
                                     mobileNumber: e.target.value,
                                   },
                                 })
                               }
                               placeholder="e.g. 0771234567"
                               className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
+                            />
+                          </div>
+                          <div>
+                            <label className="block font-semibold text-slate-700 mb-1">Email Address *</label>
+                            <input
+                              type="email"
+                              required
+                              value={formData.participant1?.email || ""}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  participant1: {
+                                    ...(formData.participant1 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
+                                    email: e.target.value,
+                                  },
+                                })
+                              }
+                              placeholder="e.g. sunil@example.com"
+                              className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800"
                             />
                           </div>
                           <div>
@@ -2218,7 +2240,7 @@ function RegisterForm() {
                                 setFormData({
                                   ...formData,
                                   participant1: {
-                                    ...(formData.participant1 || { fullName: "", mobileNumber: "", designation: "" }),
+                                    ...(formData.participant1 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
                                     designation: e.target.value,
                                   },
                                 })
@@ -2235,7 +2257,7 @@ function RegisterForm() {
                         <span className="text-[11px] font-bold text-slate-600 uppercase">
                           Participant 2 (Optional)
                         </span>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                           <div>
                             <label className="block font-semibold text-slate-700 mb-1">Full Name</label>
                             <input
@@ -2245,7 +2267,7 @@ function RegisterForm() {
                                 setFormData({
                                   ...formData,
                                   participant2: {
-                                    ...(formData.participant2 || { fullName: "", mobileNumber: "", designation: "" }),
+                                    ...(formData.participant2 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
                                     fullName: e.target.value,
                                   },
                                 })
@@ -2263,13 +2285,31 @@ function RegisterForm() {
                                 setFormData({
                                   ...formData,
                                   participant2: {
-                                    ...(formData.participant2 || { fullName: "", mobileNumber: "", designation: "" }),
+                                    ...(formData.participant2 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
                                     mobileNumber: e.target.value,
                                   },
                                 })
                               }
                               placeholder="e.g. 0719876543"
                               className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
+                            />
+                          </div>
+                          <div>
+                            <label className="block font-semibold text-slate-700 mb-1">Email Address</label>
+                            <input
+                              type="email"
+                              value={formData.participant2?.email || ""}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  participant2: {
+                                    ...(formData.participant2 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
+                                    email: e.target.value,
+                                  },
+                                })
+                              }
+                              placeholder="e.g. attendee2@example.com"
+                              className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800"
                             />
                           </div>
                           <div>
@@ -2281,7 +2321,7 @@ function RegisterForm() {
                                 setFormData({
                                   ...formData,
                                   participant2: {
-                                    ...(formData.participant2 || { fullName: "", mobileNumber: "", designation: "" }),
+                                    ...(formData.participant2 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
                                     designation: e.target.value,
                                   },
                                 })
@@ -2314,7 +2354,7 @@ function RegisterForm() {
                         <span className="text-[11px] font-bold text-blue-900 uppercase">
                           Representative Details (Required)
                         </span>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                           <div>
                             <label className="block font-semibold text-slate-700 mb-1">Full Name *</label>
                             <input
@@ -2325,7 +2365,7 @@ function RegisterForm() {
                                 setFormData({
                                   ...formData,
                                   participant1: {
-                                    ...(formData.participant1 || { fullName: "", mobileNumber: "", designation: "" }),
+                                    ...(formData.participant1 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
                                     fullName: e.target.value,
                                   },
                                 })
@@ -2344,13 +2384,32 @@ function RegisterForm() {
                                 setFormData({
                                   ...formData,
                                   participant1: {
-                                    ...(formData.participant1 || { fullName: "", mobileNumber: "", designation: "" }),
+                                    ...(formData.participant1 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
                                     mobileNumber: e.target.value,
                                   },
                                 })
                               }
                               placeholder="e.g. 0779876543"
                               className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
+                            />
+                          </div>
+                          <div>
+                            <label className="block font-semibold text-slate-700 mb-1">Email Address *</label>
+                            <input
+                              type="email"
+                              required
+                              value={formData.participant1?.email || ""}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  participant1: {
+                                    ...(formData.participant1 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
+                                    email: e.target.value,
+                                  },
+                                })
+                              }
+                              placeholder="e.g. supplier@example.com"
+                              className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800"
                             />
                           </div>
                           <div>
@@ -2363,7 +2422,7 @@ function RegisterForm() {
                                 setFormData({
                                   ...formData,
                                   participant1: {
-                                    ...(formData.participant1 || { fullName: "", mobileNumber: "", designation: "" }),
+                                    ...(formData.participant1 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
                                     designation: e.target.value,
                                   },
                                 })
@@ -2663,7 +2722,7 @@ function RegisterForm() {
                           <span className="text-[11px] font-bold text-blue-900 uppercase">
                             Participant 1 (Required)
                           </span>
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                             <div>
                               <label className="block font-semibold text-slate-700 mb-1">Full Name *</label>
                               <input
@@ -2674,7 +2733,7 @@ function RegisterForm() {
                                   setFormData({
                                     ...formData,
                                     participant1: {
-                                      ...(formData.participant1 || { fullName: "", mobileNumber: "", designation: "" }),
+                                      ...(formData.participant1 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
                                       fullName: e.target.value,
                                     },
                                   })
@@ -2693,13 +2752,32 @@ function RegisterForm() {
                                   setFormData({
                                     ...formData,
                                     participant1: {
-                                      ...(formData.participant1 || { fullName: "", mobileNumber: "", designation: "" }),
+                                      ...(formData.participant1 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
                                       mobileNumber: e.target.value,
                                     },
                                   })
                                 }
                                 placeholder="e.g. 0771234567"
                                 className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
+                              />
+                            </div>
+                            <div>
+                              <label className="block font-semibold text-slate-700 mb-1">Email Address *</label>
+                              <input
+                                type="email"
+                                required
+                                value={formData.participant1?.email || ""}
+                                onChange={(e) =>
+                                  setFormData({
+                                    ...formData,
+                                    participant1: {
+                                      ...(formData.participant1 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
+                                      email: e.target.value,
+                                    },
+                                  })
+                                }
+                                placeholder="e.g. sunil@example.com"
+                                className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800"
                               />
                             </div>
                             <div>
@@ -2712,7 +2790,7 @@ function RegisterForm() {
                                   setFormData({
                                     ...formData,
                                     participant1: {
-                                      ...(formData.participant1 || { fullName: "", mobileNumber: "", designation: "" }),
+                                      ...(formData.participant1 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
                                       designation: e.target.value,
                                     },
                                   })
@@ -2729,7 +2807,7 @@ function RegisterForm() {
                           <span className="text-[11px] font-bold text-slate-600 uppercase">
                             Participant 2 (Optional)
                           </span>
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                             <div>
                               <label className="block font-semibold text-slate-700 mb-1">Full Name</label>
                               <input
@@ -2739,7 +2817,7 @@ function RegisterForm() {
                                   setFormData({
                                     ...formData,
                                     participant2: {
-                                      ...(formData.participant2 || { fullName: "", mobileNumber: "", designation: "" }),
+                                      ...(formData.participant2 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
                                       fullName: e.target.value,
                                     },
                                   })
@@ -2757,13 +2835,31 @@ function RegisterForm() {
                                   setFormData({
                                     ...formData,
                                     participant2: {
-                                      ...(formData.participant2 || { fullName: "", mobileNumber: "", designation: "" }),
+                                      ...(formData.participant2 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
                                       mobileNumber: e.target.value,
                                     },
                                   })
                                 }
                                 placeholder="e.g. 0719876543"
                                 className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
+                              />
+                            </div>
+                            <div>
+                              <label className="block font-semibold text-slate-700 mb-1">Email Address</label>
+                              <input
+                                type="email"
+                                value={formData.participant2?.email || ""}
+                                onChange={(e) =>
+                                  setFormData({
+                                    ...formData,
+                                    participant2: {
+                                      ...(formData.participant2 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
+                                      email: e.target.value,
+                                    },
+                                  })
+                                }
+                                placeholder="e.g. attendee2@example.com"
+                                className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800"
                               />
                             </div>
                             <div>
@@ -2775,7 +2871,7 @@ function RegisterForm() {
                                   setFormData({
                                     ...formData,
                                     participant2: {
-                                      ...(formData.participant2 || { fullName: "", mobileNumber: "", designation: "" }),
+                                      ...(formData.participant2 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
                                       designation: e.target.value,
                                     },
                                   })
@@ -3953,6 +4049,7 @@ function RegisterForm() {
                     <p className="text-slate-600 font-medium">{formData.participant1?.designation || "N/A"}</p>
                     <div className="pt-1 text-[11px] text-slate-500 font-mono space-y-0.5">
                       <div>Phone: {formData.participant1?.mobileNumber || "N/A"}</div>
+                      <div>Email: {formData.participant1?.email || "N/A"}</div>
                     </div>
                   </div>
                   {/* Participant 2 */}
@@ -3964,6 +4061,7 @@ function RegisterForm() {
                         <p className="text-slate-600 font-medium">{formData.participant2.designation || "N/A"}</p>
                         <div className="pt-1 text-[11px] text-slate-500 font-mono space-y-0.5">
                           <div>Phone: {formData.participant2.mobileNumber || "N/A"}</div>
+                          {formData.participant2.email && <div>Email: {formData.participant2.email}</div>}
                         </div>
                       </>
                     ) : (

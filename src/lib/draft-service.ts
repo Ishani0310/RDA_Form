@@ -509,8 +509,10 @@ export async function submitFinalDeclaration(
   if (!contractor.contactOfficer) contractor.contactOfficer = {};
   if (rawQ.participant1?.fullName) contractor.contactOfficer.name = rawQ.participant1.fullName.trim();
   if (rawQ.participant1?.designation) contractor.contactOfficer.designation = rawQ.participant1.designation.trim();
-  if (rawQ.contactNumber) contractor.contactOfficer.phone = rawQ.contactNumber.trim();
-  if (rawQ.email) contractor.contactOfficer.email = rawQ.email.trim().toLowerCase();
+  if (rawQ.participant1?.mobileNumber) contractor.contactOfficer.phone = rawQ.participant1.mobileNumber.trim();
+  else if (rawQ.contactNumber) contractor.contactOfficer.phone = rawQ.contactNumber.trim();
+  if (rawQ.participant1?.email) contractor.contactOfficer.email = rawQ.participant1.email.trim().toLowerCase();
+  else if (rawQ.email) contractor.contactOfficer.email = rawQ.email.trim().toLowerCase();
 
   const submittedAt = new Date();
 

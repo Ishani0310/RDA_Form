@@ -12,6 +12,7 @@ export type ParticipantCategory = "Contractor" | "Supplier" | "Government Office
 export interface WorkshopParticipant {
   fullName: string;
   mobileNumber: string;
+  email?: string;
   designation: string;
 }
 
