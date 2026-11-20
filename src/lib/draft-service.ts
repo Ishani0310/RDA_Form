@@ -487,7 +487,15 @@ export async function submitFinalDeclaration(
       contractor.primarySpeciality = "Government Stakeholder";
     } else if (normalizedQ.participantCategory === "Contractor") {
       if (normalizedQ.ictadRegistrationNumber) {
-        contractor.registrationNumber = normalizedQ.ictadRegistrationNumber.toUpperCase();
+        const targetReg = normalizedQ.ictadRegistrationNumber.trim().toUpperCase();
+        const otherWithReg = await Contractor.findOne({
+          registrationNumber: targetReg,
+          _id: { $ne: contractor._id },
+        });
+        if (otherWithReg) {
+          throw new Error(`ICTAD registration number ${targetReg} is already registered in the system. Each contractor must enter a unique registration number.`);
+        }
+        contractor.registrationNumber = targetReg;
       }
       if (normalizedQ.cidaGrade) {
         contractor.cidaGrade = normalizedQ.cidaGrade as any;

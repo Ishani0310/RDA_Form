@@ -386,7 +386,7 @@ export function getBaselineOfficialSections(): IFormSection[] {
           code: "Q17",
           number: qNum++,
           text: "ICTAD Registration Number",
-          description: "Official accreditation reference.",
+          description: "Official accreditation reference. Must be unique for your organization.",
           placeholder: "e.g., CIDA/CON/001234",
           fieldType: "short_text",
           displayOrder: 1,

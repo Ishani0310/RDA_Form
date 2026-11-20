@@ -232,12 +232,64 @@ function RegisterForm() {
   const [supplierMaterialsOtherList, setSupplierMaterialsOtherList] = useState<string[]>([""]);
   const [cidaGradeOtherList, setCidaGradeOtherList] = useState<string[]>([""]);
 
+  // Unique ICTAD Registration Number State
+  const [regNumberError, setRegNumberError] = useState<string | null>(null);
+  const [isCheckingRegNumber, setIsCheckingRegNumber] = useState(false);
+  const [regNumberAvailable, setRegNumberAvailable] = useState(false);
+
   // Multi-item helper: parse comma-separated string into list of items
   const parseOtherSpecialties = (str?: string): string[] => {
     if (!str || !str.trim()) return [""];
     const items = str.split(",").map((s) => s.trim()).filter(Boolean);
     return items.length > 0 ? items : [""];
   };
+
+  const checkRegNumberUniqueness = async (regNo?: string) => {
+    const trimmed = regNo?.trim();
+    if (!trimmed) {
+      setRegNumberError(null);
+      setRegNumberAvailable(false);
+      setIsCheckingRegNumber(false);
+      return;
+    }
+
+    setIsCheckingRegNumber(true);
+
+    try {
+      const url = `/api/public/check-reg-number?regNumber=${encodeURIComponent(trimmed)}&token=${encodeURIComponent(currentDraftToken || "")}`;
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (!data.available) {
+        setRegNumberError(data.message || `ICTAD registration number "${trimmed}" is already registered.`);
+        setRegNumberAvailable(false);
+      } else {
+        setRegNumberError(null);
+        setRegNumberAvailable(true);
+      }
+    } catch {
+      // Ignore network errors on background validation
+    } finally {
+      setIsCheckingRegNumber(false);
+    }
+  };
+
+  // Debounced uniqueness check as user types
+  useEffect(() => {
+    if (formData.participantCategory !== "Contractor") return;
+    const val = formData.ictadRegistrationNumber?.trim();
+    if (!val) {
+      setRegNumberError(null);
+      setRegNumberAvailable(false);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      checkRegNumberUniqueness(val);
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [formData.ictadRegistrationNumber, formData.participantCategory, currentDraftToken]);
 
   // Sync contractor specialty other list when formData.specialtyOther changes from outside
   useEffect(() => {
@@ -949,6 +1001,29 @@ function RegisterForm() {
       }
     }
 
+    // Section 4: Validate unique ICTAD Registration Number for Contractors
+    if (formData.participantCategory === "Contractor") {
+      const reg = formData.ictadRegistrationNumber?.trim();
+      if (!reg) {
+        setFormAlert({
+          type: "error",
+          message: "Section 4: ICTAD registration number is required.",
+        });
+        const elem = document.getElementById("ictad-reg-number-input");
+        if (elem) elem.scrollIntoView({ behavior: "smooth" });
+        return;
+      }
+      if (regNumberError) {
+        setFormAlert({
+          type: "error",
+          message: `Section 4: ${regNumberError}`,
+        });
+        const elem = document.getElementById("ictad-reg-number-input");
+        if (elem) elem.scrollIntoView({ behavior: "smooth" });
+        return;
+      }
+    }
+
     // Section 10: Validate descending order for Similar Works (higher value to lower value)
     if (formData.participantCategory === "Contractor") {
       const works = formData.similarWorks || [];
@@ -1037,7 +1112,30 @@ function RegisterForm() {
         }
       }
 
-      // Section 10: Validate descending order for Similar Works (higher value to lower value)
+      // Section 4: Validate unique ICTAD Registration Number for Contractors
+    if (formData.participantCategory === "Contractor") {
+      const reg = formData.ictadRegistrationNumber?.trim();
+      if (!reg) {
+        setFormAlert({
+          type: "error",
+          message: "Section 4: ICTAD registration number is required.",
+        });
+        const elem = document.getElementById("ictad-reg-number-input");
+        if (elem) elem.scrollIntoView({ behavior: "smooth" });
+        return;
+      }
+      if (regNumberError) {
+        setFormAlert({
+          type: "error",
+          message: `Section 4: ${regNumberError}`,
+        });
+        const elem = document.getElementById("ictad-reg-number-input");
+        if (elem) elem.scrollIntoView({ behavior: "smooth" });
+        return;
+      }
+    }
+
+    // Section 10: Validate descending order for Similar Works (higher value to lower value)
       if (formData.participantCategory === "Contractor") {
         const works = formData.similarWorks || [];
         const firstWork = works[0];
@@ -2896,19 +2994,52 @@ function RegisterForm() {
 
                       <div className="space-y-4 text-xs">
                         <div>
-                          <label className="block font-semibold text-slate-700 mb-1">
-                            ICTAD registration number *
-                          </label>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="block font-semibold text-slate-700">
+                              ICTAD registration number *
+                            </label>
+                            {isCheckingRegNumber && (
+                              <span className="text-[10px] text-blue-700 font-medium flex items-center gap-1">
+                                <RefreshCw className="w-3 h-3 animate-spin text-blue-700" />
+                                Checking uniqueness...
+                              </span>
+                            )}
+                            {!isCheckingRegNumber && regNumberAvailable && formData.ictadRegistrationNumber?.trim() && !regNumberError && (
+                              <span className="text-[10px] text-emerald-700 font-bold flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                Registration number is unique
+                              </span>
+                            )}
+                          </div>
                           <input
+                            id="ictad-reg-number-input"
                             type="text"
                             required
                             value={formData.ictadRegistrationNumber}
-                            onChange={(e) =>
-                              setFormData({ ...formData, ictadRegistrationNumber: e.target.value })
-                            }
+                            onChange={(e) => {
+                              setFormData({ ...formData, ictadRegistrationNumber: e.target.value });
+                              if (regNumberError) setRegNumberError(null);
+                              setRegNumberAvailable(false);
+                            }}
+                            onBlur={() => checkRegNumberUniqueness(formData.ictadRegistrationNumber || "")}
                             placeholder="e.g. CIDA/12450"
-                            className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
+                            className={`w-full p-2.5 rounded-lg font-mono text-slate-900 focus:outline-none focus:ring-2 transition-all ${
+                              regNumberError
+                                ? "border-2 border-rose-500 bg-rose-50/50 focus:ring-rose-500 text-rose-950 font-bold"
+                                : regNumberAvailable && formData.ictadRegistrationNumber?.trim()
+                                ? "border border-emerald-500 bg-emerald-50/20 focus:ring-emerald-600"
+                                : "border border-slate-300 bg-slate-50 focus:bg-white focus:ring-blue-800"
+                            }`}
                           />
+                          {regNumberError && (
+                            <div className="flex items-start gap-1.5 p-2 mt-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-sans">
+                              <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                              <span className="font-medium">{regNumberError}</span>
+                            </div>
+                          )}
+                          <p className="text-[11px] text-slate-500 mt-1 font-sans">
+                            Each contractor organization must provide a unique CIDA / ICTAD registration number. Duplicate registration numbers are strictly prohibited.
+                          </p>
                         </div>
 
                         <div>
