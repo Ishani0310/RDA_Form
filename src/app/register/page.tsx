@@ -1830,11 +1830,10 @@ function RegisterForm() {
                   Workshop Overview
                 </h3>
                 <p>
-                  <strong className="text-slate-900 font-bold bg-amber-50 text-amber-950 px-1.5 py-0.5 rounded border border-amber-200 inline-block mb-1">
+                  <strong className="font-bold text-blue-900">
                     Organized by Inclusive Connectivity and Development Project (ICDP)
                   </strong>
-                  <br />
-                  Road Development Authority (RDA) Early Market Engagement Workshop engages prospective contractors, materials suppliers, and institutional stakeholders in the development and procurement framework.
+                  , Road Development Authority (RDA). This Early Market Engagement Workshop engages prospective contractors, materials suppliers, and institutional stakeholders in the development and procurement framework.
                 </p>
               </div>
 
