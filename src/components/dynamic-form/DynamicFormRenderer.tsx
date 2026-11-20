@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   IQuestionnaireData,
   IFormSection,
@@ -31,6 +31,7 @@ import {
   Users,
   Building2,
   Info,
+  X,
 } from "lucide-react";
 import {
   FINANCIAL_YEARS,
@@ -87,6 +88,144 @@ const COMPLETION_STATUS_OPTIONS = [
   "Substantially completed",
   "Fully completed (Performance Certificate issued)",
 ];
+
+function MultiItemOtherInput({
+  value,
+  onChange,
+  disabled,
+  placeholder,
+  label,
+  buttonLabel,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  disabled?: boolean;
+  placeholder: (idx: number) => string;
+  label: string;
+  buttonLabel: string;
+}) {
+  const [items, setItems] = useState<string[]>(() => {
+    if (!value || !value.trim()) return [""];
+    const parsed = value.split(",").map((s) => s.trim());
+    return parsed.length > 0 ? parsed : [""];
+  });
+
+  const [focusNew, setFocusNew] = useState(false);
+  const lastInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    const currentCombined = items.map((s) => s.trim()).filter(Boolean).join(", ");
+    const externalCombined = (value || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .join(", ");
+    if (currentCombined !== externalCombined) {
+      const parsed = (value || "").split(",").map((s) => s.trim());
+      setItems(parsed.length > 0 ? parsed : [""]);
+    }
+  }, [value]);
+
+  useEffect(() => {
+    if (focusNew && lastInputRef.current) {
+      lastInputRef.current.focus();
+      setFocusNew(false);
+    }
+  }, [items, focusNew]);
+
+  const updateItem = (index: number, text: string) => {
+    const next = [...items];
+    next[index] = text;
+    setItems(next);
+    onChange(next.map((s) => s.trim()).filter(Boolean).join(", "));
+  };
+
+  const addItem = () => {
+    setItems((prev) => [...prev, ""]);
+    setFocusNew(true);
+  };
+
+  const removeItem = (index: number) => {
+    const next = items.filter((_, i) => i !== index);
+    const finalItems = next.length > 0 ? next : [""];
+    setItems(finalItems);
+    onChange(finalItems.map((s) => s.trim()).filter(Boolean).join(", "));
+  };
+
+  return (
+    <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-lg space-y-2">
+      <div className="flex items-center justify-between pb-1 border-b border-amber-200/60">
+        <label className="block text-[11px] font-bold text-amber-950 uppercase tracking-wide">
+          {label}
+        </label>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-amber-900 font-semibold bg-amber-100/80 px-2 py-0.5 rounded-full">
+            {items.filter((s) => s.trim()).length} Specified
+          </span>
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={addItem}
+            className="text-[11px] font-bold text-blue-900 hover:text-blue-700 underline"
+          >
+            {buttonLabel}
+          </button>
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        {items.map((item, idx) => (
+          <div key={idx} className="flex items-center gap-1.5">
+            <span className="text-[11px] font-bold text-amber-800/60 w-4 text-right shrink-0">
+              #{idx + 1}
+            </span>
+            <input
+              ref={idx === items.length - 1 ? lastInputRef : null}
+              type="text"
+              placeholder={placeholder(idx)}
+              value={item}
+              onChange={(e) => updateItem(idx, e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addItem();
+                }
+              }}
+              disabled={disabled}
+              className="flex-1 p-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:ring-2 focus:ring-blue-800 shadow-sm"
+            />
+            {items.length > 1 && (
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={() => removeItem(idx)}
+                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors shrink-0"
+                title="Remove"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div className="pt-1 flex items-center justify-between">
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={addItem}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-md shadow-sm transition-all"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span>{buttonLabel}</span>
+        </button>
+        <span className="text-[10px] text-slate-400 italic">
+          Press Enter to add another
+        </span>
+      </div>
+    </div>
+  );
+}
 
 export function evaluateConditionalRule(
   conditional: IFormQuestion["conditionalLogic"],
@@ -876,59 +1015,14 @@ function renderSupplierMaterialsList(
       </div>
 
       {selectedMaterials.includes("Other") && (
-        <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-lg space-y-2">
-          <div className="flex items-center justify-between">
-            <label className="block text-[11px] font-semibold text-amber-950">
-              Please specify other material type(s):
-            </label>
-            <button
-              type="button"
-              disabled={disabled}
-              onClick={() => {
-                const current = (allValues?.["supplierDetails.materialsOther"] || "").split(",").map((s: string) => s.trim()).filter(Boolean);
-                onGlobalChange?.("supplierDetails.materialsOther", [...current, ""].join(", "));
-              }}
-              className="text-[11px] font-bold text-amber-900 hover:text-amber-800 underline"
-            >
-              + Add another material
-            </button>
-          </div>
-          <div className="space-y-1.5">
-            {((allValues?.["supplierDetails.materialsOther"] || "").split(",").map((s: string) => s.trim()).filter(Boolean).length > 0
-              ? (allValues?.["supplierDetails.materialsOther"] || "").split(",").map((s: string) => s.trim()).filter(Boolean)
-              : [""]
-            ).map((item: string, idx: number, arr: string[]) => (
-              <div key={idx} className="flex items-center gap-1.5">
-                <input
-                  type="text"
-                  placeholder={idx === 0 ? "Specify your material..." : `Additional material #${idx + 1}...`}
-                  value={item}
-                  onChange={(e) => {
-                    const list = [...arr];
-                    list[idx] = e.target.value;
-                    onGlobalChange?.("supplierDetails.materialsOther", list.filter(Boolean).join(", "));
-                  }}
-                  disabled={disabled}
-                  className="flex-1 p-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:ring-1 focus:ring-blue-800"
-                />
-                {arr.length > 1 && (
-                  <button
-                    type="button"
-                    disabled={disabled}
-                    onClick={() => {
-                      const list = arr.filter((_, i) => i !== idx);
-                      onGlobalChange?.("supplierDetails.materialsOther", list.filter(Boolean).join(", "));
-                    }}
-                    className="p-1.5 text-slate-400 hover:text-rose-600 rounded"
-                    title="Remove"
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
+        <MultiItemOtherInput
+          label="Please specify other material type(s):"
+          buttonLabel="+ Add another material"
+          placeholder={(idx) => (idx === 0 ? "Specify your material..." : `Additional material #${idx + 1}...`)}
+          value={allValues?.["supplierDetails.materialsOther"] || ""}
+          onChange={(val) => onGlobalChange?.("supplierDetails.materialsOther", val)}
+          disabled={disabled}
+        />
       )}
 
       {selectedMaterials.length > 0 && (
@@ -1050,9 +1144,21 @@ function renderOngoingWorksContracts(
                     ))}
                   </select>
                 </div>
+                {c.currency === "Other" && (
+                  <div className="mt-1.5">
+                    <input
+                      type="text"
+                      placeholder="Specify currency (e.g. AUD, CAD)..."
+                      value={c.currencyOther || ""}
+                      onChange={(e) => handleContractChange(idx, "currencyOther", e.target.value)}
+                      disabled={disabled}
+                      className="w-full p-1.5 bg-amber-50/60 border border-amber-300 rounded text-slate-900 text-xs focus:ring-1 focus:ring-blue-800"
+                    />
+                  </div>
+                )}
                 {c.contractAmount !== null && c.contractAmount !== undefined && c.contractAmount !== "" && (
                   <span className="text-[10px] font-mono text-slate-600 block mt-1">
-                    = {c.currency || "LKR"} {Number(c.contractAmount).toLocaleString()}
+                    = {c.currency === "Other" ? (c.currencyOther || "Other") : (c.currency || "LKR")} {Number(c.contractAmount).toLocaleString()}
                   </span>
                 )}
               </div>
@@ -1130,6 +1236,18 @@ function renderSimilarWorksContracts(
                     </option>
                   ))}
                 </select>
+                {c.contractType === "Other" && (
+                  <div className="mt-1.5">
+                    <input
+                      type="text"
+                      placeholder="Specify contract type..."
+                      value={c.contractTypeOther || ""}
+                      onChange={(e) => handleContractChange(idx, "contractTypeOther", e.target.value)}
+                      disabled={disabled}
+                      className="w-full p-1.5 bg-amber-50/60 border border-amber-300 rounded text-slate-900 text-xs focus:ring-1 focus:ring-blue-800"
+                    />
+                  </div>
+                )}
               </div>
 
               <div>
@@ -1430,11 +1548,55 @@ function renderFieldInput(
       // If 2 options like Yes/No:
       if ((question.options || []).length <= 2) {
         return (
-          <div className="flex items-center gap-4 sm:gap-6 flex-wrap">
+          <div className="space-y-2">
+            <div className="flex items-center gap-4 sm:gap-6 flex-wrap">
+              {(question.options || []).map((opt) => (
+                <label
+                  key={opt.id || opt.value}
+                  className="inline-flex items-center gap-2 cursor-pointer py-1.5 pr-2"
+                >
+                  <input
+                    type="radio"
+                    name={`radio-${question.id}`}
+                    value={opt.value}
+                    checked={value === opt.value}
+                    onChange={() => onChange(opt.value)}
+                    disabled={disabled}
+                    className="w-4 h-4 text-blue-900 focus:ring-blue-800"
+                  />
+                  <span className="font-medium text-slate-800">{opt.label}</span>
+                </label>
+              ))}
+            </div>
+            {value === "Other" && (
+              <MultiItemOtherInput
+                label={`Please specify ${question.text || "other"}:`}
+                buttonLabel="+ Add another"
+                placeholder={(idx) => (idx === 0 ? "If Other, please specify..." : `Additional #${idx + 1}...`)}
+                value={allValues?.[`${question.id}Other`] || allValues?.[`${question.code}Other`] || ""}
+                onChange={(val) => {
+                  onGlobalChange?.(`${question.id}Other`, val);
+                  if (question.code) onGlobalChange?.(`${question.code}Other`, val);
+                }}
+                disabled={disabled}
+              />
+            )}
+          </div>
+        );
+      }
+
+      // If 3 or more options (e.g. Participant Category cards):
+      return (
+        <div className="space-y-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
             {(question.options || []).map((opt) => (
               <label
                 key={opt.id || opt.value}
-                className="inline-flex items-center gap-2 cursor-pointer py-1.5 pr-2"
+                className={`p-3 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all min-h-[44px] ${
+                  value === opt.value
+                    ? "bg-blue-50/80 border-blue-900 text-blue-950 font-bold"
+                    : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
+                }`}
               >
                 <input
                   type="radio"
@@ -1445,37 +1607,23 @@ function renderFieldInput(
                   disabled={disabled}
                   className="w-4 h-4 text-blue-900 focus:ring-blue-800"
                 />
-                <span className="font-medium text-slate-800">{opt.label}</span>
+                <span className="leading-snug">{opt.label}</span>
               </label>
             ))}
           </div>
-        );
-      }
-
-      // If 3 or more options (e.g. Participant Category cards):
-      return (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
-          {(question.options || []).map((opt) => (
-            <label
-              key={opt.id || opt.value}
-              className={`p-3 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all min-h-[44px] ${
-                value === opt.value
-                  ? "bg-blue-50/80 border-blue-900 text-blue-950 font-bold"
-                  : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
-              }`}
-            >
-              <input
-                type="radio"
-                name={`radio-${question.id}`}
-                value={opt.value}
-                checked={value === opt.value}
-                onChange={() => onChange(opt.value)}
-                disabled={disabled}
-                className="w-4 h-4 text-blue-900 focus:ring-blue-800"
-              />
-              <span className="leading-snug">{opt.label}</span>
-            </label>
-          ))}
+          {value === "Other" && (
+            <MultiItemOtherInput
+              label={`Please specify ${question.text || "other"}:`}
+              buttonLabel="+ Add another"
+              placeholder={(idx) => (idx === 0 ? "If Other, please specify..." : `Additional #${idx + 1}...`)}
+              value={allValues?.[`${question.id}Other`] || allValues?.[`${question.code}Other`] || ""}
+              onChange={(val) => {
+                onGlobalChange?.(`${question.id}Other`, val);
+                if (question.code) onGlobalChange?.(`${question.code}Other`, val);
+              }}
+              disabled={disabled}
+            />
+          )}
         </div>
       );
 
@@ -1522,59 +1670,29 @@ function renderFieldInput(
 
           {/* Google Form Specification for CIDA Grading Other */}
           {(question.id === "cidaGrade" || question.code === "Q19") && value === "Other" && (
-            <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-lg space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="block text-[11px] font-semibold text-amber-950">
-                  Please specify your CIDA grading(s):
-                </label>
-                <button
-                  type="button"
-                  disabled={disabled}
-                  onClick={() => {
-                    const current = (allValues?.["cidaGradeOther"] || "").split(",").map((s: string) => s.trim()).filter(Boolean);
-                    onGlobalChange?.("cidaGradeOther", [...current, ""].join(", "));
-                  }}
-                  className="text-[11px] font-bold text-amber-900 hover:text-amber-800 underline"
-                >
-                  + Add another grade
-                </button>
-              </div>
-              <div className="space-y-1.5">
-                {((allValues?.["cidaGradeOther"] || "").split(",").map((s: string) => s.trim()).filter(Boolean).length > 0
-                  ? (allValues?.["cidaGradeOther"] || "").split(",").map((s: string) => s.trim()).filter(Boolean)
-                  : [""]
-                ).map((item: string, idx: number, arr: string[]) => (
-                  <div key={idx} className="flex items-center gap-1.5">
-                    <input
-                      type="text"
-                      placeholder={idx === 0 ? "If Other, please specify your CIDA grading..." : `Additional grade #${idx + 1}...`}
-                      value={item}
-                      onChange={(e) => {
-                        const list = [...arr];
-                        list[idx] = e.target.value;
-                        onGlobalChange?.("cidaGradeOther", list.filter(Boolean).join(", "));
-                      }}
-                      disabled={disabled}
-                      className="flex-1 p-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:ring-1 focus:ring-blue-800"
-                    />
-                    {arr.length > 1 && (
-                      <button
-                        type="button"
-                        disabled={disabled}
-                        onClick={() => {
-                          const list = arr.filter((_, i) => i !== idx);
-                          onGlobalChange?.("cidaGradeOther", list.filter(Boolean).join(", "));
-                        }}
-                        className="p-1.5 text-slate-400 hover:text-rose-600 rounded"
-                        title="Remove"
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
+            <MultiItemOtherInput
+              label="Please specify your CIDA grading(s):"
+              buttonLabel="+ Add another grade"
+              placeholder={(idx) => (idx === 0 ? "If Other, please specify your CIDA grading..." : `Additional grade #${idx + 1}...`)}
+              value={allValues?.["cidaGradeOther"] || ""}
+              onChange={(val) => onGlobalChange?.("cidaGradeOther", val)}
+              disabled={disabled}
+            />
+          )}
+
+          {/* Generic Dropdown Other */}
+          {value === "Other" && question.id !== "cidaGrade" && question.code !== "Q19" && (
+            <MultiItemOtherInput
+              label={`Please specify ${question.text || "other"}:`}
+              buttonLabel="+ Add another"
+              placeholder={(idx) => (idx === 0 ? "If Other, please specify..." : `Additional #${idx + 1}...`)}
+              value={allValues?.[`${question.id}Other`] || allValues?.[`${question.code}Other`] || ""}
+              onChange={(val) => {
+                onGlobalChange?.(`${question.id}Other`, val);
+                if (question.code) onGlobalChange?.(`${question.code}Other`, val);
+              }}
+              disabled={disabled}
+            />
           )}
         </div>
       );
@@ -1621,59 +1739,29 @@ function renderFieldInput(
 
           {/* Google Form Specification for Areas of Specialty Other */}
           {(question.id === "areasOfSpecialty" || question.code === "Q18") && currentSelected.includes("Other") && (
-            <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-lg space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="block text-[11px] font-semibold text-amber-950">
-                  Please specify your area(s) of specialty:
-                </label>
-                <button
-                  type="button"
-                  disabled={disabled}
-                  onClick={() => {
-                    const current = (allValues?.["specialtyOther"] || "").split(",").map((s: string) => s.trim()).filter(Boolean);
-                    onGlobalChange?.("specialtyOther", [...current, ""].join(", "));
-                  }}
-                  className="text-[11px] font-bold text-amber-900 hover:text-amber-800 underline"
-                >
-                  + Add another specialty
-                </button>
-              </div>
-              <div className="space-y-1.5">
-                {((allValues?.["specialtyOther"] || "").split(",").map((s: string) => s.trim()).filter(Boolean).length > 0
-                  ? (allValues?.["specialtyOther"] || "").split(",").map((s: string) => s.trim()).filter(Boolean)
-                  : [""]
-                ).map((item: string, idx: number, arr: string[]) => (
-                  <div key={idx} className="flex items-center gap-1.5">
-                    <input
-                      type="text"
-                      placeholder={idx === 0 ? "If Other, please specify your area of specialty..." : `Additional specialty #${idx + 1}...`}
-                      value={item}
-                      onChange={(e) => {
-                        const list = [...arr];
-                        list[idx] = e.target.value;
-                        onGlobalChange?.("specialtyOther", list.filter(Boolean).join(", "));
-                      }}
-                      disabled={disabled}
-                      className="flex-1 p-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:ring-1 focus:ring-blue-800"
-                    />
-                    {arr.length > 1 && (
-                      <button
-                        type="button"
-                        disabled={disabled}
-                        onClick={() => {
-                          const list = arr.filter((_, i) => i !== idx);
-                          onGlobalChange?.("specialtyOther", list.filter(Boolean).join(", "));
-                        }}
-                        className="p-1.5 text-slate-400 hover:text-rose-600 rounded"
-                        title="Remove"
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
+            <MultiItemOtherInput
+              label="Please specify your area(s) of specialty:"
+              buttonLabel="+ Add another specialty"
+              placeholder={(idx) => (idx === 0 ? "If Other, please specify your area of specialty..." : `Additional specialty #${idx + 1}...`)}
+              value={allValues?.["specialtyOther"] || ""}
+              onChange={(val) => onGlobalChange?.("specialtyOther", val)}
+              disabled={disabled}
+            />
+          )}
+
+          {/* Generic Multi-Select / Checkbox Other */}
+          {currentSelected.includes("Other") && question.id !== "areasOfSpecialty" && question.code !== "Q18" && (
+            <MultiItemOtherInput
+              label={`Please specify ${question.text || "other"}:`}
+              buttonLabel="+ Add another"
+              placeholder={(idx) => (idx === 0 ? "If Other, please specify..." : `Additional #${idx + 1}...`)}
+              value={allValues?.[`${question.id}Other`] || allValues?.[`${question.code}Other`] || ""}
+              onChange={(val) => {
+                onGlobalChange?.(`${question.id}Other`, val);
+                if (question.code) onGlobalChange?.(`${question.code}Other`, val);
+              }}
+              disabled={disabled}
+            />
           )}
         </div>
       );
