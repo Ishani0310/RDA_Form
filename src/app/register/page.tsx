@@ -6,10 +6,8 @@ import {
   Building2,
   CheckCircle2,
   AlertTriangle,
-  Copy,
   ArrowRight,
   FileText,
-  KeyRound,
   RefreshCw,
   Clock,
   Sparkles,
@@ -28,6 +26,8 @@ import {
   Save,
   Plus,
   RotateCcw,
+  History,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { evaluateConditionalRule } from "@/components/dynamic-form/DynamicFormRenderer";
@@ -56,6 +56,93 @@ import {
   PROVINCE_DISTRICT_MAP,
   SriLankaProvince,
 } from "@/lib/questionnaire-types";
+
+export interface BrowserSavedDraft {
+  token: string;
+  reference: string;
+  organizationName: string;
+  category?: string;
+  lastSavedAt: string;
+}
+
+const STORAGE_KEY = "rda_icdp_saved_drafts";
+const CLIENT_ID_KEY = "rda_browser_client_id";
+
+function getOrCreateBrowserClientId(): string {
+  if (typeof window === "undefined") return "";
+  try {
+    let clientId = localStorage.getItem(CLIENT_ID_KEY);
+    if (!clientId) {
+      clientId =
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `cid_${Date.now()}_${Math.random().toString(36).substring(2, 12)}`;
+      localStorage.setItem(CLIENT_ID_KEY, clientId);
+    }
+    return clientId;
+  } catch {
+    return "";
+  }
+}
+
+function getBrowserSavedDrafts(): BrowserSavedDraft[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveBrowserDraft(draft: BrowserSavedDraft) {
+  if (typeof window === "undefined") return;
+  try {
+    const existing = getBrowserSavedDrafts().filter(
+      (d) => d.token !== draft.token && d.reference !== draft.reference
+    );
+    existing.unshift(draft);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(existing.slice(0, 10)));
+  } catch {}
+}
+
+function removeBrowserDraft(tokenOrRef: string) {
+  if (typeof window === "undefined") return;
+  try {
+    const remaining = getBrowserSavedDrafts().filter(
+      (d) => d.token !== tokenOrRef && d.reference !== tokenOrRef
+    );
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(remaining));
+  } catch {}
+}
+
+function createInitialFormData(): OfficialQuestionnaireData {
+  return {
+    organizationName: "",
+    contactNumber: "",
+    email: "",
+    willParticipate: "",
+    participantCategory: "",
+    participant1: { fullName: "", mobileNumber: "", designation: "" },
+    participant2: { fullName: "", mobileNumber: "", designation: "" },
+    supplierDetails: createEmptySupplierDetails(),
+    ictadRegistrationNumber: "",
+    areasOfSpecialty: [],
+    specialtyOther: "",
+    cidaGrade: "",
+    cidaGradeOther: "",
+    financialStatements: createEmptyFiveYearStatements(),
+    loanCommitments: { twoYearRepaymentsDue2026To2028: null },
+    hasOngoingContracts: "",
+    totalOutstandingValueLkrMillion: null,
+    ongoingContracts: createEmptyOngoingWorks(),
+    generalExperience: "",
+    similarWorks: createEmptySimilarWorks(),
+    mattersForDiscussion: "",
+  };
+}
 
 const CIDA_GRADES: CidaGradeOption[] = [
   "CS2",
@@ -111,50 +198,50 @@ function RegisterForm() {
   const searchParams = useSearchParams();
   const tokenFromUrl = searchParams.get("token") || "";
 
-  // Tab: "form" or "resume"
-  const [activeTab, setActiveTab] = useState<"form" | "resume">("form");
-  const [resumeTokenInput, setResumeTokenInput] = useState(tokenFromUrl);
-  const [activeResumeToken, setActiveResumeToken] = useState(tokenFromUrl);
+  // Draft session credentials & identifiers
+  const [currentDraftToken, setCurrentDraftToken] = useState<string>(tokenFromUrl);
+  const [currentReference, setCurrentReference] = useState<string>("");
+  const [savedDraftsList, setSavedDraftsList] = useState<BrowserSavedDraft[]>([]);
+  const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false);
+
+  // Auto-Save Indicator State: "idle" | "saving" | "saved" | "error"
+  const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [lastSavedTime, setLastSavedTime] = useState<Date | null>(null);
+
+  // Concurrency & Debounce refs
+  const isSavingRef = useRef(false);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isInitialLoadRef = useRef(true);
+  const lastSavedJsonRef = useRef<string>("");
+
   const [showWorkshopInfo, setShowWorkshopInfo] = useState(false);
 
   // Questionnaire Form State
-  const [formData, setFormData] = useState<OfficialQuestionnaireData>({
-    organizationName: "",
-    contactNumber: "",
-    email: "",
-    willParticipate: "",
-    participantCategory: "",
-    participant1: { fullName: "", mobileNumber: "", designation: "" },
-    participant2: { fullName: "", mobileNumber: "", designation: "" },
-    supplierDetails: createEmptySupplierDetails(),
-    ictadRegistrationNumber: "",
-    areasOfSpecialty: [],
-    specialtyOther: "",
-    cidaGrade: "",
-    cidaGradeOther: "",
-    financialStatements: createEmptyFiveYearStatements(),
-    loanCommitments: { twoYearRepaymentsDue2026To2028: null },
-    hasOngoingContracts: "",
-    totalOutstandingValueLkrMillion: null,
-    ongoingContracts: createEmptyOngoingWorks(),
-    generalExperience: "",
-    similarWorks: createEmptySimilarWorks(),
-    mattersForDiscussion: "",
-  });
+  const [formData, setFormData] = useState<OfficialQuestionnaireData>(createInitialFormData);
 
   // UI States
   const [loading, setLoading] = useState(false);
   const [formAlert, setFormAlert] = useState<{ type: "success" | "error"; message: string } | null>(null);
-  const [resumeAlert, setResumeAlert] = useState<{ type: "success" | "error"; message: string } | null>(null);
-  const [generatedToken, setGeneratedToken] = useState<string | null>(null);
   const [submissionSuccess, setSubmissionSuccess] = useState<{
     reference: string;
     businessName: string;
     submittedAt: string;
     provincialOffice: string;
   } | null>(null);
-  const [copied, setCopied] = useState(false);
   const [publishedQuestionnaire, setPublishedQuestionnaire] = useState<any>(null);
+
+  // Check saved drafts on mount
+  useEffect(() => {
+    getOrCreateBrowserClientId();
+    const stored = getBrowserSavedDrafts();
+    setSavedDraftsList(stored);
+
+    if (tokenFromUrl) {
+      loadDraft(tokenFromUrl);
+    } else if (stored.length > 0) {
+      setShowRecoveryPrompt(true);
+    }
+  }, [tokenFromUrl]);
 
   // Load active published questionnaire schema
   useEffect(() => {
@@ -351,24 +438,10 @@ function RegisterForm() {
     );
   };
 
-  const handleTabChange = (tab: "form" | "resume") => {
-    setActiveTab(tab);
-    setFormAlert(null);
-    setResumeAlert(null);
-  };
-
-  // Auto-load draft if token in URL
-  useEffect(() => {
-    if (tokenFromUrl) {
-      loadDraft(tokenFromUrl);
-    }
-  }, [tokenFromUrl]);
-
-  const loadDraft = async (token: string) => {
+  const loadDraft = async (token: string, silent = false) => {
     const clean = token.trim();
     if (!clean) return;
     setLoading(true);
-    setResumeAlert(null);
     setFormAlert(null);
     try {
       const res = await fetch(`/api/public/draft?token=${clean}`);
@@ -388,7 +461,7 @@ function RegisterForm() {
           restoredFinancials[yrKey] = yr;
         }
 
-        setFormData({
+        const restoredData: OfficialQuestionnaireData = {
           organizationName: q.organizationName || c.businessName || "",
           contactNumber: q.contactNumber || c.contactOfficer?.phone || "",
           email: q.email || c.contactOfficer?.email || "",
@@ -410,59 +483,95 @@ function RegisterForm() {
           loanCommitments: q.loanCommitments || { twoYearRepaymentsDue2026To2028: null },
           hasOngoingContracts: q.hasOngoingContracts || "",
           totalOutstandingValueLkrMillion: q.totalOutstandingValueLkrMillion ?? null,
-          ongoingContracts: Array.isArray(q.ongoingContracts) && q.ongoingContracts.length > 0 ? q.ongoingContracts : createEmptyOngoingWorks(),
+          ongoingContracts:
+            Array.isArray(q.ongoingContracts) && q.ongoingContracts.length > 0
+              ? q.ongoingContracts
+              : createEmptyOngoingWorks(),
           generalExperience: q.generalExperience || "",
-          similarWorks: Array.isArray(q.similarWorks) && q.similarWorks.length > 0 ? q.similarWorks : createEmptySimilarWorks(),
+          similarWorks:
+            Array.isArray(q.similarWorks) && q.similarWorks.length > 0
+              ? q.similarWorks
+              : createEmptySimilarWorks(),
           mattersForDiscussion: q.mattersForDiscussion || "",
-        });
+        };
 
-        setActiveResumeToken(clean);
-        setResumeAlert(null);
-        setActiveTab("form");
-        setFormAlert({
-          type: "success",
-          message: `Saved draft restored successfully (${data.draft.submissionReference}). Expires: ${new Date(
-            data.draft.expiresAt
-          ).toLocaleDateString("en-GB")}.`,
-        });
+        isInitialLoadRef.current = true;
+        lastSavedJsonRef.current = JSON.stringify(restoredData);
+        setFormData(restoredData);
+        setCurrentDraftToken(clean);
+
+        const ref = data.draft.submissionReference || data.draft.reference || "";
+        setCurrentReference(ref);
+        setShowRecoveryPrompt(false);
+        setAutoSaveStatus("saved");
+        setLastSavedTime(new Date(data.draft.updatedAt || data.draft.createdAt || Date.now()));
+
+        if (!silent) {
+          setFormAlert({
+            type: "success",
+            message: `Previous registration draft restored successfully (${ref || "Draft Reference Active"}). All entered details have been recovered.`,
+          });
+        }
       } else {
-        setResumeAlert({ type: "error", message: data.message || "Failed to restore draft from resume token." });
+        setFormAlert({
+          type: "error",
+          message: data.message || "Could not recover draft from server session. Starting fresh registration.",
+        });
+        removeBrowserDraft(clean);
+        setSavedDraftsList(getBrowserSavedDrafts());
+        setShowRecoveryPrompt(false);
       }
     } catch {
-      setResumeAlert({ type: "error", message: "Network error loading saved draft session." });
+      setFormAlert({
+        type: "error",
+        message: "Network error loading saved draft session. Please check your internet connection.",
+      });
     } finally {
       setLoading(false);
+      setTimeout(() => {
+        isInitialLoadRef.current = false;
+      }, 500);
     }
   };
 
-  const handleSaveDraft = async () => {
-    const orgName = formData.organizationName.trim() || formData.supplierDetails?.companyName?.trim();
+  const performDraftSave = async (isAutoSave = false): Promise<boolean> => {
+    const orgName = (formData.organizationName || formData.supplierDetails?.companyName || "").trim();
     if (!orgName) {
-      setFormAlert({ type: "error", message: "Organization / Company name is required to save draft progress." });
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      return;
+      if (!isAutoSave) {
+        setFormAlert({
+          type: "error",
+          message: "Organization / Company name is required to save registration progress.",
+        });
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+      return false;
     }
 
-    setLoading(true);
-    setFormAlert(null);
+    if (isSavingRef.current) return false;
+    isSavingRef.current = true;
+    setAutoSaveStatus("saving");
+    if (!isAutoSave) {
+      setLoading(true);
+      setFormAlert(null);
+    }
 
     try {
       const payload: Record<string, unknown> = {
         questionnaireData: formData,
         businessName: orgName,
-        registrationNumber: formData.ictadRegistrationNumber || undefined,
-        cidaGrade: formData.cidaGrade || undefined,
-        province: formData.supplierDetails?.province || "Western Province",
-        district: formData.supplierDetails?.district || undefined,
+        registrationNumber: formData.ictadRegistrationNumber?.trim() || undefined,
+        cidaGrade: formData.cidaGrade?.trim() || undefined,
+        province: formData.supplierDetails?.province?.trim() || "Western Province",
+        district: formData.supplierDetails?.district?.trim() || undefined,
         contactOfficer: {
-          name: formData.participant1?.fullName || "Authorized Representative",
-          phone: formData.contactNumber || "+94 11 000 0000",
-          email: formData.email || "contact@rda.gov.lk",
+          name: formData.participant1?.fullName?.trim() || "Authorized Representative",
+          phone: formData.contactNumber?.trim() || "+94 11 000 0000",
+          email: formData.email?.trim() || "contact@rda.gov.lk",
         },
       };
 
-      if (activeResumeToken) {
-        payload.resumeToken = activeResumeToken;
+      if (currentDraftToken) {
+        payload.resumeToken = currentDraftToken;
       }
 
       const res = await fetch("/api/public/draft", {
@@ -473,22 +582,123 @@ function RegisterForm() {
       const data = await res.json();
 
       if (res.ok && data.success && data.token) {
-        setGeneratedToken(data.token);
-        setActiveResumeToken(data.token);
-        setFormAlert({
-          type: "success",
-          message: data.isNew
-            ? "New draft saved! Please copy your 64-character resume token below to resume anytime."
-            : "Draft progress updated successfully.",
-        });
+        const assignedRef =
+          data.submissionReference ||
+          data.data?.submission?.submissionReference ||
+          currentReference;
+
+        setCurrentDraftToken(data.token);
+        if (assignedRef) setCurrentReference(assignedRef);
+
+        const draftEntry: BrowserSavedDraft = {
+          token: data.token,
+          reference: assignedRef || "RDA-DRAFT",
+          organizationName: orgName,
+          category:
+            formData.participantCategory ||
+            (formData.willParticipate === "No" ? "Non-Attendee" : "General"),
+          lastSavedAt: new Date().toISOString(),
+        };
+        saveBrowserDraft(draftEntry);
+        setSavedDraftsList(getBrowserSavedDrafts());
+
+        lastSavedJsonRef.current = JSON.stringify(formData);
+        setAutoSaveStatus("saved");
+        setLastSavedTime(new Date());
+
+        if (!isAutoSave) {
+          setFormAlert({
+            type: "success",
+            message: `Draft successfully saved! Permanent Reference: ${
+              assignedRef || "Assigned"
+            }. You can close this browser anytime and continue when you return.`,
+          });
+        }
+        return true;
       } else {
-        setFormAlert({ type: "error", message: data.message || "Failed to save draft progress." });
+        setAutoSaveStatus("error");
+        if (!isAutoSave) {
+          setFormAlert({
+            type: "error",
+            message: data.message || "Failed to save draft progress.",
+          });
+        }
+        return false;
       }
     } catch {
-      setFormAlert({ type: "error", message: "Network error occurred while saving draft." });
+      setAutoSaveStatus("error");
+      if (!isAutoSave) {
+        setFormAlert({
+          type: "error",
+          message: "Network error occurred while saving draft progress.",
+        });
+      }
+      return false;
     } finally {
-      setLoading(false);
+      isSavingRef.current = false;
+      if (!isAutoSave) setLoading(false);
     }
+  };
+
+  // Debounced Auto-Save on questionnaire changes
+  useEffect(() => {
+    if (isInitialLoadRef.current) {
+      isInitialLoadRef.current = false;
+      lastSavedJsonRef.current = JSON.stringify(formData);
+      return;
+    }
+
+    const orgName = (formData.organizationName || formData.supplierDetails?.companyName || "").trim();
+    if (!orgName) return;
+
+    const currentJson = JSON.stringify(formData);
+    if (currentJson === lastSavedJsonRef.current) return;
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    setAutoSaveStatus("saving");
+    debounceTimerRef.current = setTimeout(() => {
+      performDraftSave(true);
+    }, 2000);
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [formData]);
+
+  const handleStartNewRegistration = () => {
+    const orgName = (formData.organizationName || formData.supplierDetails?.companyName || "").trim();
+    if (orgName && currentDraftToken) {
+      saveBrowserDraft({
+        token: currentDraftToken,
+        reference: currentReference || "RDA-DRAFT",
+        organizationName: orgName,
+        category:
+          formData.participantCategory ||
+          (formData.willParticipate === "No" ? "Non-Attendee" : "General"),
+        lastSavedAt: new Date().toISOString(),
+      });
+    }
+
+    isInitialLoadRef.current = true;
+    setFormData(createInitialFormData());
+    setCurrentDraftToken("");
+    setCurrentReference("");
+    setAutoSaveStatus("idle");
+    setLastSavedTime(null);
+    setShowRecoveryPrompt(false);
+    setFormAlert({
+      type: "success",
+      message: "Started a separate new registration. Any previous drafts remain safely stored in this browser.",
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    setTimeout(() => {
+      isInitialLoadRef.current = false;
+    }, 500);
   };
 
   const handleSubmitFinal = async () => {
@@ -497,6 +707,25 @@ function RegisterForm() {
 
     try {
       const orgName = formData.organizationName.trim() || formData.supplierDetails?.companyName?.trim();
+      if (!orgName) {
+        setFormAlert({
+          type: "error",
+          message: "Name of your Organization / Company / Institution is required to submit.",
+        });
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        setLoading(false);
+        return;
+      }
+
+      if (!formData.willParticipate) {
+        setFormAlert({
+          type: "error",
+          message: "Please indicate whether you will be participating in the workshop on 07 December 2026.",
+        });
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        setLoading(false);
+        return;
+      }
 
       // Enforce dynamic questions validation according to active published questionnaire
       if (publishedQuestionnaire?.sections) {
@@ -526,6 +755,8 @@ function RegisterForm() {
           }
         }
       }
+
+      // Step 1: Save draft to sync latest questionnaire state and obtain token
       const savePayload: Record<string, unknown> = {
         questionnaireData: formData,
         businessName: orgName || "Registered Entity",
@@ -534,12 +765,12 @@ function RegisterForm() {
         province: formData.supplierDetails?.province?.trim() || (formData as any).province?.trim() || undefined,
         district: formData.supplierDetails?.district?.trim() || (formData as any).district?.trim() || undefined,
         contactOfficer: {
-          name: formData.participant1?.fullName?.trim() || undefined,
+          name: formData.participant1?.fullName?.trim() || orgName || "Authorized Representative",
           phone: formData.contactNumber?.trim() || undefined,
           email: formData.email?.trim() || undefined,
         },
       };
-      if (activeResumeToken) savePayload.resumeToken = activeResumeToken;
+      if (currentDraftToken) savePayload.resumeToken = currentDraftToken;
 
       const saveRes = await fetch("/api/public/draft", {
         method: "POST",
@@ -554,7 +785,7 @@ function RegisterForm() {
 
       const tokenToSubmit = saveData.token;
 
-      // Finalize submission
+      // Step 2: Finalize declaration (transitions DRAFT -> SUBMITTED and permanently revokes token)
       const subRes = await fetch("/api/public/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -563,16 +794,29 @@ function RegisterForm() {
       const subData = await subRes.json();
 
       if (subRes.ok && subData.success && subData.submission) {
+        // Purge submitted draft from browser recovery storage
+        removeBrowserDraft(tokenToSubmit);
+        if (currentReference) removeBrowserDraft(currentReference);
+        if (subData.submission.reference) removeBrowserDraft(subData.submission.reference);
+        setSavedDraftsList(getBrowserSavedDrafts());
+
         setSubmissionSuccess(subData.submission);
-        setActiveResumeToken("");
-        setGeneratedToken(null);
+        setCurrentDraftToken("");
+        setCurrentReference("");
+        setAutoSaveStatus("idle");
         window.scrollTo({ top: 0, behavior: "smooth" });
       } else {
-        setFormAlert({ type: "error", message: subData.message || "Submission rejected. Please check all required fields." });
+        setFormAlert({
+          type: "error",
+          message: subData.message || "Submission rejected. Please check all required fields.",
+        });
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
     } catch (err: unknown) {
-      setFormAlert({ type: "error", message: err instanceof Error ? err.message : "Network error during submission." });
+      setFormAlert({
+        type: "error",
+        message: err instanceof Error ? err.message : "Network error during submission.",
+      });
       window.scrollTo({ top: 0, behavior: "smooth" });
     } finally {
       setLoading(false);
@@ -739,14 +983,6 @@ function RegisterForm() {
       [field]: parsedValue,
     };
     setFormData({ ...formData, similarWorks: list });
-  };
-
-  const copyTokenLink = () => {
-    if (!generatedToken) return;
-    const url = `${window.location.origin}/register?token=${generatedToken}`;
-    navigator.clipboard.writeText(url);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
   };
 
   // Official receipt screen upon completed submission
@@ -959,82 +1195,205 @@ function RegisterForm() {
         )}
       </div>
 
-      {/* Tabs: Questionnaire Form vs Resume Saved Draft */}
-      <div className="flex flex-wrap border-b border-slate-200 bg-white rounded-t-xl px-2 sm:px-4 pt-2 gap-1 sm:gap-2">
-        <button
-          type="button"
-          onClick={() => handleTabChange("form")}
-          className={`px-3 sm:px-4 py-2.5 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 sm:gap-2 min-h-[44px] ${
-            activeTab === "form"
-              ? "border-blue-900 text-blue-900"
-              : "border-transparent text-slate-500 hover:text-slate-700"
-          }`}
-        >
-          <FileText className="w-4 h-4 shrink-0" />
-          <span>Questionnaire Form</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => handleTabChange("resume")}
-          className={`px-3 sm:px-4 py-2.5 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 sm:gap-2 min-h-[44px] ${
-            activeTab === "resume"
-              ? "border-blue-900 text-blue-900"
-              : "border-transparent text-slate-500 hover:text-slate-700"
-          }`}
-        >
-          <KeyRound className="w-4 h-4 shrink-0" />
-          <span>Resume Saved Draft</span>
-          {activeResumeToken && (
-            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
-          )}
-        </button>
-      </div>
-
-      {/* TAB 1: FORM */}
-      {activeTab === "form" && (
-        <div className="space-y-6">
-          {formAlert && (
-            <div
-              className={`p-4 rounded-xl border text-xs flex items-start gap-2.5 ${
-                formAlert.type === "success"
-                  ? "bg-emerald-50 border-emerald-200 text-emerald-900"
-                  : "bg-rose-50 border-rose-200 text-rose-900"
-              }`}
-            >
-              {formAlert.type === "success" ? (
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-              ) : (
-                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-              )}
-              <span className="leading-relaxed font-semibold">{formAlert.message}</span>
+      {/* Smart Browser Draft Recovery Screen */}
+      {showRecoveryPrompt && savedDraftsList.length > 0 && (
+        <div className="bg-white rounded-2xl border-2 border-blue-900/20 shadow-xl p-5 sm:p-7 space-y-5">
+          <div className="flex items-start gap-3.5">
+            <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-900 border border-blue-200 flex items-center justify-center shrink-0">
+              <RotateCcw className="w-5 h-5 text-blue-900" />
             </div>
-          )}
-
-          {/* Generated Token Banner */}
-          {generatedToken && (
-            <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-xl space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-blue-950 uppercase tracking-wide flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                  Your Private Resume Key (Keep Safe)
-                </span>
-                <button
-                  type="button"
-                  onClick={copyTokenLink}
-                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-900 hover:text-blue-700 bg-white px-2 py-1 rounded border border-blue-200"
-                >
-                  <Copy className="w-3 h-3" />
-                  {copied ? "Copied Link!" : "Copy Resume Link"}
-                </button>
-              </div>
-              <code className="block p-2.5 bg-white rounded border border-blue-200 font-mono text-xs text-blue-950 select-all break-all">
-                {generatedToken}
-              </code>
-              <p className="text-[11px] text-blue-800">
-                You can bookmark or copy this key. It allows you to return to this questionnaire anytime within 30 days.
+            <div className="space-y-1">
+              <span className="text-[10px] font-extrabold tracking-widest text-blue-900 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200 uppercase">
+                Browser Smart Draft Recovery
+              </span>
+              <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
+                Resume Previous Incomplete Registration?
+              </h2>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                An incomplete registration session was detected in this browser. You can continue from your exact saved progress or start a separate new registration.
               </p>
             </div>
+          </div>
+
+          {/* List of Incomplete Drafts in this browser */}
+          <div className="space-y-3">
+            {savedDraftsList.map((d, index) => (
+              <div
+                key={d.token || index}
+                className="p-4 rounded-xl bg-slate-50 border border-slate-200 hover:border-blue-300 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-slate-900 text-sm">
+                      {d.organizationName || "Untitled Registration"}
+                    </span>
+                    <span className="text-[11px] font-mono font-bold text-blue-900 bg-white px-2 py-0.5 rounded border border-slate-200">
+                      {d.reference}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-[11px] text-slate-500 flex-wrap">
+                    <span>Category: <strong>{d.category || "General"}</strong></span>
+                    <span>&bull;</span>
+                    <span>Last Saved: {new Date(d.lastSavedAt).toLocaleString("en-GB")}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => loadDraft(d.token)}
+                    disabled={loading}
+                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs shadow-sm transition-all"
+                  >
+                    {loading ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <ArrowRight className="w-3.5 h-3.5 text-amber-400" />
+                    )}
+                    <span>Continue Previous Registration</span>
+                  </button>
+                  {savedDraftsList.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        removeBrowserDraft(d.token);
+                        setSavedDraftsList(getBrowserSavedDrafts());
+                      }}
+                      className="p-2 text-slate-400 hover:text-rose-600 rounded-lg transition-colors"
+                      title="Discard this draft from browser"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Option B: Start New Registration */}
+          <div className="pt-2 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={handleStartNewRegistration}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-sm transition-all"
+            >
+              <Plus className="w-4 h-4 text-emerald-600" />
+              <span>Start New Registration</span>
+            </button>
+
+            <p className="text-[11px] text-slate-500 text-center sm:text-right">
+              Starting a new registration will not overwrite previous drafts.
+            </p>
+          </div>
+
+          {/* Browser Recovery Note */}
+          <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-[11px] flex items-start gap-2 leading-relaxed">
+            <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <strong>Browser Storage Notice:</strong> If you are using Private/Incognito browsing, or if browser cache was cleared, previously saved drafts cannot be automatically recovered. For assistance, contact the ICDP Helpdesk at <strong>070 697 0408</strong>.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Live Auto-Save Status Bar and Quick Controls */}
+      <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        {/* Left: Auto-save status */}
+        <div className="flex items-center gap-2.5">
+          {autoSaveStatus === "saving" ? (
+            <div className="flex items-center gap-2 text-xs font-semibold text-blue-900">
+              <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-900" />
+              <span>Saving draft progress...</span>
+            </div>
+          ) : autoSaveStatus === "saved" ? (
+            <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+              <span>
+                Saved {currentReference ? `&bull; Ref: ${currentReference}` : ""}
+                {lastSavedTime
+                  ? ` (${lastSavedTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })})`
+                  : ""}
+              </span>
+            </div>
+          ) : autoSaveStatus === "error" ? (
+            <div className="flex items-center gap-2 text-xs font-semibold text-rose-700">
+              <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+              <span>Save failed. Check connection.</span>
+              <button
+                type="button"
+                onClick={() => performDraftSave(false)}
+                className="underline hover:text-rose-900 ml-1 text-xs"
+              >
+                Retry
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
+              <Clock className="w-3.5 h-3.5 text-slate-400" />
+              <span>
+                {currentReference ? `Draft Ref: ${currentReference}` : "Auto-saving active (saves while you fill)"}
+              </span>
+            </div>
           )}
+        </div>
+
+        {/* Right: Quick actions */}
+        <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
+          {/* Manual Save as Draft button */}
+          <button
+            type="button"
+            onClick={() => performDraftSave(false)}
+            disabled={loading}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-sm transition-all"
+            title="Explicitly save form draft now"
+          >
+            <Save className="w-3.5 h-3.5 text-blue-900" />
+            <span>Save as Draft</span>
+          </button>
+
+          {/* If other saved drafts exist in browser, allow switching */}
+          {savedDraftsList.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowRecoveryPrompt(!showRecoveryPrompt)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-sm transition-all"
+              title="View all drafts saved in this browser"
+            >
+              <History className="w-3.5 h-3.5 text-slate-600" />
+              <span>Saved Drafts ({savedDraftsList.length})</span>
+            </button>
+          )}
+
+          {/* Start New Registration button */}
+          <button
+            type="button"
+            onClick={handleStartNewRegistration}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs shadow-sm transition-all"
+            title="Start a separate blank registration"
+          >
+            <Plus className="w-3.5 h-3.5 text-emerald-600" />
+            <span>+ New</span>
+          </button>
+        </div>
+      </div>
+
+      <div className="space-y-6">
+        {formAlert && (
+          <div
+            className={`p-4 rounded-xl border text-xs flex items-start gap-2.5 ${
+              formAlert.type === "success"
+                ? "bg-emerald-50 border-emerald-200 text-emerald-900"
+                : "bg-rose-50 border-rose-200 text-rose-900"
+            }`}
+          >
+            {formAlert.type === "success" ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+            ) : (
+              <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+            )}
+            <span className="leading-relaxed font-semibold">{formAlert.message}</span>
+          </div>
+        )}
 
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6 lg:p-8 space-y-8">
             {/* SECTION 1: BASIC INFORMATION */}
@@ -1145,15 +1504,27 @@ function RegisterForm() {
                       </div>
                     )}
 
-                    <button
-                      type="button"
-                      onClick={handleSubmitFinal}
-                      disabled={loading}
-                      className="inline-flex items-center gap-2 px-5 py-3 sm:py-2.5 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold shadow-md transition-all disabled:opacity-60 min-h-[44px]"
-                    >
-                      {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4 text-amber-400" />}
-                      <span>Submit Response Directly</span>
-                    </button>
+                    <div className="flex flex-wrap items-center gap-2.5 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => performDraftSave(false)}
+                        disabled={loading}
+                        className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-sm transition-all min-h-[44px]"
+                      >
+                        <Save className="w-3.5 h-3.5 text-blue-900" />
+                        <span>Save as Draft</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleSubmitFinal}
+                        disabled={loading}
+                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs shadow-md transition-all disabled:opacity-60 min-h-[44px]"
+                      >
+                        {loading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5 text-amber-400" />}
+                        <span>Submit Response Directly</span>
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -2490,12 +2861,18 @@ function RegisterForm() {
                 <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
                   <button
                     type="button"
-                    onClick={handleSaveDraft}
+                    onClick={() => performDraftSave(false)}
                     disabled={loading}
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-3 sm:py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-sm transition-all min-h-[44px]"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-5 py-3 sm:py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-sm transition-all min-h-[44px]"
                   >
-                    {loading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Clock className="w-3.5 h-3.5 text-blue-900" />}
-                    <span>Save Progress &amp; Get Resume Token</span>
+                    {loading ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-900" />
+                    ) : (
+                      <Save className="w-3.5 h-3.5 text-blue-900" />
+                    )}
+                    <span>
+                      {currentReference ? `Save Draft (${currentReference})` : "Save as Draft"}
+                    </span>
                   </button>
 
                   <button
@@ -2521,72 +2898,9 @@ function RegisterForm() {
             )}
           </div>
         </div>
-      )}
-
-      {/* TAB 2: RESUME DRAFT */}
-      {activeTab === "resume" && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6 lg:p-8 space-y-6">
-          <div className="flex items-center gap-2.5 pb-2 border-b border-slate-100">
-            <KeyRound className="w-5 h-5 text-blue-900" />
-            <div>
-              <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
-                Resume an Existing Saved Registration Draft
-              </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Enter your private 64-character hexadecimal resume key to restore your previously saved declaration.
-              </p>
-            </div>
-          </div>
-
-          {resumeAlert && (
-            <div
-              className={`p-4 rounded-xl border text-xs flex items-start gap-2.5 ${
-                resumeAlert.type === "success"
-                  ? "bg-emerald-50 border-emerald-200 text-emerald-900"
-                  : "bg-rose-50 border-rose-200 text-rose-900"
-              }`}
-            >
-              {resumeAlert.type === "success" ? (
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-              ) : (
-                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-              )}
-              <span className="leading-relaxed font-semibold">{resumeAlert.message}</span>
-            </div>
-          )}
-
-          <div className="space-y-3">
-            <label className="block text-xs font-bold text-slate-700">
-              Private Resume Token (64 Hexadecimal Characters) *
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={resumeTokenInput}
-                onChange={(e) => setResumeTokenInput(e.target.value)}
-                placeholder="Paste your 64-character resume token..."
-                className="w-full p-3 font-mono text-xs bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
-              />
-            </div>
-            <p className="text-[11px] text-slate-500">
-              Note: Resume keys remain valid for 30 days from initial creation. Submitting a final declaration revokes the key permanently to prevent duplicate filings.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => loadDraft(resumeTokenInput)}
-            disabled={loading || !resumeTokenInput.trim()}
-            className="inline-flex items-center gap-2 px-5 py-3 sm:py-2.5 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs shadow-sm transition-all disabled:opacity-60 min-h-[44px]"
-          >
-            {loading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ArrowRight className="w-3.5 h-3.5 text-amber-400" />}
-            <span>Load Draft &amp; Continue Registration</span>
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
+      </div>
+    );
+  }
 
 export default function RegisterPage() {
   return (

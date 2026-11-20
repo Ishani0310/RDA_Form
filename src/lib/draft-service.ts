@@ -531,7 +531,7 @@ export async function submitFinalDeclaration(
   // Record audit log
   await recordActivityLog({
     action: "CONTRACTOR_SUBMISSION_RECEIVED",
-    performerName: contractor.contactOfficer.name,
+    performerName: contractor.contactOfficer?.name || contractor.businessName || "Authorized Representative",
     performerRole: "CONTRACTOR",
     targetType: "Submission",
     targetId: officialSubmissionRef,
