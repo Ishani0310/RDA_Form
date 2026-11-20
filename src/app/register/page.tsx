@@ -29,6 +29,10 @@ import {
   History,
   X,
   Trash2,
+  ArrowLeft,
+  Printer,
+  ShieldCheck,
+  Eye,
 } from "lucide-react";
 import Link from "next/link";
 import { evaluateConditionalRule } from "@/components/dynamic-form/DynamicFormRenderer";
@@ -218,6 +222,7 @@ function RegisterForm() {
   const lastSavedJsonRef = useRef<string>("");
 
   const [showWorkshopInfo, setShowWorkshopInfo] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
 
   // Questionnaire Form State
   const [formData, setFormData] = useState<OfficialQuestionnaireData>(createInitialFormData);
@@ -871,6 +876,69 @@ function RegisterForm() {
     }, 500);
   };
 
+  const handleInitiateReview = () => {
+    setFormAlert(null);
+
+    const orgName = formData.organizationName.trim() || formData.supplierDetails?.companyName?.trim();
+    if (!orgName) {
+      setFormAlert({
+        type: "error",
+        message: "Name of your Organization / Company / Institution is required to review and submit.",
+      });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    if (!formData.willParticipate) {
+      setFormAlert({
+        type: "error",
+        message: "Please indicate whether you will be participating in the workshop on 07 December 2026.",
+      });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    if (formData.willParticipate === "Yes" && !formData.participantCategory) {
+      setFormAlert({
+        type: "error",
+        message: "Please select your Participant Category.",
+      });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    // Dynamic questionnaire validation according to published questionnaire
+    if (publishedQuestionnaire?.sections) {
+      for (const sec of publishedQuestionnaire.sections) {
+        for (const q of sec.questions) {
+          if (
+            q.isRequired &&
+            !BASELINE_QUESTION_IDS.has(q.id) &&
+            evaluateConditionalRule(q.conditionalLogic, formData as any)
+          ) {
+            const val = (formData as any)[q.id] ?? (formData as any)[q.code];
+            if (
+              val === undefined ||
+              val === null ||
+              val === "" ||
+              (Array.isArray(val) && val.length === 0)
+            ) {
+              setFormAlert({
+                type: "error",
+                message: `${q.text} is required.`,
+              });
+              window.scrollTo({ top: 0, behavior: "smooth" });
+              return;
+            }
+          }
+        }
+      }
+    }
+
+    // Form is valid: open Review Area
+    setShowReviewModal(true);
+  };
+
   const handleSubmitFinal = async () => {
     setLoading(true);
     setFormAlert(null);
@@ -970,6 +1038,7 @@ function RegisterForm() {
         if (subData.submission.reference) removeBrowserDraft(subData.submission.reference);
         setSavedDraftsList(getBrowserSavedDrafts());
 
+        setShowReviewModal(false);
         setSubmissionSuccess(subData.submission);
         setCurrentDraftToken("");
         setCurrentReference("");
@@ -1887,12 +1956,12 @@ function RegisterForm() {
 
                       <button
                         type="button"
-                        onClick={handleSubmitFinal}
+                        onClick={handleInitiateReview}
                         disabled={loading}
                         className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs shadow-md transition-all disabled:opacity-60 min-h-[44px]"
                       >
-                        {loading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5 text-amber-400" />}
-                        <span>Submit Response Directly</span>
+                        {loading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Eye className="w-3.5 h-3.5 text-amber-400" />}
+                        <span>Review &amp; Submit Response</span>
                       </button>
                     </div>
                   </div>
@@ -3503,19 +3572,19 @@ function RegisterForm() {
 
                   <button
                     type="button"
-                    onClick={handleSubmitFinal}
+                    onClick={handleInitiateReview}
                     disabled={loading}
                     className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 sm:py-2.5 rounded-xl bg-gradient-to-r from-blue-900 to-blue-800 hover:from-blue-800 hover:to-blue-700 text-white font-extrabold text-xs shadow-md shadow-blue-900/20 transition-all min-h-[44px]"
                   >
                     {loading ? (
                       <>
                         <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                        <span>Submitting Response...</span>
+                        <span>Validating Form...</span>
                       </>
                     ) : (
                       <>
-                        <CheckCircle2 className="w-4 h-4 text-amber-400" />
-                        <span>Submit Official Questionnaire Response</span>
+                        <Eye className="w-4 h-4 text-amber-400" />
+                        <span>Review &amp; Submit Questionnaire Response</span>
                       </>
                     )}
                   </button>
@@ -3525,6 +3594,475 @@ function RegisterForm() {
           </div>
         </div>
       </>
+    )}
+
+    {/* ========================================================================= */}
+    {/* OFFICIAL REGISTRATION REVIEW & CONFIRMATION MODAL                         */}
+    {/* ========================================================================= */}
+    {showReviewModal && (
+      <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 md:p-6 overflow-hidden animate-fadeIn">
+        <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-4xl w-full max-h-[92vh] flex flex-col overflow-hidden">
+          {/* Modal Header */}
+          <div className="bg-[#0b1f3a] text-white px-5 py-4 sm:px-6 sm:py-5 flex items-center justify-between shrink-0 border-b border-white/10">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-white p-1 shadow-sm flex items-center justify-center shrink-0">
+                <img src="/rda-emblem.png" alt="RDA Emblem" className="w-full h-full object-contain" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] tracking-wider font-bold text-amber-400 uppercase">
+                    RDA Sri Lanka &bull; Verification Area
+                  </span>
+                  <span className="px-2 py-0.5 rounded text-[8px] bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-400/30">
+                    PRE-SUBMISSION REVIEW
+                  </span>
+                </div>
+                <h2 className="text-base sm:text-lg font-bold tracking-tight text-white mt-0.5 truncate">
+                  Review All Registration Details
+                </h2>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowReviewModal(false)}
+              className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+              title="Close and Return to Form"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Modal Body - Scrollable */}
+          <div className="overflow-y-auto p-4 sm:p-6 space-y-5 flex-1 bg-slate-50/60 text-xs text-slate-800">
+            {/* Review Guidance Alert */}
+            <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-3">
+              <Info className="w-4 h-4 text-blue-900 shrink-0 mt-0.5" />
+              <div className="text-blue-950 space-y-0.5 leading-relaxed">
+                <span className="font-bold block text-xs sm:text-sm">Please verify your details below</span>
+                <p className="text-[11px] text-blue-900/90">
+                  Carefully review all information entered across every section. If any details are incorrect, click <strong>&quot;Modify / Edit Details&quot;</strong> to return to the form and edit. Once verified, click <strong>&quot;Confirm &amp; Submit Directly&quot;</strong> to complete your official filing to the Road Development Authority.
+                </p>
+              </div>
+            </div>
+
+            {/* Section 1: Basic Information & Attendance */}
+            <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3">
+              <div className="flex items-center gap-2 pb-2 border-b border-slate-100 font-bold text-blue-950 uppercase tracking-wide text-[11px]">
+                <Building2 className="w-3.5 h-3.5 text-blue-900" />
+                <span>Section 1: Basic Information &amp; Workshop Attendance</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div>
+                  <span className="text-slate-500 font-medium text-[11px] block">Organization / Company Name:</span>
+                  <span className="font-bold text-slate-900 text-sm">{formData.organizationName || formData.supplierDetails?.companyName || "N/A"}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 font-medium text-[11px] block">Workshop Attendance:</span>
+                  <span className={`inline-block mt-0.5 px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                    formData.willParticipate === "Yes" ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"
+                  }`}>
+                    {formData.willParticipate === "Yes" ? "Yes — Will Attend (07 Dec 2026)" : "No — Unable to Attend"}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-500 font-medium text-[11px] block">Official Contact Number:</span>
+                  <span className="font-semibold text-slate-800 font-mono">{formData.contactNumber || "N/A"}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 font-medium text-[11px] block">Official Email Address:</span>
+                  <span className="font-semibold text-slate-800 font-mono">{formData.email || "N/A"}</span>
+                </div>
+                {formData.willParticipate === "Yes" && (
+                  <div className="sm:col-span-2 pt-1 border-t border-slate-100">
+                    <span className="text-slate-500 font-medium text-[11px] block">Participant Category:</span>
+                    <span className="font-bold text-blue-950 text-xs">
+                      {formData.participantCategory || "N/A"}
+                    </span>
+                  </div>
+                )}
+                {formData.willParticipate === "No" && (
+                  <div className="sm:col-span-2 pt-1 border-t border-slate-100">
+                    <span className="text-slate-500 font-medium text-[11px] block">Status:</span>
+                    <span className="text-slate-600 text-xs italic">Declination of attendance recorded.</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Section 3: Official Representatives */}
+            {formData.willParticipate === "Yes" && (
+              <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3">
+                <div className="flex items-center gap-2 pb-2 border-b border-slate-100 font-bold text-blue-950 uppercase tracking-wide text-[11px]">
+                  <Users className="w-3.5 h-3.5 text-blue-900" />
+                  <span>Designated Workshop Representatives</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  {/* Participant 1 */}
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
+                    <span className="text-[10px] font-bold text-blue-900 uppercase">Primary Representative (Participant 1)</span>
+                    <p className="font-bold text-slate-900 text-sm">{formData.participant1?.fullName || "N/A"}</p>
+                    <p className="text-slate-600 font-medium">{formData.participant1?.designation || "N/A"}</p>
+                    <div className="pt-1 text-[11px] text-slate-500 font-mono space-y-0.5">
+                      <div>Phone: {formData.participant1?.mobileNumber || "N/A"}</div>
+                    </div>
+                  </div>
+                  {/* Participant 2 */}
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
+                    <span className="text-[10px] font-bold text-slate-600 uppercase">Second Representative (Participant 2)</span>
+                    {formData.participant2?.fullName?.trim() ? (
+                      <>
+                        <p className="font-bold text-slate-900 text-sm">{formData.participant2.fullName}</p>
+                        <p className="text-slate-600 font-medium">{formData.participant2.designation || "N/A"}</p>
+                        <div className="pt-1 text-[11px] text-slate-500 font-mono space-y-0.5">
+                          <div>Phone: {formData.participant2.mobileNumber || "N/A"}</div>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-slate-400 italic text-xs pt-1">No second representative designated.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* CONTRACTOR SPECIFIC SECTIONS */}
+            {formData.willParticipate === "Yes" && formData.participantCategory === "Contractor" && (
+              <>
+                {/* Section 4: Contractor Specialties & CIDA Grades */}
+                <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3">
+                  <div className="flex items-center gap-2 pb-2 border-b border-slate-100 font-bold text-blue-950 uppercase tracking-wide text-[11px]">
+                    <ShieldCheck className="w-3.5 h-3.5 text-blue-900" />
+                    <span>Section 4: Contractor Details &amp; CIDA Grading</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 font-medium text-[11px] block">ICTAD / CIDA Registration Number:</span>
+                    <span className="font-mono font-bold text-slate-900 text-sm">{formData.ictadRegistrationNumber || "N/A"}</span>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-100 space-y-2">
+                    <span className="text-slate-500 font-medium text-[11px] block">Selected Technical Specialties &amp; Assigned CIDA Grades:</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {(formData.areasOfSpecialty || []).filter((s) => s !== "Other").map((spec) => {
+                        const grade = formData.specialtyGrades?.[spec];
+                        const gradeLabel = grade === "Other" && formData.specialtyGradesOther?.[spec]
+                          ? `Other (${formData.specialtyGradesOther[spec]})`
+                          : grade || "Not selected";
+                        return (
+                          <div key={spec} className="p-2.5 rounded-lg bg-blue-50/70 border border-blue-200 flex items-center justify-between">
+                            <span className="font-bold text-slate-900 text-xs">{spec}</span>
+                            <span className="text-xs font-black text-blue-900 bg-white px-2 py-0.5 rounded shadow-xs border border-blue-100">
+                              Grade: {gradeLabel}
+                            </span>
+                          </div>
+                        );
+                      })}
+
+                      {(formData.areasOfSpecialty || []).includes("Other") && (
+                        specialtyOtherList.filter((s) => s.trim()).map((oth, oIdx) => {
+                          const itemKey = oth.trim() || `Other_${oIdx + 1}`;
+                          const grade = formData.specialtyGrades?.[itemKey] || formData.specialtyGrades?.[oth];
+                          const gradeLabel = grade === "Other" && (formData.specialtyGradesOther?.[itemKey] || formData.specialtyGradesOther?.[oth])
+                            ? `Other (${formData.specialtyGradesOther?.[itemKey] || formData.specialtyGradesOther?.[oth]})`
+                            : grade || "Not selected";
+                          return (
+                            <div key={`oth-rev-${oIdx}`} className="p-2.5 rounded-lg bg-amber-50/70 border border-amber-200 flex items-center justify-between">
+                              <span className="font-bold text-slate-900 text-xs">Other: {oth}</span>
+                              <span className="text-xs font-black text-amber-900 bg-white px-2 py-0.5 rounded shadow-xs border border-amber-100">
+                                Grade: {gradeLabel}
+                              </span>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 5 & 6: Financial Statements & Loan Commitments */}
+                <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3">
+                  <div className="flex items-center gap-2 pb-2 border-b border-slate-100 font-bold text-blue-950 uppercase tracking-wide text-[11px]">
+                    <Briefcase className="w-3.5 h-3.5 text-blue-900" />
+                    <span>Section 5: Financial Capability (5-Year Consolidated Statements)</span>
+                  </div>
+
+                  <div className="overflow-x-auto rounded-lg border border-slate-200">
+                    <table className="w-full text-left border-collapse text-[11px]">
+                      <thead>
+                        <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                          <th className="p-2 min-w-[140px]">Financial Indicator (LKR)</th>
+                          {FINANCIAL_YEARS.map((y) => (
+                            <th key={y} className="p-2 text-right">{y}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {[
+                          { key: "totalAssets" as const, label: "Total Assets" },
+                          { key: "totalLiabilities" as const, label: "Total Liabilities" },
+                          { key: "totalEquity" as const, label: "Total Equity / Net Worth", isReadOnly: true },
+                          { key: "currentAssets" as const, label: "Current Assets" },
+                          { key: "currentLiabilities" as const, label: "Current Liabilities" },
+                          { key: "workingCapital" as const, label: "Working Capital", isReadOnly: true },
+                          { key: "totalRevenue" as const, label: "Total Revenue / Turnover" },
+                          { key: "profitBeforeTax" as const, label: "Profit Before Tax" },
+                        ].map((row) => (
+                          <tr key={row.key} className={row.isReadOnly ? "bg-slate-50/80 font-bold" : ""}>
+                            <td className="p-2 text-slate-700">{row.label}</td>
+                            {FINANCIAL_YEARS.map((y) => {
+                              const val = formData.financialStatements?.[y]?.[row.key];
+                              return (
+                                <td key={y} className="p-2 text-right font-mono text-slate-800">
+                                  {val !== null && val !== undefined ? Number(val).toLocaleString("en-US") : "—"}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Loan Repayments */}
+                  <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[11px]">
+                    <span className="font-semibold text-slate-700">Total Loan Repayments Due (01 Dec 2026 – 01 Dec 2028):</span>
+                    <span className="font-bold text-blue-900 font-mono text-xs">
+                      {formData.loanCommitments?.twoYearRepaymentsDue2026To2028 !== null && formData.loanCommitments?.twoYearRepaymentsDue2026To2028 !== undefined
+                        ? `${Number(formData.loanCommitments.twoYearRepaymentsDue2026To2028).toLocaleString("en-US")} LKR`
+                        : "0 LKR"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Section 7: Current Work Commitments */}
+                <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3">
+                  <div className="flex items-center gap-2 pb-2 border-b border-slate-100 font-bold text-blue-950 uppercase tracking-wide text-[11px]">
+                    <Layers className="w-3.5 h-3.5 text-blue-900" />
+                    <span>Section 7: Current Work Commitments</span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <span className="text-slate-500 font-medium text-[11px] block">Currently Has Ongoing Contracts:</span>
+                      <span className={`inline-block mt-0.5 px-2 py-0.5 rounded text-xs font-bold ${
+                        formData.hasOngoingContracts === "Yes" ? "bg-amber-100 text-amber-900" : "bg-slate-100 text-slate-700"
+                      }`}>
+                        {formData.hasOngoingContracts || "No"}
+                      </span>
+                    </div>
+                    {formData.hasOngoingContracts === "Yes" && (
+                      <div className="text-left sm:text-right">
+                        <span className="text-slate-500 font-medium text-[11px] block">Total Outstanding Value:</span>
+                        <span className="font-black text-blue-900 font-mono text-sm">
+                          {formData.totalOutstandingValueLkrMillion !== null && formData.totalOutstandingValueLkrMillion !== undefined
+                            ? `${Number(formData.totalOutstandingValueLkrMillion).toLocaleString("en-US")} LKR`
+                            : "0 LKR"}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {formData.hasOngoingContracts === "Yes" && (formData.ongoingContracts || []).some((c) => c && c.contractName) && (
+                    <div className="overflow-x-auto rounded-lg border border-slate-200 mt-2">
+                      <table className="w-full text-left border-collapse text-[11px]">
+                        <thead>
+                          <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                            <th className="p-2 w-10">#</th>
+                            <th className="p-2">Name of Contract</th>
+                            <th className="p-2">Contract No</th>
+                            <th className="p-2">Employer&apos;s Name</th>
+                            <th className="p-2 text-right">Value (LKR)</th>
+                            <th className="p-2">Est. Completion</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 font-medium">
+                          {(formData.ongoingContracts || []).filter((c) => c && (c.contractName || c.contractNo)).map((c, i) => (
+                            <tr key={i}>
+                              <td className="p-2 font-bold text-slate-500">{i + 1}</td>
+                              <td className="p-2 font-bold text-slate-900">{c.contractName || "—"}</td>
+                              <td className="p-2 font-mono">{c.contractNo || "—"}</td>
+                              <td className="p-2">{c.employerName || "—"}</td>
+                              <td className="p-2 text-right font-mono font-bold text-blue-900">
+                                {c.contractAmount !== null && c.contractAmount !== undefined ? Number(c.contractAmount).toLocaleString("en-US") : "—"}
+                              </td>
+                              <td className="p-2">{c.completionDate || "—"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                {/* Section 9: Experience */}
+                <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-2">
+                  <div className="flex items-center gap-2 pb-2 border-b border-slate-100 font-bold text-blue-950 uppercase tracking-wide text-[11px]">
+                    <Briefcase className="w-3.5 h-3.5 text-blue-900" />
+                    <span>Section 9: Experience</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 font-medium text-[11px] block">General Construction Experience:</span>
+                    <span className="font-bold text-slate-900 text-xs">{formData.generalExperience || "N/A"}</span>
+                  </div>
+                </div>
+
+                {/* Section 10: Similar Work Experience */}
+                <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3">
+                  <div className="flex items-center gap-2 pb-2 border-b border-slate-100 font-bold text-blue-950 uppercase tracking-wide text-[11px]">
+                    <FileText className="w-3.5 h-3.5 text-blue-900" />
+                    <span>Section 10: Similar Work Experience (Highest Value Contracts)</span>
+                  </div>
+
+                  <div className="overflow-x-auto rounded-lg border border-slate-200">
+                    <table className="w-full text-left border-collapse text-[11px]">
+                      <thead>
+                        <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                          <th className="p-2 w-10">#</th>
+                          <th className="p-2">Contract Name</th>
+                          <th className="p-2">Type</th>
+                          <th className="p-2 text-right">Amount (LKR)</th>
+                          <th className="p-2">Start Date</th>
+                          <th className="p-2">Completion Date</th>
+                          <th className="p-2">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 font-medium">
+                        {(formData.similarWorks || []).map((w, i) => (
+                          <tr key={i}>
+                            <td className="p-2 font-bold text-slate-500">{i + 1}</td>
+                            <td className="p-2 font-bold text-slate-900">{w.contractName || "—"}</td>
+                            <td className="p-2">{w.contractType || "—"}</td>
+                            <td className="p-2 text-right font-mono font-bold text-blue-900">
+                              {w.contractAmount !== null && w.contractAmount !== undefined ? Number(w.contractAmount).toLocaleString("en-US") : "—"}
+                            </td>
+                            <td className="p-2">{w.startDate || "—"}</td>
+                            <td className="p-2">{w.completionDate || "—"}</td>
+                            <td className="p-2">
+                              <span className="px-1.5 py-0.5 rounded text-[10px] bg-slate-100 text-slate-700 font-semibold">
+                                {w.completionStatus || "—"}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* SUPPLIER SPECIFIC SECTION */}
+            {formData.willParticipate === "Yes" && formData.participantCategory === "Supplier" && formData.supplierDetails && (
+              <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3">
+                <div className="flex items-center gap-2 pb-2 border-b border-slate-100 font-bold text-purple-950 uppercase tracking-wide text-[11px]">
+                  <Truck className="w-3.5 h-3.5 text-purple-900" />
+                  <span>Material Supplier Capacity &amp; Details</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <span className="text-slate-500 font-medium text-[11px] block">Company Name:</span>
+                    <span className="font-bold text-slate-900 text-xs">{formData.supplierDetails.companyName || "N/A"}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 font-medium text-[11px] block">Province &amp; District:</span>
+                    <span className="font-bold text-slate-900 text-xs">
+                      {[formData.supplierDetails.province, formData.supplierDetails.district].filter(Boolean).join(" • ") || "N/A"}
+                    </span>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <span className="text-slate-500 font-medium text-[11px] block">Plant / Production Facility Location:</span>
+                    <span className="text-slate-800 text-xs">{formData.supplierDetails.locationAddress || "N/A"}</span>
+                  </div>
+                </div>
+
+                {formData.supplierDetails.materialsSupplied && formData.supplierDetails.materialsSupplied.length > 0 && (
+                  <div className="pt-2 border-t border-slate-100 space-y-2">
+                    <span className="text-slate-500 font-medium text-[11px] block">Supplied Materials &amp; Annual Capacity:</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {formData.supplierDetails.materialsSupplied.map((mat) => {
+                        const cap = formData.supplierDetails?.supplyCapacities?.[mat];
+                        return (
+                          <div key={mat} className="p-2.5 rounded-lg bg-purple-50/70 border border-purple-200 flex items-center justify-between">
+                            <span className="font-bold text-slate-900 text-xs">{mat}</span>
+                            <span className="font-bold text-purple-950 font-mono text-xs">
+                              {cap?.quantity ? `${cap.quantity} ${cap.unit}` : "Capacity not specified"}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Section 11: Matters for Discussion */}
+            {formData.willParticipate === "Yes" && (
+              <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-2">
+                <div className="flex items-center gap-2 pb-2 border-b border-slate-100 font-bold text-blue-950 uppercase tracking-wide text-[11px]">
+                  <HelpCircle className="w-3.5 h-3.5 text-blue-900" />
+                  <span>Section 11: Matters for Discussion at the Workshop</span>
+                </div>
+                <p className="text-slate-800 font-medium leading-relaxed">
+                  {formData.mattersForDiscussion || "No specific matters or concerns submitted."}
+                </p>
+              </div>
+            )}
+
+            {/* Attestation & Declaration */}
+            <div className="p-4 bg-emerald-50/60 border border-emerald-200 rounded-xl space-y-2">
+              <div className="flex items-center gap-2 font-bold text-emerald-950 uppercase text-[11px]">
+                <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
+                <span>Authorized Representative Declaration</span>
+              </div>
+              <p className="text-[11px] text-emerald-900/90 leading-relaxed">
+                I hereby confirm that all information provided in this questionnaire filing is true, accurate, and complete to the best of my knowledge, and submitted on behalf of the registered organization for the Road Development Authority Inclusive Connectivity and Development Project (ICDP).
+              </p>
+            </div>
+          </div>
+
+          {/* Modal Footer */}
+          <div className="p-4 sm:px-6 bg-white border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+            <button
+              type="button"
+              onClick={() => setShowReviewModal(false)}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-sm transition-colors min-h-[42px]"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 text-slate-500" />
+              <span>Modify / Edit Details</span>
+            </button>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-sm transition-colors min-h-[42px]"
+                title="Print Review Sheet"
+              >
+                <Printer className="w-3.5 h-3.5 text-slate-600" />
+                <span>Print Review</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSubmitFinal}
+                disabled={loading}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-900 to-blue-800 hover:from-blue-800 hover:to-blue-700 text-white font-extrabold text-xs shadow-lg shadow-blue-900/20 transition-all disabled:opacity-60 min-h-[42px]"
+              >
+                {loading ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Submitting Registration...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 text-amber-400" />
+                    <span>Confirm &amp; Submit Directly</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     )}
   </div>
 );
