@@ -212,6 +212,7 @@ function RegisterForm() {
   const [currentReference, setCurrentReference] = useState<string>("");
   const [savedDraftsList, setSavedDraftsList] = useState<BrowserSavedDraft[]>([]);
   const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false);
+  const [hasCheckedDrafts, setHasCheckedDrafts] = useState(false);
 
   // Auto-Save Indicator State: "idle" | "saving" | "saved" | "error"
   const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
@@ -456,6 +457,7 @@ function RegisterForm() {
     } else if (stored.length > 0) {
       setShowRecoveryPrompt(true);
     }
+    setHasCheckedDrafts(true);
   }, [tokenFromUrl]);
 
   // Load active published questionnaire schema
@@ -920,6 +922,7 @@ function RegisterForm() {
           (formData.willParticipate === "No" ? "Non-Attendee" : "General"),
         lastSavedAt: new Date().toISOString(),
       });
+      setSavedDraftsList(getBrowserSavedDrafts());
     }
 
     isInitialLoadRef.current = true;
@@ -1914,27 +1917,14 @@ function RegisterForm() {
         )}
       </div>
 
-      {/* Prominent Full-Width Start Registration CTA Button */}
-      <div className="w-full">
-        <button
-          type="button"
-          onClick={() => {
-            const target = document.getElementById("registration-form-start") || document.getElementById("section-1");
-            if (target) {
-              target.scrollIntoView({ behavior: "smooth", block: "start" });
-            }
-          }}
-          className="w-full py-3 sm:py-3.5 px-4 sm:px-6 rounded-xl sm:rounded-2xl bg-gradient-to-r from-[#0b1f3a] via-[#12335f] to-[#0b1f3a] hover:from-[#0d2749] hover:to-[#0d2749] text-white font-extrabold text-xs sm:text-base shadow-lg hover:shadow-xl border border-white/15 flex items-center justify-center gap-2 sm:gap-2.5 transition-all group active:scale-[0.99] cursor-pointer min-h-[46px]"
-        >
-          <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 shrink-0" />
-          <span>Start Registration</span>
-          <span className="hidden min-[380px]:inline">&bull; Fill Questionnaire</span>
-          <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 group-hover:translate-x-1 transition-transform shrink-0" />
-        </button>
-      </div>
-
-      {/* Smart Browser Draft Recovery Screen */}
-      {showRecoveryPrompt && savedDraftsList.length > 0 ? (
+      {/* Conditional Flow: Draft Check & Recovery */}
+      {!hasCheckedDrafts ? (
+        <div className="bg-white/60 backdrop-blur-sm rounded-2xl border border-slate-200 p-8 flex flex-col items-center justify-center gap-3 text-slate-500 shadow-sm min-h-[140px]">
+          <RefreshCw className="w-5 h-5 animate-spin text-blue-900" />
+          <span className="text-xs font-semibold text-slate-600">Checking for saved registration drafts...</span>
+        </div>
+      ) : showRecoveryPrompt && savedDraftsList.length > 0 ? (
+        /* Scenario A: Previous Draft Exists - Show Draft Recovery, hide top start button and questionnaire */
         <div className="bg-white rounded-2xl border-2 border-blue-900/20 shadow-xl p-5 sm:p-7 space-y-5">
           <div className="flex items-start gap-3.5">
             <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-900 border border-blue-200 flex items-center justify-center shrink-0">
@@ -2045,6 +2035,25 @@ function RegisterForm() {
         </div>
       ) : (
         <>
+          {/* Prominent Full-Width Start Registration CTA Button */}
+          <div className="w-full">
+            <button
+              type="button"
+              onClick={() => {
+                const target = document.getElementById("registration-form-start") || document.getElementById("section-1");
+                if (target) {
+                  target.scrollIntoView({ behavior: "smooth", block: "start" });
+                }
+              }}
+              className="w-full py-3 sm:py-3.5 px-4 sm:px-6 rounded-xl sm:rounded-2xl bg-gradient-to-r from-[#0b1f3a] via-[#12335f] to-[#0b1f3a] hover:from-[#0d2749] hover:to-[#0d2749] text-white font-extrabold text-xs sm:text-base shadow-lg hover:shadow-xl border border-white/15 flex items-center justify-center gap-2 sm:gap-2.5 transition-all group active:scale-[0.99] cursor-pointer min-h-[46px]"
+            >
+              <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 shrink-0" />
+              <span>Start Registration</span>
+              <span className="hidden min-[380px]:inline">&bull; Fill Questionnaire</span>
+              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 group-hover:translate-x-1 transition-transform shrink-0" />
+            </button>
+          </div>
+
           {/* Live Auto-Save Status Bar and Quick Controls */}
           <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         {/* Left: Auto-save status */}
