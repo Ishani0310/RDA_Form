@@ -17,7 +17,8 @@ export interface IContractor extends Document {
     | "C8"
     | "C9"
     | "Specialist"
-    | "Pending";
+    | "Pending"
+    | (string & {});
   primarySpeciality?: string;
   province:
     | "Western Province"
@@ -64,21 +65,7 @@ const ContractorSchema = new Schema<IContractor>(
     },
     cidaGrade: {
       type: String,
-      enum: [
-        "CS1",
-        "CS2",
-        "C1",
-        "C2",
-        "C3",
-        "C4",
-        "C5",
-        "C6",
-        "C7",
-        "C8",
-        "C9",
-        "Specialist",
-        "Pending",
-      ],
+      trim: true,
       default: "Pending",
     },
     primarySpeciality: {
