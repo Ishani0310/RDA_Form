@@ -1720,24 +1720,24 @@ function RegisterForm() {
             </p>
 
             {/* 4. Bottom Row: 07 December 2026 and logo (closer to the subtitle) */}
-            <div className="pt-0.5 flex items-start justify-between gap-2.5">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 backdrop-blur-sm border border-white/15 text-[11px] min-[360px]:text-xs font-semibold text-amber-300 shadow-sm shrink-0 mt-0.5">
-                <Calendar className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <div className="pt-0.5 flex items-center justify-between gap-2">
+              <div className="inline-flex items-center gap-1.5 px-2 py-1 min-[360px]:px-2.5 rounded-lg bg-white/10 backdrop-blur-sm border border-white/15 text-[10px] min-[360px]:text-xs font-semibold text-amber-300 shadow-sm shrink-0">
+                <Calendar className="w-3 h-3 min-[360px]:w-3.5 min-[360px]:h-3.5 text-amber-400 shrink-0" />
                 <span>07 December 2026</span>
               </div>
 
               {/* Ministry & RDA Official Logos on mobile bottom-right */}
-              <div className="bg-white rounded-xl px-2.5 py-1.5 shadow-md border border-white/40 shrink-0 flex flex-col items-center gap-1 max-w-[145px]">
+              <div className="bg-white rounded-xl px-2 py-0.5 min-[380px]:py-1 shadow-md border border-white/40 shrink-0 flex flex-col items-center gap-0.5 max-w-[115px] min-[380px]:max-w-[130px]">
                 <img
                   src="/ministry-logo.png"
                   alt="Ministry of Transport, Highways and Urban Development"
-                  className="h-4.5 w-auto object-contain"
+                  className="h-3 min-[380px]:h-3.5 w-auto object-contain"
                 />
                 <div className="w-full border-t border-slate-200" />
                 <img
                   src="/rda-logo.png"
                   alt="Road Development Authority Sri Lanka"
-                  className="h-5.5 w-auto object-contain"
+                  className="h-4 min-[380px]:h-4.5 w-auto object-contain"
                 />
               </div>
             </div>
@@ -1924,10 +1924,11 @@ function RegisterForm() {
               target.scrollIntoView({ behavior: "smooth", block: "start" });
             }
           }}
-          className="w-full py-3.5 sm:py-4 px-5 sm:px-6 rounded-xl sm:rounded-2xl bg-gradient-to-r from-[#0b1f3a] via-[#12335f] to-[#0b1f3a] hover:from-[#0d2749] hover:to-[#0d2749] text-white font-extrabold text-sm sm:text-base shadow-lg hover:shadow-xl border border-white/15 flex items-center justify-center gap-2 sm:gap-2.5 transition-all group active:scale-[0.99] cursor-pointer min-h-[48px]"
+          className="w-full py-3 sm:py-3.5 px-4 sm:px-6 rounded-xl sm:rounded-2xl bg-gradient-to-r from-[#0b1f3a] via-[#12335f] to-[#0b1f3a] hover:from-[#0d2749] hover:to-[#0d2749] text-white font-extrabold text-xs sm:text-base shadow-lg hover:shadow-xl border border-white/15 flex items-center justify-center gap-2 sm:gap-2.5 transition-all group active:scale-[0.99] cursor-pointer min-h-[46px]"
         >
           <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 shrink-0" />
-          <span>Start Registration &bull; Fill Questionnaire</span>
+          <span>Start Registration</span>
+          <span className="hidden min-[380px]:inline">&bull; Fill Questionnaire</span>
           <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 group-hover:translate-x-1 transition-transform shrink-0" />
         </button>
       </div>
