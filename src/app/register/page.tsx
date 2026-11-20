@@ -1704,8 +1704,8 @@ function RegisterForm() {
             </div>
 
             {/* 2. Heading 1: Early Market Engagement Workshop (Single unbroken line) */}
-            <div className="w-full overflow-hidden">
-              <h1 className="text-[14.5px] min-[360px]:text-[15.5px] min-[390px]:text-[17px] min-[430px]:text-lg font-black tracking-tight text-white leading-snug whitespace-nowrap">
+            <div className="w-full">
+              <h1 className="text-[13.5px] min-[360px]:text-[15px] min-[390px]:text-[16.5px] min-[430px]:text-lg font-black tracking-tight text-white leading-snug whitespace-nowrap">
                 Early Market Engagement Workshop
               </h1>
             </div>
@@ -1747,7 +1747,7 @@ function RegisterForm() {
                   Road Development Authority &bull; Sri Lanka
                 </span>
               </div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white leading-tight">
+              <h1 className="text-xl sm:text-2xl md:text-[25px] lg:text-[28px] xl:text-[30px] font-black tracking-tight text-white leading-tight whitespace-nowrap">
                 Early Market Engagement Workshop
               </h1>
               <p className="text-xs sm:text-sm text-slate-300 font-medium leading-relaxed">
@@ -1763,17 +1763,17 @@ function RegisterForm() {
 
             {/* Official Ministry & RDA Logos on Tablet & Desktop */}
             <div className="shrink-0 flex items-center">
-              <div className="bg-white rounded-2xl px-4 py-3 lg:px-5 lg:py-3.5 shadow-lg border border-white/40 flex flex-col items-center gap-2 max-w-[220px] sm:max-w-[240px] lg:max-w-[280px]">
+              <div className="bg-white rounded-2xl px-3.5 py-2.5 sm:px-4 sm:py-3 lg:px-4.5 lg:py-3 shadow-lg border border-white/40 flex flex-col items-center gap-1.5 max-w-[200px] sm:max-w-[220px] lg:max-w-[240px]">
                 <img
                   src="/ministry-logo.png"
                   alt="Ministry of Transport, Highways and Urban Development"
-                  className="h-6 sm:h-7 lg:h-8 w-auto object-contain"
+                  className="h-5.5 sm:h-6.5 lg:h-7.5 w-auto object-contain"
                 />
                 <div className="w-full border-t border-slate-200" />
                 <img
                   src="/rda-logo.png"
                   alt="Road Development Authority Sri Lanka"
-                  className="h-7 sm:h-8 lg:h-9 w-auto object-contain"
+                  className="h-6.5 sm:h-7.5 lg:h-8.5 w-auto object-contain"
                 />
               </div>
             </div>
