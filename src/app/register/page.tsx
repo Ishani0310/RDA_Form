@@ -670,7 +670,11 @@ function RegisterForm() {
     businessName: string;
     submittedAt: string;
     provincialOffice: string;
+    confirmationEmailSentTo?: string | null;
+    emailStatus?: string;
   } | null>(null);
+  const [confirmationEmail, setConfirmationEmail] = useState<string>("");
+  const [confirmationEmailError, setConfirmationEmailError] = useState<string | null>(null);
   const [publishedQuestionnaire, setPublishedQuestionnaire] = useState<any>(null);
 
   // Check saved drafts on mount
@@ -1205,6 +1209,8 @@ function RegisterForm() {
     setCurrentReference("");
     setAutoSaveStatus("idle");
     setLastSavedTime(null);
+    setConfirmationEmail("");
+    setConfirmationEmailError(null);
     setShowRecoveryPrompt(false);
     setFormAlert({
       type: "success",
@@ -1274,6 +1280,10 @@ function RegisterForm() {
     }
 
     setFieldErrors({});
+    if (!confirmationEmail.trim()) {
+      setConfirmationEmail(formData.email?.trim() || formData.participant1?.email?.trim() || "");
+    }
+    setConfirmationEmailError(null);
     setShowReviewModal(true);
   };
 
@@ -1281,6 +1291,30 @@ function RegisterForm() {
     setLoading(true);
     setFormAlert(null);
     setModalDeclarationError(null);
+    setConfirmationEmailError(null);
+
+    // Confirmation Email validation
+    const trimmedConfirmEmail = confirmationEmail.trim();
+    if (!trimmedConfirmEmail) {
+      setConfirmationEmailError("Please enter an email address to receive your official registration confirmation receipt.");
+      setLoading(false);
+      const emailInput = document.getElementById("input-confirmation-email");
+      if (emailInput) {
+        emailInput.focus();
+        emailInput.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      return;
+    }
+    if (!isValidEmailAddress(trimmedConfirmEmail)) {
+      setConfirmationEmailError("Please enter a valid email address (e.g., name@company.com).");
+      setLoading(false);
+      const emailInput = document.getElementById("input-confirmation-email");
+      if (emailInput) {
+        emailInput.focus();
+        emailInput.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      return;
+    }
 
     // Declaration consent check
     if (!declarationAccepted) {
@@ -1350,7 +1384,10 @@ function RegisterForm() {
       const subRes = await fetch("/api/public/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resumeToken: tokenToSubmit }),
+        body: JSON.stringify({
+          resumeToken: tokenToSubmit,
+          confirmationEmail: trimmedConfirmEmail,
+        }),
       });
       const subData = await subRes.json();
 
@@ -1784,6 +1821,18 @@ function RegisterForm() {
             </p>
           </div>
 
+          {submissionSuccess.confirmationEmailSentTo && (
+            <div className="p-3.5 bg-blue-50/80 border border-blue-200 rounded-xl text-left flex items-start gap-3">
+              <Mail className="w-5 h-5 text-blue-900 shrink-0 mt-0.5" />
+              <div className="space-y-0.5 text-xs">
+                <span className="font-bold text-blue-950 block">Official Confirmation Email Dispatched</span>
+                <p className="text-blue-900/90 text-[11px] leading-relaxed">
+                  An official acknowledgment receipt with reference number <strong>{submissionSuccess.reference}</strong> and workshop details (<strong>07 December 2026 at 9:00 AM</strong>) was sent to <strong className="font-mono text-blue-950">{submissionSuccess.confirmationEmailSentTo}</strong>.
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="p-5 rounded-xl bg-slate-50 border border-slate-200 text-left text-xs space-y-2.5 font-mono">
             <div className="flex justify-between border-b border-slate-200/60 pb-2">
               <span className="text-slate-500 font-sans">Submission Reference:</span>
@@ -1793,9 +1842,15 @@ function RegisterForm() {
               <span className="text-slate-500 font-sans">Organization / Entity:</span>
               <span className="font-bold text-slate-800">{submissionSuccess.businessName}</span>
             </div>
+            {submissionSuccess.confirmationEmailSentTo && (
+              <div className="flex justify-between border-b border-slate-200/60 pb-2">
+                <span className="text-slate-500 font-sans">Confirmation Sent To:</span>
+                <span className="font-bold text-slate-800 font-mono">{submissionSuccess.confirmationEmailSentTo}</span>
+              </div>
+            )}
             <div className="flex justify-between border-b border-slate-200/60 pb-2">
-              <span className="text-slate-500 font-sans">Workshop Date:</span>
-              <span className="text-slate-700 font-bold">07 December 2026</span>
+              <span className="text-slate-500 font-sans">Workshop Schedule:</span>
+              <span className="text-slate-700 font-bold font-sans">07 December 2026 at 9:00 AM</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500 font-sans">Recorded Timestamp:</span>
@@ -1815,6 +1870,8 @@ function RegisterForm() {
             <button
               onClick={() => {
                 setSubmissionSuccess(null);
+                setConfirmationEmail("");
+                setConfirmationEmailError(null);
                 setSpecialtyOtherList([""]);
                 setSupplierMaterialsOtherList([""]);
                 setCidaGradeOtherList([""]);
@@ -4850,6 +4907,53 @@ function RegisterForm() {
                   })()}
                 </div>
               )}
+
+              {/* Notification & Confirmation Email Address Card */}
+              <div
+                id="confirmation-email-card"
+                className={`p-4 rounded-xl space-y-2 transition-all ${
+                  confirmationEmailError
+                    ? "bg-rose-50/80 border-2 border-rose-500 shadow-sm"
+                    : "bg-blue-50/70 border border-blue-200"
+                }`}
+              >
+                <div className="flex items-center gap-2 font-bold text-slate-900 uppercase text-[11px]">
+                  <Mail className="w-4 h-4 text-blue-900 shrink-0" />
+                  <span>Email Address for Official Confirmation Receipt *</span>
+                </div>
+                <p className="text-[11px] text-slate-700 leading-relaxed">
+                  Your permanent registration reference number and workshop details (<strong>07 December 2026 at 9:00 AM</strong>) will be sent to this email address immediately upon submission.
+                </p>
+                <div className="pt-1">
+                  <input
+                    id="input-confirmation-email"
+                    type="email"
+                    value={confirmationEmail}
+                    onChange={(e) => {
+                      setConfirmationEmail(e.target.value);
+                      if (confirmationEmailError) setConfirmationEmailError(null);
+                    }}
+                    placeholder="e.g. info@company.lk or representative@company.lk"
+                    aria-invalid={Boolean(confirmationEmailError)}
+                    aria-describedby={confirmationEmailError ? "error-confirmation-email" : undefined}
+                    className={`w-full p-2.5 rounded-lg text-slate-900 text-xs font-mono focus:outline-none transition-all ${
+                      confirmationEmailError
+                        ? "bg-white border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                        : "bg-white border border-slate-300 focus:ring-2 focus:ring-blue-800"
+                    }`}
+                  />
+                  {confirmationEmailError && (
+                    <div
+                      id="error-confirmation-email"
+                      role="alert"
+                      className="flex items-center gap-1.5 pt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn"
+                    >
+                      <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                      <span>{confirmationEmailError}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
 
               {/* Attestation & Declaration */}
               <div

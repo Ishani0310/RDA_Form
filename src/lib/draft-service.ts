@@ -404,6 +404,8 @@ export async function submitFinalDeclaration(
   businessName: string;
   submittedAt: string;
   provincialOffice: string;
+  questionnaireData?: Record<string, any>;
+  contactOfficer?: Record<string, any>;
 }> {
   if (!isValidTokenFormat(rawToken)) {
     throw new Error("Invalid resume token format.");
@@ -562,5 +564,7 @@ export async function submitFinalDeclaration(
     businessName: contractor.businessName,
     submittedAt: submittedAt.toISOString(),
     provincialOffice: submission.provincialOffice,
+    questionnaireData: rawQ,
+    contactOfficer: contractor.contactOfficer,
   };
 }
