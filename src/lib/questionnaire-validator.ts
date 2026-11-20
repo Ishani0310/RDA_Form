@@ -285,6 +285,28 @@ export function validateQuestionnaireSubmission(
     }
   }
 
+  // Enforce descending order by value (higher value to lower value)
+  if (c1 && c1.contractName && c1.contractName.trim().toUpperCase() !== "N/A") {
+    let prevValidAmount: number | null = null;
+    let prevValidIdx = 0;
+
+    for (let i = 0; i < contracts.length; i++) {
+      const c = contracts[i];
+      if (c && c.contractName && c.contractName.trim().toUpperCase() !== "N/A") {
+        if (c.contractAmount !== null && c.contractAmount !== undefined && c.contractAmount !== "") {
+          const currentVal = Number(c.contractAmount);
+          if (!isNaN(currentVal)) {
+            if (prevValidAmount !== null && currentVal > prevValidAmount) {
+              errors[`similarWorks.${i}.contractAmount`] = `Contract ${i + 1} amount (LKR ${currentVal.toLocaleString()}) cannot exceed Contract ${prevValidIdx + 1} amount (LKR ${prevValidAmount.toLocaleString()}). Contracts must be entered in descending order from highest to lowest value.`;
+            }
+            prevValidAmount = currentVal;
+            prevValidIdx = i;
+          }
+        }
+      }
+    }
+  }
+
   return {
     isValid: Object.keys(errors).length === 0,
     errors,

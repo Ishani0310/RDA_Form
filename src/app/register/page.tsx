@@ -33,6 +33,7 @@ import {
   Printer,
   ShieldCheck,
   Eye,
+  ArrowUpDown,
 } from "lucide-react";
 import Link from "next/link";
 import { evaluateConditionalRule } from "@/components/dynamic-form/DynamicFormRenderer";
@@ -935,6 +936,35 @@ function RegisterForm() {
       }
     }
 
+    // Section 10: Validate descending order for Similar Works (higher value to lower value)
+    if (formData.participantCategory === "Contractor") {
+      const works = formData.similarWorks || [];
+      const firstWork = works[0];
+      if (firstWork && firstWork.contractName && firstWork.contractName.trim().toUpperCase() !== "N/A") {
+        let prevValidAmt: number | null = null;
+        let prevValidIdx = 0;
+        for (let i = 0; i < works.length; i++) {
+          const w = works[i];
+          if (w && w.contractName && w.contractName.trim().toUpperCase() !== "N/A" && w.contractAmount !== null && w.contractAmount !== undefined && w.contractAmount !== "") {
+            const curAmt = Number(w.contractAmount);
+            if (!isNaN(curAmt)) {
+              if (prevValidAmt !== null && curAmt > prevValidAmt) {
+                setFormAlert({
+                  type: "error",
+                  message: `Section 10: Contract #${i + 1} amount (LKR ${curAmt.toLocaleString()}) cannot exceed Contract #${prevValidIdx + 1} amount (LKR ${prevValidAmt.toLocaleString()}). Contracts must be entered in descending order from highest to lowest value. Please click "Sort by Highest Value First" or adjust the values.`,
+                });
+                const elem = document.getElementById("section-10-container");
+                if (elem) elem.scrollIntoView({ behavior: "smooth" });
+                return;
+              }
+              prevValidAmt = curAmt;
+              prevValidIdx = i;
+            }
+          }
+        }
+      }
+    }
+
     // Form is valid: open Review Area
     setShowReviewModal(true);
   };
@@ -988,6 +1018,37 @@ function RegisterForm() {
                 window.scrollTo({ top: 0, behavior: "smooth" });
                 setLoading(false);
                 return;
+              }
+            }
+          }
+        }
+      }
+
+      // Section 10: Validate descending order for Similar Works (higher value to lower value)
+      if (formData.participantCategory === "Contractor") {
+        const works = formData.similarWorks || [];
+        const firstWork = works[0];
+        if (firstWork && firstWork.contractName && firstWork.contractName.trim().toUpperCase() !== "N/A") {
+          let prevValidAmt: number | null = null;
+          let prevValidIdx = 0;
+          for (let i = 0; i < works.length; i++) {
+            const w = works[i];
+            if (w && w.contractName && w.contractName.trim().toUpperCase() !== "N/A" && w.contractAmount !== null && w.contractAmount !== undefined && w.contractAmount !== "") {
+              const curAmt = Number(w.contractAmount);
+              if (!isNaN(curAmt)) {
+                if (prevValidAmt !== null && curAmt > prevValidAmt) {
+                  setFormAlert({
+                    type: "error",
+                    message: `Section 10: Contract #${i + 1} amount (LKR ${curAmt.toLocaleString()}) cannot exceed Contract #${prevValidIdx + 1} amount (LKR ${prevValidAmt.toLocaleString()}). Contracts must be entered in descending order from highest to lowest value. Please click "Sort by Highest Value First" or adjust the values.`,
+                  });
+                  const elem = document.getElementById("section-10-container");
+                  if (elem) elem.scrollIntoView({ behavior: "smooth" });
+                  setLoading(false);
+                  setShowReviewModal(false);
+                  return;
+                }
+                prevValidAmt = curAmt;
+                prevValidIdx = i;
               }
             }
           }
@@ -1358,6 +1419,20 @@ function RegisterForm() {
       contractIndex: i + 1,
     }));
     setFormData({ ...formData, similarWorks: filtered });
+  };
+
+  const handleSortSimilarWorksDescending = () => {
+    const list = [...(formData.similarWorks || createEmptySimilarWorks())];
+    list.sort((a, b) => {
+      const aVal = Number(a.contractAmount) || 0;
+      const bVal = Number(b.contractAmount) || 0;
+      return bVal - aVal;
+    });
+    const reindexed = list.map((c, i) => ({
+      ...c,
+      contractIndex: i + 1,
+    }));
+    setFormData({ ...formData, similarWorks: reindexed });
   };
 
   // Official receipt screen upon completed submission
@@ -3314,7 +3389,7 @@ function RegisterForm() {
                     </div>
 
                     {/* SECTION 10: SIMILAR WORK EXPERIENCE */}
-                    <div className="space-y-4 pt-4 border-t border-slate-100">
+                    <div id="section-10-container" className="space-y-4 pt-4 border-t border-slate-100">
                       <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                         <div className="flex items-center gap-2">
                           <FileText className="w-4 h-4 text-blue-900" />
@@ -3326,9 +3401,17 @@ function RegisterForm() {
 
                       <div className="p-3.5 bg-amber-50 border border-amber-200/80 rounded-xl text-xs text-amber-900 flex items-start gap-2.5">
                         <HelpCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                        <p className="leading-relaxed">
-                          <strong>Official Instruction:</strong> Please provide details of the highest-value contracts your organization has completed within the last five years (December 2021 to November 2026) that are similar in nature to the proposed works. For firms without relevant experience, please enter <strong>N/A</strong> in the Contract Name field and leave the other fields blank.
-                        </p>
+                        <div className="leading-relaxed space-y-1">
+                          <p>
+                            <strong>Official Instruction:</strong> Please provide details of the highest-value contracts your organization has completed within the last five years (December 2021 to November 2026) that are similar in nature to the proposed works.
+                          </p>
+                          <p className="font-semibold text-amber-950">
+                            ⚠️ <strong>Required Order: Higher Value to Lower Value (Descending)</strong> — Contract #1 must be your largest contract by amount. Subsequent contracts must be equal or lower in value. If entered out of order, you can use the <strong>"Sort by Highest Value First"</strong> button below.
+                          </p>
+                          <p className="text-[11px] text-amber-800">
+                            For firms without relevant experience, please enter <strong>N/A</strong> in the Contract Name field and leave the other fields blank.
+                          </p>
+                        </div>
                       </div>
 
                       <div className="space-y-3">
@@ -3339,7 +3422,14 @@ function RegisterForm() {
                                 <th className="p-3 w-12 text-center">#</th>
                                 <th className="p-3 min-w-[200px]">Contract Name / Project</th>
                                 <th className="p-3 w-48">Contract Type</th>
-                                <th className="p-3 w-44">Amount (LKR)</th>
+                                <th className="p-3 w-48">
+                                  <div className="flex flex-col">
+                                    <span>Amount (LKR) *</span>
+                                    <span className="text-[9px] text-amber-700 font-bold normal-case tracking-normal">
+                                      (Higher to Lower ↓)
+                                    </span>
+                                  </div>
+                                </th>
                                 <th className="p-3 w-52">Duration (Start - Completion)</th>
                                 <th className="p-3 w-48">Completion Status</th>
                                 <th className="p-3 w-14 text-center">Action</th>
@@ -3348,12 +3438,33 @@ function RegisterForm() {
                             <tbody className="divide-y divide-slate-200/80">
                               {(formData.similarWorks || createEmptySimilarWorks()).map((contract, idx) => {
                                 const isNA = Boolean(contract.contractName && contract.contractName.trim().toUpperCase() === "N/A");
+                                const currentAmount = Number(contract.contractAmount);
+                                const hasValidAmount = !isNA && !isNaN(currentAmount) && contract.contractAmount !== null && contract.contractAmount !== undefined && contract.contractAmount !== "";
+
+                                // Check if current contract amount violates descending order compared to previous contract with amount
+                                let prevAmount: number | null = null;
+                                let prevContractNum: number | null = null;
+                                if (hasValidAmount && idx > 0) {
+                                  const allList = formData.similarWorks || [];
+                                  for (let p = idx - 1; p >= 0; p--) {
+                                    const prevC = allList[p];
+                                    if (prevC && prevC.contractName && prevC.contractName.trim().toUpperCase() !== "N/A" && prevC.contractAmount !== null && prevC.contractAmount !== undefined && prevC.contractAmount !== "") {
+                                      const pVal = Number(prevC.contractAmount);
+                                      if (!isNaN(pVal)) {
+                                        prevAmount = pVal;
+                                        prevContractNum = p + 1;
+                                        break;
+                                      }
+                                    }
+                                  }
+                                }
+                                const isOrderViolation = prevAmount !== null && currentAmount > prevAmount;
 
                                 return (
                                   <tr
                                     key={idx}
                                     className={`hover:bg-slate-50/70 transition-colors ${
-                                      isNA ? "bg-slate-50/40 opacity-70" : ""
+                                      isNA ? "bg-slate-50/40 opacity-70" : isOrderViolation ? "bg-rose-50/30" : ""
                                     }`}
                                   >
                                     <td className="p-3 text-center font-bold text-blue-900 bg-slate-50/50 align-top pt-4">
@@ -3405,12 +3516,24 @@ function RegisterForm() {
                                         value={contract.contractAmount ?? ""}
                                         onChange={(e) => handleContractChange(idx, "contractAmount", e.target.value)}
                                         placeholder="Amount in LKR"
-                                        className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono disabled:opacity-50"
+                                        className={`w-full p-2 bg-slate-50 border rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 font-mono disabled:opacity-50 ${
+                                          isOrderViolation
+                                            ? "border-rose-400 bg-rose-50/60 focus:ring-rose-500 text-rose-900"
+                                            : "border-slate-300 focus:ring-blue-800"
+                                        }`}
                                       />
                                       {!isNA && contract.contractAmount !== null && contract.contractAmount !== undefined && contract.contractAmount !== "" && (
                                         <span className="text-[10px] font-mono text-slate-600 block">
                                           = LKR {Number(contract.contractAmount).toLocaleString()}
                                         </span>
+                                      )}
+                                      {isOrderViolation && (
+                                        <div className="flex items-start gap-1 p-1.5 mt-1 rounded bg-rose-50 border border-rose-200 text-rose-700 text-[10px] leading-tight font-sans">
+                                          <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-rose-600 mt-0.5" />
+                                          <span>
+                                            Must be &le; Contract #{prevContractNum} (LKR {prevAmount!.toLocaleString()}). Please enter higher value to lower value.
+                                          </span>
+                                        </div>
                                       )}
                                     </td>
                                     <td className="p-3 align-top">
@@ -3471,17 +3594,28 @@ function RegisterForm() {
                           </table>
                         </div>
 
-                        <div className="flex items-center justify-between pt-1">
-                          <button
-                            type="button"
-                            onClick={handleAddSimilarWork}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-sm transition-all"
-                          >
-                            <Plus className="w-4 h-4" />
-                            <span>+ Add Similar Work Contract</span>
-                          </button>
-                          <span className="text-[10px] text-slate-400 italic">
-                            You can add additional completed contracts as needed
+                        <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={handleAddSimilarWork}
+                              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-sm transition-all"
+                            >
+                              <Plus className="w-4 h-4" />
+                              <span>+ Add Similar Work Contract</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleSortSimilarWorksDescending}
+                              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 hover:text-blue-900 rounded-lg shadow-sm transition-all"
+                              title="Automatically reorder contracts from highest value to lowest value"
+                            >
+                              <ArrowUpDown className="w-4 h-4 text-blue-900" />
+                              <span>Sort by Highest Value First</span>
+                            </button>
+                          </div>
+                          <span className="text-[10px] text-slate-500 font-medium">
+                            Enter contracts in descending order (highest value first)
                           </span>
                         </div>
                       </div>
@@ -3918,7 +4052,7 @@ function RegisterForm() {
                           <th className="p-2 w-10">#</th>
                           <th className="p-2">Contract Name</th>
                           <th className="p-2">Type</th>
-                          <th className="p-2 text-right">Amount (LKR)</th>
+                          <th className="p-2 text-right">Amount (LKR) (Highest to Lowest)</th>
                           <th className="p-2">Start Date</th>
                           <th className="p-2">Completion Date</th>
                           <th className="p-2">Status</th>

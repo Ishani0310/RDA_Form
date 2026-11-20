@@ -594,7 +594,7 @@ export function getBaselineOfficialSections(): IFormSection[] {
       id: "sec-similar-works",
       code: "SEC-10",
       title: "SECTION 10 – SIMILAR WORK EXPERIENCE",
-      description: "Please provide details of the highest-value contracts your organization has completed within the last five years (December 2021 to November 2026) that are similar in nature to the proposed works.",
+      description: "Please provide details of the highest-value contracts your organization has completed within the last five years (December 2021 to November 2026) that are similar in nature to the proposed works, entered in descending order from highest to lowest value.",
       displayOrder: 11,
       questions: [
         {
@@ -602,7 +602,7 @@ export function getBaselineOfficialSections(): IFormSection[] {
           code: "Q26",
           number: qNum++,
           text: "Similar Work Contracts (Exactly 3 Contracts)",
-          description: "Contract 1 required when experience exists (enter N/A in Contract Name if none). Contracts 2 and 3 optional.",
+          description: "Contract 1 required when experience exists (enter N/A in Contract Name if none). Subsequent contracts must be entered in descending order from highest value to lowest value.",
           fieldType: "complex_table",
           displayOrder: 1,
           isRequired: false,
