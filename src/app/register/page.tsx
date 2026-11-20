@@ -1383,43 +1383,90 @@ function RegisterForm() {
   return (
     <div className="max-w-4xl mx-auto my-6 sm:my-10 lg:my-12 px-3 sm:px-4 lg:px-6 space-y-5 sm:space-y-6">
       {/* Header Banner */}
-      <div className="bg-[#0b1f3a] text-white p-4 sm:p-6 lg:p-8 rounded-2xl shadow-xl relative overflow-hidden">
+      <div className="bg-[#0b1f3a] text-white p-4 sm:p-6 lg:p-7 rounded-2xl shadow-xl relative overflow-hidden">
         <div className="absolute right-0 top-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
-          <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white p-1 shadow-md flex items-center justify-center shrink-0 border border-white/20">
-              <img
-                src="/rda-emblem.png"
-                alt="RDA Official Emblem"
-                className="w-full h-full object-contain"
-              />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] tracking-widest font-bold text-amber-400 uppercase">
-                  Road Development Authority &bull; Sri Lanka
-                </span>
-                <span className="px-2 py-0.5 rounded text-[9px] bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-400/30">
-                  ICDP OFFICIAL PORTAL
-                </span>
+
+        <div className="relative z-10">
+          {/* Mobile Layout (< sm / < 640px) */}
+          <div className="sm:hidden space-y-3">
+            {/* Top Row: Left Emblem & Govt/Portal Badges, Right Official Logo */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-white p-1 shadow-sm flex items-center justify-center shrink-0 border border-white/20">
+                  <img
+                    src="/rda-emblem.png"
+                    alt="RDA Official Emblem"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+                <div className="min-w-0">
+                  <span className="text-[10px] tracking-wider font-bold text-amber-400 uppercase block truncate">
+                    RDA &bull; Sri Lanka
+                  </span>
+                  <span className="inline-block px-1.5 py-0.5 rounded text-[8px] bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-400/30">
+                    ICDP OFFICIAL PORTAL
+                  </span>
+                </div>
               </div>
-              <h1 className="text-base sm:text-lg lg:text-xl font-extrabold tracking-tight mt-0.5 leading-snug">
+
+              {/* RDA Official Logo on mobile top-right */}
+              <div className="bg-white rounded-xl px-2.5 py-1 shadow-sm border border-white/30 shrink-0">
+                <img
+                  src="/rda-logo.png"
+                  alt="Road Development Authority Sri Lanka"
+                  className="h-7 w-auto object-contain"
+                />
+              </div>
+            </div>
+
+            {/* Title & Workshop Details on mobile */}
+            <div className="pt-2 border-t border-white/10">
+              <h1 className="text-base font-extrabold tracking-tight leading-snug">
                 Inclusive Connectivity and Development Project (ICDP)
               </h1>
-              <p className="text-xs text-slate-300 mt-0.5 leading-relaxed">
+              <p className="text-xs text-slate-300 mt-1 leading-relaxed">
                 Early Market Engagement Workshop &bull; 07 December 2026
               </p>
             </div>
           </div>
 
-          {/* Official RDA Logo on top-right */}
-          <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
-            <div className="bg-white rounded-xl px-3 py-1.5 shadow-md border border-white/30 flex items-center">
-              <img
-                src="/rda-logo.png"
-                alt="Road Development Authority Sri Lanka"
-                className="h-8 sm:h-9 w-auto object-contain"
-              />
+          {/* Tablet & Desktop Layout (>= sm / >= 640px) */}
+          <div className="hidden sm:flex sm:items-center sm:justify-between sm:gap-4 lg:gap-6">
+            <div className="flex items-center gap-3.5 lg:gap-4 min-w-0 flex-1">
+              <div className="w-12 h-12 lg:w-14 lg:h-14 rounded-xl bg-white p-1.5 shadow-md flex items-center justify-center shrink-0 border border-white/20">
+                <img
+                  src="/rda-emblem.png"
+                  alt="RDA Official Emblem"
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] lg:text-[11px] tracking-widest font-bold text-amber-400 uppercase">
+                    Road Development Authority &bull; Sri Lanka
+                  </span>
+                  <span className="px-2 py-0.5 rounded text-[9px] bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-400/30">
+                    ICDP OFFICIAL PORTAL
+                  </span>
+                </div>
+                <h1 className="text-base sm:text-lg lg:text-xl font-extrabold tracking-tight mt-0.5 leading-snug">
+                  Inclusive Connectivity and Development Project (ICDP)
+                </h1>
+                <p className="text-xs text-slate-300 mt-0.5 leading-relaxed">
+                  Early Market Engagement Workshop &bull; 07 December 2026
+                </p>
+              </div>
+            </div>
+
+            {/* Official RDA Logo on Tablet & Desktop */}
+            <div className="shrink-0 flex items-center">
+              <div className="bg-white rounded-xl px-3.5 py-1.5 lg:px-4 lg:py-2 shadow-md border border-white/30 flex items-center">
+                <img
+                  src="/rda-logo.png"
+                  alt="Road Development Authority Sri Lanka"
+                  className="h-8 sm:h-9 lg:h-10 w-auto object-contain"
+                />
+              </div>
             </div>
           </div>
         </div>
