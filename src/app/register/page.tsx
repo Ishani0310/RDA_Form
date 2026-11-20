@@ -1855,36 +1855,43 @@ function RegisterForm() {
                     </p>
                     <p className="flex items-center gap-1.5">
                       <Phone className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
-                      <strong>Indunil:</strong>{" "}
-                      <a href="tel:0712863433" className="text-blue-900 underline hover:text-blue-700 font-medium">
-                        071 286 3433
-                      </a>
-                    </p>
-                    <p className="flex items-center gap-1.5">
-                      <Phone className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
                       <strong>Inquiry Contact:</strong>{" "}
                       <a href="tel:0706970408" className="text-blue-900 underline hover:text-blue-700 font-medium">
                         070 697 0408
                       </a>{" "}
                       <span className="text-slate-500">(Thilina Tharinda)</span>
                     </p>
-                  </div>
-                  <div className="pt-0.5 space-y-1">
-                    <p className="flex items-center gap-1.5 flex-wrap">
+
+                    {/* Mr. Indunil Madhusanka Details */}
+                    <div className="p-2 rounded-lg bg-slate-50 border border-slate-200/80 space-y-1 my-1">
+                      <p className="font-bold text-slate-900 flex items-center gap-1.5">
+                        <Users className="w-3.5 h-3.5 text-blue-900 shrink-0" />
+                        Mr. Indunil Madhusanka
+                      </p>
+                      <p className="flex items-center gap-1.5 pl-5">
+                        <Phone className="w-3 h-3 text-emerald-700 shrink-0" />
+                        <span>Phone:</span>{" "}
+                        <a href="tel:0712863433" className="text-blue-900 underline hover:text-blue-700 font-medium">
+                          071 286 3433
+                        </a>
+                      </p>
+                      <p className="flex items-center gap-1.5 pl-5">
+                        <Mail className="w-3 h-3 text-blue-700 shrink-0" />
+                        <span>Email:</span>{" "}
+                        <a href="mailto:amindunil@gmail.com" className="text-blue-900 underline hover:text-blue-700 font-medium">
+                          amindunil@gmail.com
+                        </a>
+                      </p>
+                    </div>
+
+                    <p className="flex items-center gap-1.5 pt-0.5">
                       <Mail className="w-3.5 h-3.5 text-blue-700 shrink-0" />
-                      <strong>Registration Emails:</strong>
+                      <strong>Registration Email:</strong>{" "}
                       <a
                         href="mailto:wbicdpbid@gmail.com"
                         className="text-blue-900 underline hover:text-blue-700 font-medium"
                       >
                         wbicdpbid@gmail.com
-                      </a>
-                      <span className="text-slate-400">&bull;</span>
-                      <a
-                        href="mailto:amindunil@gmail.com"
-                        className="text-blue-900 underline hover:text-blue-700 font-medium"
-                      >
-                        amindunil@gmail.com
                       </a>
                     </p>
                   </div>
