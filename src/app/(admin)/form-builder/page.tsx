@@ -1447,10 +1447,10 @@ export default function FormBuilderPage() {
                               <Mail className="w-3.5 h-3.5 text-blue-700" />
                               <strong>Registration Email:</strong>{" "}
                               <a
-                                href="mailto:senehassenehas64@gmail.com"
+                                href="mailto:amindunil@gmail.com"
                                 className="text-blue-900 underline hover:text-blue-700 font-medium"
                               >
-                                senehassenehas64@gmail.com
+                                amindunil@gmail.com
                               </a>
                             </p>
                           </div>
