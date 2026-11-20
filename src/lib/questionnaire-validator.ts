@@ -23,6 +23,17 @@ export interface ValidationResult {
   errors: Record<string, string>;
 }
 
+export function isValidSriLankanPhone(raw?: string | null): boolean {
+  if (!raw || !raw.trim()) return false;
+  const cleaned = raw.trim().replace(/[\s\-\(\)\.]/g, "");
+  return /^(?:0\d{9}|\+94\d{9})$/.test(cleaned);
+}
+
+export function isValidEmailAddress(raw?: string | null): boolean {
+  if (!raw || !raw.trim()) return false;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(raw.trim());
+}
+
 export function validateQuestionnaireSubmission(
   data: Partial<OfficialQuestionnaireData>
 ): ValidationResult {
@@ -32,20 +43,19 @@ export function validateQuestionnaireSubmission(
   // SECTION 1: BASIC INFORMATION
   // =========================================================================
   if (!data.organizationName || !data.organizationName.trim()) {
-    errors.organizationName = "Name of your Organization / Company / Institution is required.";
+    errors.organizationName = "Organization name is required. Please enter your registered business name.";
   }
 
   if (!data.contactNumber || !data.contactNumber.trim()) {
-    errors.contactNumber = "Contact number is required.";
+    errors.contactNumber = "Contact telephone number is required. Please enter an active telephone or mobile number.";
+  } else if (!isValidSriLankanPhone(data.contactNumber)) {
+    errors.contactNumber = "Please enter a valid 10-digit Sri Lankan telephone or mobile number.";
   }
 
   if (!data.email || !data.email.trim()) {
-    errors.email = "Email address is required.";
-  } else {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(data.email.trim())) {
-      errors.email = "Please provide a valid email address.";
-    }
+    errors.email = "Email address is required. Please enter your primary correspondence email.";
+  } else if (!isValidEmailAddress(data.email)) {
+    errors.email = "Please enter a valid email address (e.g., name@company.com).";
   }
 
   if (!data.willParticipate || (data.willParticipate !== "Yes" && data.willParticipate !== "No")) {
@@ -53,7 +63,7 @@ export function validateQuestionnaireSubmission(
       "Please indicate whether you will be participating in the workshop on 07 December 2026.";
   }
 
-  // If NOT participating in the workshop, immediate submission is valid
+  // If NOT participating in the workshop, basic organizational details are sufficient
   if (data.willParticipate === "No") {
     return {
       isValid: Object.keys(errors).length === 0,
@@ -68,7 +78,7 @@ export function validateQuestionnaireSubmission(
     !data.participantCategory ||
     !["Contractor", "Supplier", "Government Officer"].includes(data.participantCategory)
   ) {
-    errors.participantCategory = "Please select the participant category you represent.";
+    errors.participantCategory = "Please select your participant category to continue.";
     return {
       isValid: false,
       errors,
@@ -79,26 +89,30 @@ export function validateQuestionnaireSubmission(
   // SECTION 3: PARTICIPANT DETAILS
   // =========================================================================
   if (!data.participant1?.fullName?.trim()) {
-    errors["participant1.fullName"] = "Participant Full Name is required.";
+    errors["participant1.fullName"] = "Participant 1 full name is required. Please enter the full name of your representative.";
   }
   if (!data.participant1?.mobileNumber?.trim()) {
-    errors["participant1.mobileNumber"] = "Participant Mobile Number is required.";
+    errors["participant1.mobileNumber"] = "Participant 1 mobile number is required. Please enter an active mobile number.";
+  } else if (!isValidSriLankanPhone(data.participant1.mobileNumber)) {
+    errors["participant1.mobileNumber"] = "Please enter a valid 10-digit Sri Lankan mobile number.";
   }
-  if (data.participant1?.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.participant1.email.trim())) {
-    errors["participant1.email"] = "Please enter a valid email address for Participant 1.";
+  if (data.participant1?.email && data.participant1.email.trim() && !isValidEmailAddress(data.participant1.email)) {
+    errors["participant1.email"] = "Please enter a valid email address (e.g., name@company.com).";
   }
-  if (data.participant2?.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.participant2.email.trim())) {
-    errors["participant2.email"] = "Please enter a valid email address for Participant 2.";
+  if (data.participant2?.email && data.participant2.email.trim() && !isValidEmailAddress(data.participant2.email)) {
+    errors["participant2.email"] = "Please enter a valid email address for Participant 2 (e.g., name@company.com).";
+  }
+  if (data.participant2?.mobileNumber && data.participant2.mobileNumber.trim() && !isValidSriLankanPhone(data.participant2.mobileNumber)) {
+    errors["participant2.mobileNumber"] = "Please enter a valid 10-digit Sri Lankan mobile number for Participant 2.";
   }
   if (!data.participant1?.designation?.trim()) {
-    errors["participant1.designation"] = "Participant Designation is required.";
+    errors["participant1.designation"] = "Participant 1 designation is required. Please enter the official job title.";
   }
 
   // -------------------------------------------------------------------------
   // CATEGORY: GOVERNMENT OFFICER
   // -------------------------------------------------------------------------
   if (data.participantCategory === "Government Officer") {
-    // Government officers only provide participant details and optional matters for discussion
     return {
       isValid: Object.keys(errors).length === 0,
       errors,
@@ -112,25 +126,25 @@ export function validateQuestionnaireSubmission(
     const sup = data.supplierDetails || createEmptySupplierDetails();
 
     if (!sup.companyName || !sup.companyName.trim()) {
-      errors["supplierDetails.companyName"] = "Company Name is required for suppliers.";
+      errors["supplierDetails.companyName"] = "Supplier company name is required. Please enter your registered business name.";
     }
 
     if (!sup.materialsSupplied || sup.materialsSupplied.length === 0) {
-      errors["supplierDetails.materialsSupplied"] = "Please select at least one material you supply.";
+      errors["supplierDetails.materialsSupplied"] = "Please select at least one material category supplied by your company.";
     } else if (sup.materialsSupplied.includes("Other") && !sup.materialsOther?.trim()) {
-      errors["supplierDetails.materialsOther"] = "Please specify the other material you supply.";
+      errors["supplierDetails.materialsOther"] = "Please specify the other material(s) supplied by your company.";
     }
 
     if (!sup.locationAddress || !sup.locationAddress.trim()) {
-      errors["supplierDetails.locationAddress"] = "Location Address is required.";
+      errors["supplierDetails.locationAddress"] = "Factory / supply location address is required. Please enter the physical operating address.";
     }
 
     if (!sup.province || !sup.province.trim()) {
-      errors["supplierDetails.province"] = "Please select your Province.";
+      errors["supplierDetails.province"] = "Please select the province where your facility is located.";
     }
 
     if (!sup.district || !sup.district.trim()) {
-      errors["supplierDetails.district"] = "Please select your District.";
+      errors["supplierDetails.district"] = "Please select the district where your facility is located.";
     }
 
     return {
@@ -145,21 +159,21 @@ export function validateQuestionnaireSubmission(
 
   // Section 4: Contractor Details
   if (!data.ictadRegistrationNumber || !data.ictadRegistrationNumber.trim()) {
-    errors.ictadRegistrationNumber = "ICTAD registration number is required for contractors.";
+    errors.ictadRegistrationNumber = "ICTAD registration number is required for contractors (e.g., C-12345).";
   }
 
   if (!data.areasOfSpecialty || data.areasOfSpecialty.length === 0) {
-    errors.areasOfSpecialty = "Please select at least one area of specialty.";
+    errors.areasOfSpecialty = "Please select at least one construction area of specialty.";
   } else if (data.areasOfSpecialty.includes("Other") && !data.specialtyOther?.trim()) {
-    errors.specialtyOther = "Please specify your other area of specialty.";
+    errors.specialtyOther = "Please specify your other construction area of specialty.";
   }
 
   // Validate CIDA grading for each selected specialty area
   const specs = data.areasOfSpecialty || [];
   const specialtyGrades = data.specialtyGrades || {};
   for (const s of specs) {
-    if (!specialtyGrades[s] || !specialtyGrades[s].trim()) {
-      errors[`specialtyGrades.${s}`] = `Please select CIDA grading for ${s}.`;
+    if (s !== "Other" && (!specialtyGrades[s] || !specialtyGrades[s].trim())) {
+      errors[`specialtyGrades.${s}`] = `Please select your CIDA grade for ${s}.`;
     }
   }
 
@@ -171,8 +185,8 @@ export function validateQuestionnaireSubmission(
       .join(", ");
     if (gradeSummary) {
       data.cidaGrade = gradeSummary;
-    } else if (specs.length > 0) {
-      errors.cidaGrade = "Please select CIDA grading under each selected specialty area.";
+    } else if (specs.filter(s => s !== "Other").length > 0) {
+      errors.cidaGrade = "Please select your CIDA grade under each selected specialty area.";
     }
   }
 
@@ -221,7 +235,7 @@ export function validateQuestionnaireSubmission(
     (data.hasOngoingContracts !== "Yes" && data.hasOngoingContracts !== "No")
   ) {
     errors.hasOngoingContracts =
-      "Please indicate whether your company currently has ongoing contracts.";
+      "Please indicate whether your company currently has ongoing contracts in hand.";
   }
 
   // Section 8: Ongoing Works (Required if hasOngoingContracts === "Yes")
@@ -232,7 +246,7 @@ export function validateQuestionnaireSubmission(
       data.totalOutstandingValueLkrMillion === ""
     ) {
       errors.totalOutstandingValueLkrMillion =
-        "Total value of outstanding works as at 1 December 2026 is required. (Enter full total amount in LKR, or 0 if none).";
+        "Total value of outstanding works is required. Please enter the amount in LKR (or 0 if none).";
     } else {
       const outNum = Number(data.totalOutstandingValueLkrMillion);
       if (isNaN(outNum)) {
@@ -250,7 +264,7 @@ export function validateQuestionnaireSubmission(
     "More than 30 years",
   ];
   if (!data.generalExperience || !validExp.includes(data.generalExperience)) {
-    errors.generalExperience = "Please select your general experience in the construction industry.";
+    errors.generalExperience = "Please select your firm's general experience in the construction industry.";
   }
 
   // Section 10: Similar Work Experience (3 Contracts)
@@ -259,7 +273,7 @@ export function validateQuestionnaireSubmission(
 
   if (!c1 || !c1.contractName || !c1.contractName.trim()) {
     errors["similarWorks.0.contractName"] =
-      "Please provide Contract 1 name, or enter N/A if your firm has no similar work experience.";
+      "Please provide Contract 1 name, or enter 'N/A' if your firm has no similar work experience.";
   } else if (c1.contractName.trim().toUpperCase() !== "N/A") {
     if (!c1.contractType) {
       errors["similarWorks.0.contractType"] = "Contract 1: Contract type is required.";

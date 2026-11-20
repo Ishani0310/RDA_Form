@@ -34,9 +34,16 @@ import {
   ShieldCheck,
   Eye,
   ArrowUpDown,
+  AlertCircle,
+  ArrowDown,
 } from "lucide-react";
 import Link from "next/link";
 import { evaluateConditionalRule } from "@/components/dynamic-form/DynamicFormRenderer";
+import {
+  validateQuestionnaireSubmission,
+  isValidSriLankanPhone,
+  isValidEmailAddress,
+} from "@/lib/questionnaire-validator";
 import {
   OfficialQuestionnaireData,
   FINANCIAL_YEARS,
@@ -203,6 +210,92 @@ const COMPLETION_STATUS_OPTIONS: SimilarWorkCompletionStatus[] = [
 
 const CURRENCY_OPTIONS = ["LKR", "USD", "EUR", "JPY", "GBP", "Other"];
 
+// Field navigation sequence matching physical questionnaire layout
+const QUESTIONNAIRE_FIELD_ORDER = [
+  "organizationName",
+  "contactNumber",
+  "email",
+  "willParticipate",
+  "participantCategory",
+  // Section 3: Participants
+  "participant1.fullName",
+  "participant1.mobileNumber",
+  "participant1.email",
+  "participant1.designation",
+  "participant2.fullName",
+  "participant2.mobileNumber",
+  "participant2.email",
+  "participant2.designation",
+  // Section 4: Supplier Details
+  "supplierDetails.companyName",
+  "supplierDetails.materialsSupplied",
+  "supplierDetails.materialsOther",
+  "supplierDetails.locationAddress",
+  "supplierDetails.province",
+  "supplierDetails.district",
+  // Section 4: Contractor Details
+  "ictadRegistrationNumber",
+  "areasOfSpecialty",
+  "specialtyOther",
+  // Section 7 & 8: Work Commitments
+  "hasOngoingContracts",
+  "totalOutstandingValueLkrMillion",
+  // Section 9: Experience
+  "generalExperience",
+  // Section 10: Similar Works
+  "similarWorks.0.contractName",
+  "similarWorks.0.contractType",
+  "similarWorks.0.contractAmount",
+  "similarWorks.0.startDate",
+  "similarWorks.0.completionDate",
+  "similarWorks.0.completionStatus",
+  "similarWorks.1.contractType",
+  "similarWorks.1.contractAmount",
+  "similarWorks.2.contractType",
+  "similarWorks.2.contractAmount",
+  "similarWorks.descending",
+];
+
+const getDomIdForField = (fieldKey: string): string => {
+  if (fieldKey.startsWith("specialtyGrades.")) {
+    const spec = fieldKey.replace("specialtyGrades.", "");
+    return `input-specialtyGrades-${spec.replace(/[^a-zA-Z0-9]/g, "_")}`;
+  }
+  if (fieldKey.startsWith("dynamic.")) {
+    return `input-dynamic-${fieldKey.replace("dynamic.", "")}`;
+  }
+  if (fieldKey === "similarWorks.descending") {
+    return "section-10-container";
+  }
+  return `input-${fieldKey.replace(/\./g, "-")}`;
+};
+
+function mapServerErrorMessageToField(message: string): { key: string; message: string } | null {
+  if (!message) return null;
+  const clean = message.replace(/^Incomplete questionnaire:\s*/i, "").trim();
+
+  if (/organization/i.test(clean)) return { key: "organizationName", message: clean };
+  if (/contact (telephone|number)/i.test(clean)) return { key: "contactNumber", message: clean };
+  if (/email/i.test(clean)) return { key: "email", message: clean };
+  if (/participating in the workshop/i.test(clean)) return { key: "willParticipate", message: clean };
+  if (/participant category/i.test(clean)) return { key: "participantCategory", message: clean };
+  if (/participant.*full name/i.test(clean)) return { key: "participant1.fullName", message: clean };
+  if (/participant.*mobile/i.test(clean)) return { key: "participant1.mobileNumber", message: clean };
+  if (/participant.*designation/i.test(clean)) return { key: "participant1.designation", message: clean };
+  if (/supplier.*company/i.test(clean)) return { key: "supplierDetails.companyName", message: clean };
+  if (/material.*suppl/i.test(clean)) return { key: "supplierDetails.materialsSupplied", message: clean };
+  if (/location address/i.test(clean)) return { key: "supplierDetails.locationAddress", message: clean };
+  if (/province/i.test(clean)) return { key: "supplierDetails.province", message: clean };
+  if (/district/i.test(clean)) return { key: "supplierDetails.district", message: clean };
+  if (/ictad/i.test(clean) || /registration number/i.test(clean)) return { key: "ictadRegistrationNumber", message: clean };
+  if (/area.*specialty/i.test(clean)) return { key: "areasOfSpecialty", message: clean };
+  if (/general experience/i.test(clean)) return { key: "generalExperience", message: clean };
+  if (/contract 1/i.test(clean) || /similar work/i.test(clean)) return { key: "similarWorks.0.contractName", message: clean };
+  if (/descending order/i.test(clean) || /cannot exceed/i.test(clean)) return { key: "similarWorks.descending", message: clean };
+
+  return null;
+}
+
 function RegisterForm() {
   const searchParams = useSearchParams();
   const tokenFromUrl = searchParams.get("token") || "";
@@ -213,6 +306,70 @@ function RegisterForm() {
   const [savedDraftsList, setSavedDraftsList] = useState<BrowserSavedDraft[]>([]);
   const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false);
   const [hasCheckedDrafts, setHasCheckedDrafts] = useState(false);
+
+  // Field-level validation state & Declaration consent
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [declarationAccepted, setDeclarationAccepted] = useState(false);
+  const [modalDeclarationError, setModalDeclarationError] = useState<string | null>(null);
+
+  const clearFieldError = (fieldKey: string) => {
+    setFieldErrors((prev) => {
+      if (!prev[fieldKey]) return prev;
+      const updated = { ...prev };
+      delete updated[fieldKey];
+      return updated;
+    });
+  };
+
+  const getNextErrorFieldKey = (errorsMap?: Record<string, string>): string | null => {
+    const activeErrors = errorsMap || fieldErrors;
+    const keys = Object.keys(activeErrors);
+    if (keys.length === 0) return null;
+
+    for (const key of QUESTIONNAIRE_FIELD_ORDER) {
+      if (activeErrors[key]) return key;
+    }
+    for (const key of keys) {
+      if (key.startsWith("specialtyGrades.")) return key;
+    }
+    for (const key of keys) {
+      if (key.startsWith("dynamic.")) return key;
+    }
+    return keys[0] || null;
+  };
+
+  const scrollToAndFocusField = (fieldKey: string) => {
+    if (typeof window === "undefined") return;
+    const domId = getDomIdForField(fieldKey);
+    let target = document.getElementById(domId);
+    if (!target) {
+      target =
+        document.querySelector(`[name="${fieldKey}"]`) ||
+        document.querySelector(`[data-field="${fieldKey}"]`) ||
+        document.querySelector(`#${fieldKey}`);
+    }
+
+    if (target) {
+      const rect = target.getBoundingClientRect();
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const targetY = rect.top + scrollTop - 120; // 120px offset to clear sticky headers
+
+      window.scrollTo({
+        top: Math.max(0, targetY),
+        behavior: "smooth",
+      });
+
+      setTimeout(() => {
+        const focusable = target!.matches("input, select, textarea, button, [tabindex]")
+          ? (target as HTMLElement)
+          : target!.querySelector<HTMLElement>("input:not([type='hidden']), select, textarea, button, [tabindex='0']");
+
+        if (focusable) {
+          focusable.focus({ preventScroll: true });
+        }
+      }, 350);
+    }
+  };
 
   // Auto-Save Indicator State: "idle" | "saving" | "saved" | "error"
   const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
@@ -273,6 +430,72 @@ function RegisterForm() {
     } finally {
       setIsCheckingRegNumber(false);
     }
+  };
+
+  const renderParticipantField = (
+    partNum: 1 | 2,
+    field: "fullName" | "mobileNumber" | "email" | "designation",
+    label: string,
+    placeholder: string,
+    isRequired: boolean,
+    type: "text" | "tel" | "email" = "text"
+  ) => {
+    const errorKey = `participant${partNum}.${field}`;
+    const domId = `input-participant${partNum}-${field}`;
+    const errorMsg = fieldErrors[errorKey];
+    const participantObj = partNum === 1 ? formData.participant1 : formData.participant2;
+    const value = participantObj?.[field] || "";
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const newVal = e.target.value;
+      setFormData((prev) => ({
+        ...prev,
+        [`participant${partNum}`]: {
+          ...(partNum === 1
+            ? prev.participant1 || { fullName: "", mobileNumber: "", email: "", designation: "" }
+            : prev.participant2 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
+          [field]: newVal,
+        },
+      }));
+      if (fieldErrors[errorKey]) {
+        clearFieldError(errorKey);
+      }
+    };
+
+    return (
+      <div key={domId}>
+        <label htmlFor={domId} className="block font-semibold text-slate-700 mb-1">
+          {label} {isRequired && <span className="text-rose-500">*</span>}
+        </label>
+        <input
+          id={domId}
+          type={type}
+          required={isRequired}
+          value={value}
+          onChange={handleChange}
+          placeholder={placeholder}
+          aria-invalid={Boolean(errorMsg)}
+          aria-describedby={errorMsg ? `error-${errorKey}` : undefined}
+          className={`w-full p-2.5 rounded-lg text-slate-900 text-xs focus:outline-none transition-all ${
+            type === "tel" ? "font-mono" : ""
+          } ${
+            errorMsg
+              ? "bg-rose-50/30 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+              : "bg-white border border-slate-300 focus:ring-2 focus:ring-blue-800"
+          }`}
+        />
+        {errorMsg && (
+          <div
+            id={`error-${errorKey}`}
+            role="alert"
+            className="flex items-start gap-1 mt-1 text-[11px] font-semibold text-rose-600 animate-fadeIn"
+          >
+            <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+            <span>{errorMsg}</span>
+          </div>
+        )}
+      </div>
+    );
   };
 
   // Debounced uniqueness check as user types
@@ -561,17 +784,24 @@ function RegisterForm() {
   const renderDynamicQuestionField = (q: any) => {
     if (!evaluateConditionalRule(q.conditionalLogic, formData as any)) return null;
 
+    const errorKey = `dynamic.${q.id}`;
+    const domId = `input-dynamic-${q.id}`;
+    const errorMsg = fieldErrors[errorKey];
+
     const val = (formData as any)[q.id] ?? (formData as any)[q.code] ?? "";
     const setVal = (newVal: any) => {
       setFormData((prev: any) => ({
         ...prev,
         [q.id]: newVal,
       }));
+      if (fieldErrors[errorKey]) {
+        clearFieldError(errorKey);
+      }
     };
 
     return (
       <div key={q.id} className="space-y-1.5 pt-2">
-        <label className="block font-semibold text-slate-700">
+        <label htmlFor={domId} className="block font-semibold text-slate-700">
           <span className="text-blue-900 font-mono text-xs mr-1 font-bold">[{q.code}]</span>
           <span>{q.text}</span>
           {q.isRequired && <span className="text-rose-500 font-bold ml-1">*</span>}
@@ -580,17 +810,31 @@ function RegisterForm() {
 
         {q.fieldType === "long_text" ? (
           <textarea
+            id={domId}
             rows={3}
             value={val}
             onChange={(e) => setVal(e.target.value)}
             placeholder={q.placeholder || ""}
-            className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
+            aria-invalid={Boolean(errorMsg)}
+            aria-describedby={errorMsg ? `error-${errorKey}` : undefined}
+            className={`w-full p-2.5 rounded-lg text-slate-900 focus:outline-none transition-all ${
+              errorMsg
+                ? "bg-rose-50/30 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
+            }`}
           />
         ) : q.fieldType === "dropdown" ? (
           <select
+            id={domId}
             value={val}
             onChange={(e) => setVal(e.target.value)}
-            className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
+            aria-invalid={Boolean(errorMsg)}
+            aria-describedby={errorMsg ? `error-${errorKey}` : undefined}
+            className={`w-full p-2.5 rounded-lg text-slate-900 focus:outline-none transition-all ${
+              errorMsg
+                ? "bg-rose-50/30 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
+            }`}
           >
             <option value="">-- Select an option --</option>
             {(q.options || []).map((opt: any) => (
@@ -600,7 +844,12 @@ function RegisterForm() {
             ))}
           </select>
         ) : q.fieldType === "radio" ? (
-          <div className="space-y-2">
+          <div
+            id={domId}
+            className={`space-y-2 p-2 rounded-xl transition-all ${
+              errorMsg ? "bg-rose-50/30 border-2 border-rose-500" : ""
+            }`}
+          >
             {(q.options || []).map((opt: any) => (
               <label
                 key={opt.id || opt.value}
@@ -619,7 +868,12 @@ function RegisterForm() {
             ))}
           </div>
         ) : q.fieldType === "yes_no" ? (
-          <div className="flex gap-3">
+          <div
+            id={domId}
+            className={`flex gap-3 p-1 rounded-xl transition-all ${
+              errorMsg ? "bg-rose-50/30 border-2 border-rose-500" : ""
+            }`}
+          >
             {["Yes", "No"].map((c) => (
               <label
                 key={c}
@@ -639,6 +893,7 @@ function RegisterForm() {
           </div>
         ) : (
           <input
+            id={domId}
             type={
               q.fieldType === "email"
                 ? "email"
@@ -657,8 +912,24 @@ function RegisterForm() {
             value={val}
             onChange={(e) => setVal(e.target.value)}
             placeholder={q.placeholder || ""}
-            className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
+            aria-invalid={Boolean(errorMsg)}
+            aria-describedby={errorMsg ? `error-${errorKey}` : undefined}
+            className={`w-full p-2.5 rounded-lg text-slate-900 focus:outline-none transition-all font-mono ${
+              errorMsg
+                ? "bg-rose-50/30 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
+            }`}
           />
+        )}
+        {errorMsg && (
+          <div
+            id={`error-${errorKey}`}
+            role="alert"
+            className="flex items-start gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn"
+          >
+            <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+            <span>{errorMsg}</span>
+          </div>
         )}
         {q.helpText && <p className="text-[11px] text-slate-400">{q.helpText}</p>}
       </div>
@@ -945,38 +1216,22 @@ function RegisterForm() {
     }, 500);
   };
 
-  const handleInitiateReview = () => {
-    setFormAlert(null);
+  const validateForm = (): { isValid: boolean; errors: Record<string, string>; firstErrorKey?: string } => {
+    // 1. Core authoritative schema validation
+    const valResult = validateQuestionnaireSubmission(formData);
+    const errors: Record<string, string> = { ...valResult.errors };
 
-    const orgName = formData.organizationName.trim() || formData.supplierDetails?.companyName?.trim();
-    if (!orgName) {
-      setFormAlert({
-        type: "error",
-        message: "Name of your Organization / Company / Institution is required to review and submit.",
-      });
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      return;
+    // 2. Unique ICTAD Registration Number check for contractors
+    if (formData.participantCategory === "Contractor") {
+      const reg = formData.ictadRegistrationNumber?.trim();
+      if (!reg) {
+        errors.ictadRegistrationNumber = "ICTAD registration number is required for contractors (e.g., C-12345).";
+      } else if (regNumberError) {
+        errors.ictadRegistrationNumber = regNumberError;
+      }
     }
 
-    if (!formData.willParticipate) {
-      setFormAlert({
-        type: "error",
-        message: "Please indicate whether you will be participating in the workshop on 07 December 2026.",
-      });
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      return;
-    }
-
-    if (formData.willParticipate === "Yes" && !formData.participantCategory) {
-      setFormAlert({
-        type: "error",
-        message: "Please select your Participant Category.",
-      });
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      return;
-    }
-
-    // Dynamic questionnaire validation according to published questionnaire
+    // 3. Dynamic questions validation according to active published questionnaire
     if (publishedQuestionnaire?.sections) {
       for (const sec of publishedQuestionnaire.sections) {
         for (const q of sec.questions) {
@@ -992,203 +1247,85 @@ function RegisterForm() {
               val === "" ||
               (Array.isArray(val) && val.length === 0)
             ) {
-              setFormAlert({
-                type: "error",
-                message: `${q.text} is required.`,
-              });
-              window.scrollTo({ top: 0, behavior: "smooth" });
-              return;
+              errors[`dynamic.${q.id}`] = `${q.text} is required. Please provide the requested information.`;
             }
           }
         }
       }
     }
 
-    // Section 4: Validate unique ICTAD Registration Number for Contractors
-    if (formData.participantCategory === "Contractor") {
-      const reg = formData.ictadRegistrationNumber?.trim();
-      if (!reg) {
-        setFormAlert({
-          type: "error",
-          message: "Section 4: ICTAD registration number is required.",
-        });
-        const elem = document.getElementById("ictad-reg-number-input");
-        if (elem) elem.scrollIntoView({ behavior: "smooth" });
-        return;
+    const errorKeys = Object.keys(errors);
+    const isValid = errorKeys.length === 0;
+    const firstErrorKey = isValid ? undefined : (getNextErrorFieldKey(errors) || errorKeys[0]);
+
+    return { isValid, errors, firstErrorKey };
+  };
+
+  const handleInitiateReview = () => {
+    setFormAlert(null);
+
+    const { isValid, errors, firstErrorKey } = validateForm();
+    if (!isValid) {
+      setFieldErrors(errors);
+      if (firstErrorKey) {
+        scrollToAndFocusField(firstErrorKey);
       }
-      if (regNumberError) {
-        setFormAlert({
-          type: "error",
-          message: `Section 4: ${regNumberError}`,
-        });
-        const elem = document.getElementById("ictad-reg-number-input");
-        if (elem) elem.scrollIntoView({ behavior: "smooth" });
-        return;
-      }
+      return;
     }
 
-    // Section 10: Validate descending order for Similar Works (higher value to lower value)
-    if (formData.participantCategory === "Contractor") {
-      const works = formData.similarWorks || [];
-      const firstWork = works[0];
-      if (firstWork && firstWork.contractName && firstWork.contractName.trim().toUpperCase() !== "N/A") {
-        let prevValidAmt: number | null = null;
-        let prevValidIdx = 0;
-        for (let i = 0; i < works.length; i++) {
-          const w = works[i];
-          if (w && w.contractName && w.contractName.trim().toUpperCase() !== "N/A" && w.contractAmount !== null && w.contractAmount !== undefined && w.contractAmount !== "") {
-            const curAmt = Number(w.contractAmount);
-            if (!isNaN(curAmt)) {
-              if (prevValidAmt !== null && curAmt > prevValidAmt) {
-                setFormAlert({
-                  type: "error",
-                  message: `Section 10: Contract #${i + 1} amount (LKR ${curAmt.toLocaleString()}) cannot exceed Contract #${prevValidIdx + 1} amount (LKR ${prevValidAmt.toLocaleString()}). Contracts must be entered in descending order from highest to lowest value. Please click "Sort by Highest Value First" or adjust the values.`,
-                });
-                const elem = document.getElementById("section-10-container");
-                if (elem) elem.scrollIntoView({ behavior: "smooth" });
-                return;
-              }
-              prevValidAmt = curAmt;
-              prevValidIdx = i;
-            }
-          }
-        }
-      }
-    }
-
-    // Form is valid: open Review Area
+    setFieldErrors({});
     setShowReviewModal(true);
   };
 
   const handleSubmitFinal = async () => {
     setLoading(true);
     setFormAlert(null);
+    setModalDeclarationError(null);
+
+    // Declaration consent check
+    if (!declarationAccepted) {
+      setModalDeclarationError("Please review and accept the official declaration before submitting.");
+      setLoading(false);
+      const declInput = document.getElementById("input-declaration-consent");
+      if (declInput) declInput.focus();
+      return;
+    }
+
+    const { isValid, errors, firstErrorKey } = validateForm();
+    if (!isValid) {
+      setShowReviewModal(false);
+      setFieldErrors(errors);
+      setLoading(false);
+      if (firstErrorKey) {
+        setTimeout(() => {
+          scrollToAndFocusField(firstErrorKey);
+        }, 100);
+      }
+      return;
+    }
 
     try {
       const orgName = formData.organizationName.trim() || formData.supplierDetails?.companyName?.trim();
-      if (!orgName) {
-        setFormAlert({
-          type: "error",
-          message: "Name of your Organization / Company / Institution is required to submit.",
-        });
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        setLoading(false);
-        return;
-      }
 
-      if (!formData.willParticipate) {
-        setFormAlert({
-          type: "error",
-          message: "Please indicate whether you will be participating in the workshop on 07 December 2026.",
-        });
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        setLoading(false);
-        return;
-      }
-
-      // Enforce dynamic questions validation according to active published questionnaire
-      if (publishedQuestionnaire?.sections) {
-        for (const sec of publishedQuestionnaire.sections) {
-          for (const q of sec.questions) {
-            if (
-              q.isRequired &&
-              !BASELINE_QUESTION_IDS.has(q.id) &&
-              evaluateConditionalRule(q.conditionalLogic, formData as any)
-            ) {
-              const val = (formData as any)[q.id] ?? (formData as any)[q.code];
-              if (
-                val === undefined ||
-                val === null ||
-                val === "" ||
-                (Array.isArray(val) && val.length === 0)
-              ) {
-                setFormAlert({
-                  type: "error",
-                  message: `${q.text} is required.`,
-                });
-                window.scrollTo({ top: 0, behavior: "smooth" });
-                setLoading(false);
-                return;
-              }
-            }
-          }
-        }
-      }
-
-      // Section 4: Validate unique ICTAD Registration Number for Contractors
-    if (formData.participantCategory === "Contractor") {
-      const reg = formData.ictadRegistrationNumber?.trim();
-      if (!reg) {
-        setFormAlert({
-          type: "error",
-          message: "Section 4: ICTAD registration number is required.",
-        });
-        const elem = document.getElementById("ictad-reg-number-input");
-        if (elem) elem.scrollIntoView({ behavior: "smooth" });
-        return;
-      }
-      if (regNumberError) {
-        setFormAlert({
-          type: "error",
-          message: `Section 4: ${regNumberError}`,
-        });
-        const elem = document.getElementById("ictad-reg-number-input");
-        if (elem) elem.scrollIntoView({ behavior: "smooth" });
-        return;
-      }
-    }
-
-    // Section 10: Validate descending order for Similar Works (higher value to lower value)
-      if (formData.participantCategory === "Contractor") {
-        const works = formData.similarWorks || [];
-        const firstWork = works[0];
-        if (firstWork && firstWork.contractName && firstWork.contractName.trim().toUpperCase() !== "N/A") {
-          let prevValidAmt: number | null = null;
-          let prevValidIdx = 0;
-          for (let i = 0; i < works.length; i++) {
-            const w = works[i];
-            if (w && w.contractName && w.contractName.trim().toUpperCase() !== "N/A" && w.contractAmount !== null && w.contractAmount !== undefined && w.contractAmount !== "") {
-              const curAmt = Number(w.contractAmount);
-              if (!isNaN(curAmt)) {
-                if (prevValidAmt !== null && curAmt > prevValidAmt) {
-                  setFormAlert({
-                    type: "error",
-                    message: `Section 10: Contract #${i + 1} amount (LKR ${curAmt.toLocaleString()}) cannot exceed Contract #${prevValidIdx + 1} amount (LKR ${prevValidAmt.toLocaleString()}). Contracts must be entered in descending order from highest to lowest value. Please click "Sort by Highest Value First" or adjust the values.`,
-                  });
-                  const elem = document.getElementById("section-10-container");
-                  if (elem) elem.scrollIntoView({ behavior: "smooth" });
-                  setLoading(false);
-                  setShowReviewModal(false);
-                  return;
-                }
-                prevValidAmt = curAmt;
-                prevValidIdx = i;
-              }
-            }
-          }
-        }
-      }
-
-      // Step 1: Save draft to sync latest questionnaire state and obtain token
-      const savePayload: Record<string, unknown> = {
-        questionnaireData: formData,
-        businessName: orgName || "Registered Entity",
-        registrationNumber: formData.ictadRegistrationNumber?.trim() || undefined,
-        cidaGrade: formData.cidaGrade?.trim() || undefined,
-        province: formData.supplierDetails?.province?.trim() || (formData as any).province?.trim() || undefined,
-        district: formData.supplierDetails?.district?.trim() || (formData as any).district?.trim() || undefined,
-        contactOfficer: {
-          name: formData.participant1?.fullName?.trim() || orgName || "Authorized Representative",
-          phone: formData.participant1?.mobileNumber?.trim() || formData.contactNumber?.trim() || undefined,
-          email: formData.participant1?.email?.trim() || formData.email?.trim() || undefined,
+      // Step 1: Sync all form inputs to server to obtain/refresh token
+      const payload: any = {
+        data: formData,
+        organizationName: orgName || "RDA Participant",
+        primaryContact: {
+          fullName: formData.participant1?.fullName?.trim() || "Authorized Representative",
+          mobileNumber: formData.participant1?.mobileNumber?.trim() || formData.contactNumber?.trim() || "0112865766",
+          email: formData.participant1?.email?.trim() || formData.email?.trim() || "contact@rda.gov.lk",
         },
       };
-      if (currentDraftToken) savePayload.resumeToken = currentDraftToken;
+
+      if (currentDraftToken) {
+        payload.resumeToken = currentDraftToken;
+      }
 
       const saveRes = await fetch("/api/public/draft", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(savePayload),
+        body: JSON.stringify(payload),
       });
       const saveData = await saveRes.json();
 
@@ -1220,11 +1357,21 @@ function RegisterForm() {
         setAutoSaveStatus("idle");
         window.scrollTo({ top: 0, behavior: "smooth" });
       } else {
-        setFormAlert({
-          type: "error",
-          message: subData.message || "Submission rejected. Please check all required fields.",
-        });
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        const errorMsg = subData.message || "Submission rejected. Please check all required fields.";
+        const mapped = mapServerErrorMessageToField(errorMsg);
+        if (mapped) {
+          setShowReviewModal(false);
+          setFieldErrors((prev) => ({ ...prev, [mapped.key]: mapped.message }));
+          setTimeout(() => {
+            scrollToAndFocusField(mapped.key);
+          }, 100);
+        } else {
+          setFormAlert({
+            type: "error",
+            message: errorMsg,
+          });
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
       }
     } catch (err: unknown) {
       setFormAlert({
@@ -1239,6 +1386,7 @@ function RegisterForm() {
 
   // Handlers for Contractor Specialities & CIDA Gradings
   const handleSpecialtyChange = (spec: AreaOfSpecialty) => {
+    clearFieldError("areasOfSpecialty");
     const current = formData.areasOfSpecialty || [];
     if (current.includes(spec)) {
       if (spec === "Other") {
@@ -1277,6 +1425,7 @@ function RegisterForm() {
   };
 
   const handleSpecialtyGradeChange = (spec: string, grade: string) => {
+    clearFieldError(`specialtyGrades.${spec}`);
     const updatedGrades = {
       ...(formData.specialtyGrades || {}),
       [spec]: grade,
@@ -1309,6 +1458,7 @@ function RegisterForm() {
 
   // Handlers for Supplier Materials & Capacity
   const handleSupplierMaterialToggle = (mat: string) => {
+    clearFieldError("supplierDetails.materialsSupplied");
     const current = formData.supplierDetails?.materialsSupplied || [];
     const caps = { ...(formData.supplierDetails?.supplyCapacities || {}) };
 
@@ -1438,6 +1588,8 @@ function RegisterForm() {
     field: keyof SimilarWorkContract,
     value: any
   ) => {
+    clearFieldError(`similarWorks.${index}.${field}`);
+    clearFieldError("similarWorks.descending");
     const list = [...(formData.similarWorks || createEmptySimilarWorks())];
     let parsedValue = value;
     if (field === "contractAmount") {
@@ -1536,6 +1688,7 @@ function RegisterForm() {
   };
 
   const handleSortSimilarWorksDescending = () => {
+    clearFieldError("similarWorks.descending");
     const list = [...(formData.similarWorks || createEmptySimilarWorks())];
     list.sort((a, b) => {
       const aVal = Number(a.contractAmount) || 0;
@@ -2136,6 +2289,37 @@ function RegisterForm() {
       </div>
 
       <div id="registration-form-start" className="space-y-6 scroll-mt-6">
+        {/* Global Error Summary Banner when validation errors exist */}
+        {Object.keys(fieldErrors).length > 0 && (
+          <div
+            role="alert"
+            className="p-4 rounded-xl border-2 border-rose-300 bg-rose-50 text-rose-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md animate-fadeIn"
+          >
+            <div className="flex items-start gap-2.5">
+              <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-extrabold text-xs sm:text-sm text-rose-900">
+                  Validation Required ({Object.keys(fieldErrors).length} {Object.keys(fieldErrors).length === 1 ? "field needs" : "fields need"} attention)
+                </p>
+                <p className="text-xs text-rose-700 mt-0.5">
+                  Please correct the highlighted inputs below before proceeding.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const firstKey = getNextErrorFieldKey();
+                if (firstKey) scrollToAndFocusField(firstKey);
+              }}
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-sm transition-all shrink-0 cursor-pointer"
+            >
+              <span>Jump to Next Error</span>
+              <ArrowDown className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
         {formAlert && (
           <div
             className={`p-4 rounded-xl border text-xs flex items-start gap-2.5 ${
@@ -2165,46 +2349,94 @@ function RegisterForm() {
 
               <div className="space-y-4 text-xs">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
+                  <label htmlFor="input-organizationName" className="block font-semibold text-slate-700 mb-1">
                     Name of your Organization / Company / Institution *
                   </label>
                   <input
+                    id="input-organizationName"
                     type="text"
                     required
                     value={formData.organizationName}
-                    onChange={(e) => setFormData({ ...formData, organizationName: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, organizationName: e.target.value });
+                      if (fieldErrors.organizationName) clearFieldError("organizationName");
+                    }}
                     placeholder="e.g. State Engineering Corporation / ABC Constructions Ltd"
-                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
+                    aria-invalid={Boolean(fieldErrors.organizationName)}
+                    aria-describedby={fieldErrors.organizationName ? "error-organizationName" : undefined}
+                    className={`w-full p-2.5 rounded-lg text-slate-900 focus:outline-none transition-all ${
+                      fieldErrors.organizationName
+                        ? "bg-rose-50/30 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                        : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
+                    }`}
                   />
+                  {fieldErrors.organizationName && (
+                    <div id="error-organizationName" role="alert" className="flex items-start gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                      <span>{fieldErrors.organizationName}</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block font-semibold text-slate-700 mb-1">
+                    <label htmlFor="input-contactNumber" className="block font-semibold text-slate-700 mb-1">
                       Contact number *
                     </label>
                     <input
+                      id="input-contactNumber"
                       type="tel"
                       required
                       value={formData.contactNumber}
-                      onChange={(e) => setFormData({ ...formData, contactNumber: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, contactNumber: e.target.value });
+                        if (fieldErrors.contactNumber) clearFieldError("contactNumber");
+                      }}
                       placeholder="e.g. 0112123456 / 0771234567"
-                      className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
+                      aria-invalid={Boolean(fieldErrors.contactNumber)}
+                      aria-describedby={fieldErrors.contactNumber ? "error-contactNumber" : undefined}
+                      className={`w-full p-2.5 rounded-lg text-slate-900 focus:outline-none font-mono transition-all ${
+                        fieldErrors.contactNumber
+                          ? "bg-rose-50/30 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                          : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
+                      }`}
                     />
+                    {fieldErrors.contactNumber && (
+                      <div id="error-contactNumber" role="alert" className="flex items-start gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                        <span>{fieldErrors.contactNumber}</span>
+                      </div>
+                    )}
                   </div>
 
                   <div>
-                    <label className="block font-semibold text-slate-700 mb-1">
+                    <label htmlFor="input-email" className="block font-semibold text-slate-700 mb-1">
                       Email address *
                     </label>
                     <input
+                      id="input-email"
                       type="email"
                       required
                       value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, email: e.target.value });
+                        if (fieldErrors.email) clearFieldError("email");
+                      }}
                       placeholder="e.g. info@company.lk"
-                      className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
+                      aria-invalid={Boolean(fieldErrors.email)}
+                      aria-describedby={fieldErrors.email ? "error-email" : undefined}
+                      className={`w-full p-2.5 rounded-lg text-slate-900 focus:outline-none font-mono transition-all ${
+                        fieldErrors.email
+                          ? "bg-rose-50/30 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                          : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
+                      }`}
                     />
+                    {fieldErrors.email && (
+                      <div id="error-email" role="alert" className="flex items-start gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                        <span>{fieldErrors.email}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -2212,14 +2444,22 @@ function RegisterForm() {
                   <label className="block font-semibold text-slate-700 mb-2">
                     Will you be participating in the workshop on 07 December 2026? *
                   </label>
-                  <div className="flex items-center gap-4 sm:gap-6 flex-wrap">
+                  <div
+                    id="input-willParticipate"
+                    className={`flex items-center gap-4 sm:gap-6 flex-wrap p-2 rounded-xl transition-all ${
+                      fieldErrors.willParticipate ? "bg-rose-50/30 border-2 border-rose-500" : ""
+                    }`}
+                  >
                     <label className="inline-flex items-center gap-2 cursor-pointer py-1.5 pr-2">
                       <input
                         type="radio"
                         name="willParticipate"
                         value="Yes"
                         checked={formData.willParticipate === "Yes"}
-                        onChange={() => setFormData({ ...formData, willParticipate: "Yes" })}
+                        onChange={() => {
+                          setFormData({ ...formData, willParticipate: "Yes" });
+                          if (fieldErrors.willParticipate) clearFieldError("willParticipate");
+                        }}
                         className="w-4 h-4 text-blue-900 focus:ring-blue-800"
                       />
                       <span className="font-medium text-slate-800">Yes</span>
@@ -2230,12 +2470,21 @@ function RegisterForm() {
                         name="willParticipate"
                         value="No"
                         checked={formData.willParticipate === "No"}
-                        onChange={() => setFormData({ ...formData, willParticipate: "No" })}
+                        onChange={() => {
+                          setFormData({ ...formData, willParticipate: "No" });
+                          if (fieldErrors.willParticipate) clearFieldError("willParticipate");
+                        }}
                         className="w-4 h-4 text-blue-900 focus:ring-blue-800"
                       />
                       <span className="font-medium text-slate-800">No</span>
                     </label>
                   </div>
+                  {fieldErrors.willParticipate && (
+                    <div id="error-willParticipate" role="alert" className="flex items-start gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                      <span>{fieldErrors.willParticipate}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* EARLY SUBMISSION PATH IF WILL NOT PARTICIPATE */}
@@ -2286,6 +2535,31 @@ function RegisterForm() {
                   </div>
                 )}
 
+                {/* INITIAL PATH WHEN PARTICIPATION IS NOT YET SELECTED */}
+                {!formData.willParticipate && (
+                  <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                    <button
+                      type="button"
+                      onClick={() => performDraftSave(false)}
+                      disabled={loading}
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-sm transition-all min-h-[44px]"
+                    >
+                      <Save className="w-3.5 h-3.5 text-blue-900" />
+                      <span>{currentReference ? `Save Draft (${currentReference})` : "Save as Draft"}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleInitiateReview}
+                      disabled={loading}
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-900 to-blue-800 hover:from-blue-800 hover:to-blue-700 text-white font-extrabold text-xs shadow-md transition-all disabled:opacity-60 min-h-[44px]"
+                    >
+                      {loading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Eye className="w-3.5 h-3.5 text-amber-400" />}
+                      <span>Review &amp; Submit Questionnaire Response</span>
+                    </button>
+                  </div>
+                )}
+
                 {/* Dynamic Questions configured for Section 1 */}
                 {getDynamicQuestionsForSection("SEC-01").map(renderDynamicQuestionField)}
               </div>
@@ -2308,7 +2582,12 @@ function RegisterForm() {
                       <label className="block font-semibold text-slate-700 mb-2">
                         Which category do you represent? *
                       </label>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
+                      <div
+                        id="input-participantCategory"
+                        className={`grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 p-1.5 rounded-2xl transition-all ${
+                          fieldErrors.participantCategory ? "bg-rose-50/40 border-2 border-rose-500" : ""
+                        }`}
+                      >
                         {(["Contractor", "Supplier", "Government Officer"] as const).map((cat) => (
                           <label
                             key={cat}
@@ -2323,13 +2602,22 @@ function RegisterForm() {
                               name="participantCategory"
                               value={cat}
                               checked={formData.participantCategory === cat}
-                              onChange={() => setFormData({ ...formData, participantCategory: cat })}
+                              onChange={() => {
+                                setFormData({ ...formData, participantCategory: cat });
+                                if (fieldErrors.participantCategory) clearFieldError("participantCategory");
+                              }}
                               className="w-4 h-4 text-blue-900 focus:ring-blue-800"
                             />
                             <span>{cat}</span>
                           </label>
                         ))}
                       </div>
+                      {fieldErrors.participantCategory && (
+                        <div id="error-participantCategory" role="alert" className="flex items-start gap-1.5 mt-2 text-xs font-semibold text-rose-600 animate-fadeIn">
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                          <span>{fieldErrors.participantCategory}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -2353,82 +2641,10 @@ function RegisterForm() {
                           Participant 1 (Required)
                         </span>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                          <div>
-                            <label className="block font-semibold text-slate-700 mb-1">Full Name *</label>
-                            <input
-                              type="text"
-                              required
-                              value={formData.participant1?.fullName || ""}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  participant1: {
-                                    ...(formData.participant1 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
-                                    fullName: e.target.value,
-                                  },
-                                })
-                              }
-                              placeholder="e.g. Eng. Sunil Perera"
-                              className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800"
-                            />
-                          </div>
-                          <div>
-                            <label className="block font-semibold text-slate-700 mb-1">Mobile Number *</label>
-                            <input
-                              type="tel"
-                              required
-                              value={formData.participant1?.mobileNumber || ""}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  participant1: {
-                                    ...(formData.participant1 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
-                                    mobileNumber: e.target.value,
-                                  },
-                                })
-                              }
-                              placeholder="e.g. 0771234567"
-                              className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
-                            />
-                          </div>
-                          <div>
-                            <label className="block font-semibold text-slate-700 mb-1">Email Address *</label>
-                            <input
-                              type="email"
-                              required
-                              value={formData.participant1?.email || ""}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  participant1: {
-                                    ...(formData.participant1 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
-                                    email: e.target.value,
-                                  },
-                                })
-                              }
-                              placeholder="e.g. sunil@example.com"
-                              className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800"
-                            />
-                          </div>
-                          <div>
-                            <label className="block font-semibold text-slate-700 mb-1">Designation *</label>
-                            <input
-                              type="text"
-                              required
-                              value={formData.participant1?.designation || ""}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  participant1: {
-                                    ...(formData.participant1 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
-                                    designation: e.target.value,
-                                  },
-                                })
-                              }
-                              placeholder="e.g. Executive Engineer"
-                              className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800"
-                            />
-                          </div>
+                          {renderParticipantField(1, "fullName", "Full Name", "e.g. Eng. Sunil Perera", true)}
+                          {renderParticipantField(1, "mobileNumber", "Mobile Number", "e.g. 0771234567", true, "tel")}
+                          {renderParticipantField(1, "email", "Email Address", "e.g. sunil@example.com", true, "email")}
+                          {renderParticipantField(1, "designation", "Designation", "e.g. Executive Engineer", true)}
                         </div>
                       </div>
 
@@ -2438,78 +2654,10 @@ function RegisterForm() {
                           Participant 2 (Optional)
                         </span>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                          <div>
-                            <label className="block font-semibold text-slate-700 mb-1">Full Name</label>
-                            <input
-                              type="text"
-                              value={formData.participant2?.fullName || ""}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  participant2: {
-                                    ...(formData.participant2 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
-                                    fullName: e.target.value,
-                                  },
-                                })
-                              }
-                              placeholder="Second attendee name"
-                              className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800"
-                            />
-                          </div>
-                          <div>
-                            <label className="block font-semibold text-slate-700 mb-1">Mobile Number</label>
-                            <input
-                              type="tel"
-                              value={formData.participant2?.mobileNumber || ""}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  participant2: {
-                                    ...(formData.participant2 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
-                                    mobileNumber: e.target.value,
-                                  },
-                                })
-                              }
-                              placeholder="e.g. 0719876543"
-                              className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
-                            />
-                          </div>
-                          <div>
-                            <label className="block font-semibold text-slate-700 mb-1">Email Address</label>
-                            <input
-                              type="email"
-                              value={formData.participant2?.email || ""}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  participant2: {
-                                    ...(formData.participant2 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
-                                    email: e.target.value,
-                                  },
-                                })
-                              }
-                              placeholder="e.g. attendee2@example.com"
-                              className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800"
-                            />
-                          </div>
-                          <div>
-                            <label className="block font-semibold text-slate-700 mb-1">Designation</label>
-                            <input
-                              type="text"
-                              value={formData.participant2?.designation || ""}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  participant2: {
-                                    ...(formData.participant2 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
-                                    designation: e.target.value,
-                                  },
-                                })
-                              }
-                              placeholder="e.g. Assistant Director"
-                              className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800"
-                            />
-                          </div>
+                          {renderParticipantField(2, "fullName", "Full Name", "Second attendee name", false)}
+                          {renderParticipantField(2, "mobileNumber", "Mobile Number", "e.g. 0719876543", false, "tel")}
+                          {renderParticipantField(2, "email", "Email Address", "e.g. attendee2@example.com", false, "email")}
+                          {renderParticipantField(2, "designation", "Designation", "e.g. Assistant Director", false)}
                         </div>
                       </div>
                     </div>
@@ -2535,82 +2683,10 @@ function RegisterForm() {
                           Representative Details (Required)
                         </span>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                          <div>
-                            <label className="block font-semibold text-slate-700 mb-1">Full Name *</label>
-                            <input
-                              type="text"
-                              required
-                              value={formData.participant1?.fullName || ""}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  participant1: {
-                                    ...(formData.participant1 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
-                                    fullName: e.target.value,
-                                  },
-                                })
-                              }
-                              placeholder="e.g. K. L. Wickramasinghe"
-                              className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800"
-                            />
-                          </div>
-                          <div>
-                            <label className="block font-semibold text-slate-700 mb-1">Mobile Number *</label>
-                            <input
-                              type="tel"
-                              required
-                              value={formData.participant1?.mobileNumber || ""}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  participant1: {
-                                    ...(formData.participant1 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
-                                    mobileNumber: e.target.value,
-                                  },
-                                })
-                              }
-                              placeholder="e.g. 0779876543"
-                              className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
-                            />
-                          </div>
-                          <div>
-                            <label className="block font-semibold text-slate-700 mb-1">Email Address *</label>
-                            <input
-                              type="email"
-                              required
-                              value={formData.participant1?.email || ""}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  participant1: {
-                                    ...(formData.participant1 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
-                                    email: e.target.value,
-                                  },
-                                })
-                              }
-                              placeholder="e.g. supplier@example.com"
-                              className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800"
-                            />
-                          </div>
-                          <div>
-                            <label className="block font-semibold text-slate-700 mb-1">Designation *</label>
-                            <input
-                              type="text"
-                              required
-                              value={formData.participant1?.designation || ""}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  participant1: {
-                                    ...(formData.participant1 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
-                                    designation: e.target.value,
-                                  },
-                                })
-                              }
-                              placeholder="e.g. Sales Director / General Manager"
-                              className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800"
-                            />
-                          </div>
+                          {renderParticipantField(1, "fullName", "Full Name", "e.g. K. L. Wickramasinghe", true)}
+                          {renderParticipantField(1, "mobileNumber", "Mobile Number", "e.g. 0779876543", true, "tel")}
+                          {renderParticipantField(1, "email", "Email Address", "e.g. supplier@example.com", true, "email")}
+                          {renderParticipantField(1, "designation", "Designation", "e.g. Sales Director / General Manager", true)}
                         </div>
                       </div>
                     </div>
@@ -2632,11 +2708,15 @@ function RegisterForm() {
 
                       <div className="space-y-4 text-xs">
                         {/* Material Selection */}
-                        <div>
+                        <div id="input-supplierDetails-materialsSupplied">
                           <label className="block font-semibold text-slate-700 mb-2">
                             Please select the material(s) you supply * (Multiple selection allowed)
                           </label>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                          <div
+                            className={`grid grid-cols-2 sm:grid-cols-3 gap-2.5 p-1.5 rounded-xl transition-all ${
+                              fieldErrors["supplierDetails.materialsSupplied"] ? "bg-rose-50/40 border-2 border-rose-500" : ""
+                            }`}
+                          >
                             {SUPPLIER_MATERIALS.map((mat) => {
                               const isChecked = (formData.supplierDetails?.materialsSupplied || []).includes(mat);
                               return (
@@ -2651,7 +2731,10 @@ function RegisterForm() {
                                   <input
                                     type="checkbox"
                                     checked={isChecked}
-                                    onChange={() => handleSupplierMaterialToggle(mat)}
+                                    onChange={() => {
+                                      handleSupplierMaterialToggle(mat);
+                                      if (fieldErrors["supplierDetails.materialsSupplied"]) clearFieldError("supplierDetails.materialsSupplied");
+                                    }}
                                     className="w-4 h-4 text-blue-900 rounded focus:ring-blue-800"
                                   />
                                   <span>{mat}</span>
@@ -2659,11 +2742,18 @@ function RegisterForm() {
                               );
                             })}
                           </div>
+                          {fieldErrors["supplierDetails.materialsSupplied"] && (
+                            <div id="error-supplierDetails-materialsSupplied" role="alert" className="flex items-start gap-1.5 mt-2 text-xs font-semibold text-rose-600 animate-fadeIn">
+                              <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                              <span>{fieldErrors["supplierDetails.materialsSupplied"]}</span>
+                            </div>
+                          )}
+
                           {(formData.supplierDetails?.materialsSupplied || []).includes("Other") && (
-                            <div className="mt-3 p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                            <div id="input-supplierDetails-materialsOther" className="mt-3 p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
                               <div className="flex items-center justify-between">
                                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
-                                  Specify Other Supplied Material(s)
+                                  Specify Other Supplied Material(s) *
                                 </label>
                                 <span className="text-[11px] text-slate-500">
                                   Add one or more material types
@@ -2676,7 +2766,10 @@ function RegisterForm() {
                                     <input
                                       type="text"
                                       value={item}
-                                      onChange={(e) => handleUpdateSupplierMaterialOther(idx, e.target.value)}
+                                      onChange={(e) => {
+                                        handleUpdateSupplierMaterialOther(idx, e.target.value);
+                                        if (fieldErrors["supplierDetails.materialsOther"]) clearFieldError("supplierDetails.materialsOther");
+                                      }}
                                       onKeyDown={(e) => {
                                         if (e.key === "Enter") {
                                           e.preventDefault();
@@ -2688,7 +2781,11 @@ function RegisterForm() {
                                           ? "If Other, please specify your material type..."
                                           : `Additional material #${idx + 1}`
                                       }
-                                      className="flex-1 p-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-800"
+                                      className={`flex-1 p-2 bg-white rounded-lg text-slate-900 text-xs focus:outline-none focus:ring-2 ${
+                                        fieldErrors["supplierDetails.materialsOther"] && idx === 0
+                                          ? "border-2 border-rose-500 focus:ring-rose-200"
+                                          : "border border-slate-300 focus:ring-blue-800"
+                                      }`}
                                     />
                                     {supplierMaterialsOtherList.length > 1 && (
                                       <button
@@ -2703,6 +2800,13 @@ function RegisterForm() {
                                   </div>
                                 ))}
                               </div>
+
+                              {fieldErrors["supplierDetails.materialsOther"] && (
+                                <div id="error-supplierDetails-materialsOther" role="alert" className="flex items-start gap-1.5 mt-1 text-xs font-semibold text-rose-600 animate-fadeIn">
+                                  <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                                  <span>{fieldErrors["supplierDetails.materialsOther"]}</span>
+                                </div>
+                              )}
 
                               <div>
                                 <button
@@ -2720,25 +2824,39 @@ function RegisterForm() {
 
                         {/* Company Name */}
                         <div>
-                          <label className="block font-semibold text-slate-700 mb-1">
+                          <label htmlFor="input-supplierDetails-companyName" className="block font-semibold text-slate-700 mb-1">
                             Company Name *
                           </label>
                           <input
+                            id="input-supplierDetails-companyName"
                             type="text"
                             required
                             value={formData.supplierDetails?.companyName || ""}
-                            onChange={(e) =>
+                            onChange={(e) => {
                               setFormData({
                                 ...formData,
                                 supplierDetails: {
                                   ...(formData.supplierDetails || createEmptySupplierDetails()),
                                   companyName: e.target.value,
                                 },
-                              })
-                            }
+                              });
+                              if (fieldErrors["supplierDetails.companyName"]) clearFieldError("supplierDetails.companyName");
+                            }}
                             placeholder="e.g. Lanka Ready-Mix & Asphalt Products (Pvt) Ltd"
-                            className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
+                            aria-invalid={Boolean(fieldErrors["supplierDetails.companyName"])}
+                            aria-describedby={fieldErrors["supplierDetails.companyName"] ? "error-supplierDetails-companyName" : undefined}
+                            className={`w-full p-2.5 rounded-lg text-slate-900 focus:outline-none transition-all ${
+                              fieldErrors["supplierDetails.companyName"]
+                                ? "bg-rose-50/30 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
+                            }`}
                           />
+                          {fieldErrors["supplierDetails.companyName"] && (
+                            <div id="error-supplierDetails-companyName" role="alert" className="flex items-start gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
+                              <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                              <span>{fieldErrors["supplierDetails.companyName"]}</span>
+                            </div>
+                          )}
                         </div>
 
                         {/* Annual Supply Capacity Per Selected Material */}
@@ -2794,34 +2912,49 @@ function RegisterForm() {
 
                         {/* Location Address */}
                         <div>
-                          <label className="block font-semibold text-slate-700 mb-1">
+                          <label htmlFor="input-supplierDetails-locationAddress" className="block font-semibold text-slate-700 mb-1">
                             Location Address *
                           </label>
                           <textarea
+                            id="input-supplierDetails-locationAddress"
                             rows={2}
                             required
                             value={formData.supplierDetails?.locationAddress || ""}
-                            onChange={(e) =>
+                            onChange={(e) => {
                               setFormData({
                                 ...formData,
                                 supplierDetails: {
                                   ...(formData.supplierDetails || createEmptySupplierDetails()),
                                   locationAddress: e.target.value,
                                 },
-                              })
-                            }
+                              });
+                              if (fieldErrors["supplierDetails.locationAddress"]) clearFieldError("supplierDetails.locationAddress");
+                            }}
                             placeholder="Physical address of manufacturing plant, quarry, or central distribution warehouse..."
-                            className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
+                            aria-invalid={Boolean(fieldErrors["supplierDetails.locationAddress"])}
+                            aria-describedby={fieldErrors["supplierDetails.locationAddress"] ? "error-supplierDetails-locationAddress" : undefined}
+                            className={`w-full p-2.5 rounded-lg text-slate-900 focus:outline-none transition-all ${
+                              fieldErrors["supplierDetails.locationAddress"]
+                                ? "bg-rose-50/30 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
+                            }`}
                           />
+                          {fieldErrors["supplierDetails.locationAddress"] && (
+                            <div id="error-supplierDetails-locationAddress" role="alert" className="flex items-start gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
+                              <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                              <span>{fieldErrors["supplierDetails.locationAddress"]}</span>
+                            </div>
+                          )}
                         </div>
 
                         {/* Province & District (Dependent Dropdown) */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
-                            <label className="block font-semibold text-slate-700 mb-1">
+                            <label htmlFor="input-supplierDetails-province" className="block font-semibold text-slate-700 mb-1">
                               Province *
                             </label>
                             <select
+                              id="input-supplierDetails-province"
                               required
                               value={formData.supplierDetails?.province || ""}
                               onChange={(e) => {
@@ -2834,8 +2967,15 @@ function RegisterForm() {
                                     district: "", // reset district when province changes
                                   },
                                 });
+                                if (fieldErrors["supplierDetails.province"]) clearFieldError("supplierDetails.province");
                               }}
-                              className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-medium"
+                              aria-invalid={Boolean(fieldErrors["supplierDetails.province"])}
+                              aria-describedby={fieldErrors["supplierDetails.province"] ? "error-supplierDetails-province" : undefined}
+                              className={`w-full p-2.5 rounded-lg text-slate-900 focus:outline-none font-medium transition-all ${
+                                fieldErrors["supplierDetails.province"]
+                                  ? "bg-rose-50/30 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                  : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
+                              }`}
                             >
                               <option value="">— Select Province —</option>
                               {SRI_LANKA_PROVINCES.map((prov) => (
@@ -2844,26 +2984,40 @@ function RegisterForm() {
                                 </option>
                               ))}
                             </select>
+                            {fieldErrors["supplierDetails.province"] && (
+                              <div id="error-supplierDetails-province" role="alert" className="flex items-start gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
+                                <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                                <span>{fieldErrors["supplierDetails.province"]}</span>
+                              </div>
+                            )}
                           </div>
 
                           <div>
-                            <label className="block font-semibold text-slate-700 mb-1">
+                            <label htmlFor="input-supplierDetails-district" className="block font-semibold text-slate-700 mb-1">
                               District *
                             </label>
                             <select
+                              id="input-supplierDetails-district"
                               required
                               disabled={!formData.supplierDetails?.province}
                               value={formData.supplierDetails?.district || ""}
-                              onChange={(e) =>
+                              onChange={(e) => {
                                 setFormData({
                                   ...formData,
                                   supplierDetails: {
                                     ...(formData.supplierDetails || createEmptySupplierDetails()),
                                     district: e.target.value,
                                   },
-                                })
-                              }
-                              className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-medium disabled:opacity-50"
+                                });
+                                if (fieldErrors["supplierDetails.district"]) clearFieldError("supplierDetails.district");
+                              }}
+                              aria-invalid={Boolean(fieldErrors["supplierDetails.district"])}
+                              aria-describedby={fieldErrors["supplierDetails.district"] ? "error-supplierDetails-district" : undefined}
+                              className={`w-full p-2.5 rounded-lg text-slate-900 focus:outline-none font-medium disabled:opacity-50 transition-all ${
+                                fieldErrors["supplierDetails.district"]
+                                  ? "bg-rose-50/30 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                  : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
+                              }`}
                             >
                               <option value="">— Select District —</option>
                               {formData.supplierDetails?.province &&
@@ -2875,6 +3029,12 @@ function RegisterForm() {
                                   )
                                 )}
                             </select>
+                            {fieldErrors["supplierDetails.district"] && (
+                              <div id="error-supplierDetails-district" role="alert" className="flex items-start gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
+                                <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                                <span>{fieldErrors["supplierDetails.district"]}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -2903,82 +3063,10 @@ function RegisterForm() {
                             Participant 1 (Required)
                           </span>
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                            <div>
-                              <label className="block font-semibold text-slate-700 mb-1">Full Name *</label>
-                              <input
-                                type="text"
-                                required
-                                value={formData.participant1?.fullName || ""}
-                                onChange={(e) =>
-                                  setFormData({
-                                    ...formData,
-                                    participant1: {
-                                      ...(formData.participant1 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
-                                      fullName: e.target.value,
-                                    },
-                                  })
-                                }
-                                placeholder="e.g. Eng. Sunil Perera"
-                                className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800"
-                              />
-                            </div>
-                            <div>
-                              <label className="block font-semibold text-slate-700 mb-1">Mobile Number *</label>
-                              <input
-                                type="tel"
-                                required
-                                value={formData.participant1?.mobileNumber || ""}
-                                onChange={(e) =>
-                                  setFormData({
-                                    ...formData,
-                                    participant1: {
-                                      ...(formData.participant1 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
-                                      mobileNumber: e.target.value,
-                                    },
-                                  })
-                                }
-                                placeholder="e.g. 0771234567"
-                                className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
-                              />
-                            </div>
-                            <div>
-                              <label className="block font-semibold text-slate-700 mb-1">Email Address *</label>
-                              <input
-                                type="email"
-                                required
-                                value={formData.participant1?.email || ""}
-                                onChange={(e) =>
-                                  setFormData({
-                                    ...formData,
-                                    participant1: {
-                                      ...(formData.participant1 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
-                                      email: e.target.value,
-                                    },
-                                  })
-                                }
-                                placeholder="e.g. sunil@example.com"
-                                className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800"
-                              />
-                            </div>
-                            <div>
-                              <label className="block font-semibold text-slate-700 mb-1">Designation *</label>
-                              <input
-                                type="text"
-                                required
-                                value={formData.participant1?.designation || ""}
-                                onChange={(e) =>
-                                  setFormData({
-                                    ...formData,
-                                    participant1: {
-                                      ...(formData.participant1 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
-                                      designation: e.target.value,
-                                    },
-                                  })
-                                }
-                                placeholder="e.g. Managing Director"
-                                className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800"
-                              />
-                            </div>
+                            {renderParticipantField(1, "fullName", "Full Name", "e.g. Eng. Sunil Perera", true)}
+                            {renderParticipantField(1, "mobileNumber", "Mobile Number", "e.g. 0771234567", true, "tel")}
+                            {renderParticipantField(1, "email", "Email Address", "e.g. sunil@example.com", true, "email")}
+                            {renderParticipantField(1, "designation", "Designation", "e.g. Managing Director", true)}
                           </div>
                         </div>
 
@@ -2988,78 +3076,10 @@ function RegisterForm() {
                             Participant 2 (Optional)
                           </span>
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                            <div>
-                              <label className="block font-semibold text-slate-700 mb-1">Full Name</label>
-                              <input
-                                type="text"
-                                value={formData.participant2?.fullName || ""}
-                                onChange={(e) =>
-                                  setFormData({
-                                    ...formData,
-                                    participant2: {
-                                      ...(formData.participant2 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
-                                      fullName: e.target.value,
-                                    },
-                                  })
-                                }
-                                placeholder="Second attendee name"
-                                className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800"
-                              />
-                            </div>
-                            <div>
-                              <label className="block font-semibold text-slate-700 mb-1">Mobile Number</label>
-                              <input
-                                type="tel"
-                                value={formData.participant2?.mobileNumber || ""}
-                                onChange={(e) =>
-                                  setFormData({
-                                    ...formData,
-                                    participant2: {
-                                      ...(formData.participant2 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
-                                      mobileNumber: e.target.value,
-                                    },
-                                  })
-                                }
-                                placeholder="e.g. 0719876543"
-                                className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
-                              />
-                            </div>
-                            <div>
-                              <label className="block font-semibold text-slate-700 mb-1">Email Address</label>
-                              <input
-                                type="email"
-                                value={formData.participant2?.email || ""}
-                                onChange={(e) =>
-                                  setFormData({
-                                    ...formData,
-                                    participant2: {
-                                      ...(formData.participant2 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
-                                      email: e.target.value,
-                                    },
-                                  })
-                                }
-                                placeholder="e.g. attendee2@example.com"
-                                className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800"
-                              />
-                            </div>
-                            <div>
-                              <label className="block font-semibold text-slate-700 mb-1">Designation</label>
-                              <input
-                                type="text"
-                                value={formData.participant2?.designation || ""}
-                                onChange={(e) =>
-                                  setFormData({
-                                    ...formData,
-                                    participant2: {
-                                      ...(formData.participant2 || { fullName: "", mobileNumber: "", email: "", designation: "" }),
-                                      designation: e.target.value,
-                                    },
-                                  })
-                                }
-                                placeholder="e.g. Chief Engineer"
-                                className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800"
-                              />
-                            </div>
+                            {renderParticipantField(2, "fullName", "Full Name", "Second attendee name", false)}
+                            {renderParticipantField(2, "mobileNumber", "Mobile Number", "e.g. 0719876543", false, "tel")}
+                            {renderParticipantField(2, "email", "Email Address", "e.g. attendee2@example.com", false, "email")}
+                            {renderParticipantField(2, "designation", "Designation", "e.g. Chief Engineer", false)}
                           </div>
                         </div>
                       </div>
@@ -3077,7 +3097,7 @@ function RegisterForm() {
                       <div className="space-y-4 text-xs">
                         <div>
                           <div className="flex items-center justify-between mb-1">
-                            <label className="block font-semibold text-slate-700">
+                            <label htmlFor="input-ictadRegistrationNumber" className="block font-semibold text-slate-700">
                               ICTAD registration number *
                             </label>
                             {isCheckingRegNumber && (
@@ -3094,29 +3114,44 @@ function RegisterForm() {
                             )}
                           </div>
                           <input
-                            id="ictad-reg-number-input"
+                            id="input-ictadRegistrationNumber"
                             type="text"
                             required
                             value={formData.ictadRegistrationNumber}
                             onChange={(e) => {
                               setFormData({ ...formData, ictadRegistrationNumber: e.target.value });
                               if (regNumberError) setRegNumberError(null);
+                              if (fieldErrors.ictadRegistrationNumber) clearFieldError("ictadRegistrationNumber");
                               setRegNumberAvailable(false);
                             }}
                             onBlur={() => checkRegNumberUniqueness(formData.ictadRegistrationNumber || "")}
                             placeholder="e.g. CIDA/12450"
-                            className={`w-full p-2.5 rounded-lg font-mono text-slate-900 focus:outline-none focus:ring-2 transition-all ${
+                            aria-invalid={Boolean(regNumberError || fieldErrors.ictadRegistrationNumber)}
+                            aria-describedby={
                               regNumberError
-                                ? "border-2 border-rose-500 bg-rose-50/50 focus:ring-rose-500 text-rose-950 font-bold"
+                                ? "error-ictad-unique"
+                                : fieldErrors.ictadRegistrationNumber
+                                ? "error-ictadRegistrationNumber"
+                                : undefined
+                            }
+                            className={`w-full p-2.5 rounded-lg font-mono text-slate-900 focus:outline-none transition-all ${
+                              regNumberError || fieldErrors.ictadRegistrationNumber
+                                ? "border-2 border-rose-500 bg-rose-50/50 focus:ring-2 focus:ring-rose-200 text-rose-950 font-bold"
                                 : regNumberAvailable && formData.ictadRegistrationNumber?.trim()
                                 ? "border border-emerald-500 bg-emerald-50/20 focus:ring-emerald-600"
-                                : "border border-slate-300 bg-slate-50 focus:bg-white focus:ring-blue-800"
+                                : "border border-slate-300 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-800"
                             }`}
                           />
                           {regNumberError && (
-                            <div className="flex items-start gap-1.5 p-2 mt-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-sans">
+                            <div id="error-ictad-unique" className="flex items-start gap-1.5 p-2 mt-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-sans">
                               <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
                               <span className="font-medium">{regNumberError}</span>
+                            </div>
+                          )}
+                          {!regNumberError && fieldErrors.ictadRegistrationNumber && (
+                            <div id="error-ictadRegistrationNumber" role="alert" className="flex items-start gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
+                              <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                              <span>{fieldErrors.ictadRegistrationNumber}</span>
                             </div>
                           )}
                           <p className="text-[11px] text-slate-500 mt-1 font-sans">
@@ -3145,195 +3180,249 @@ function RegisterForm() {
                             </button>
                           </div>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {SPECIALTY_OPTIONS.filter((s) => s !== "Other").map((spec) => {
-                              const isChecked = (formData.areasOfSpecialty || []).includes(spec);
-                              return (
-                                <div
-                                  key={spec}
-                                  className={`p-3.5 rounded-xl border transition-all ${
-                                    isChecked
-                                      ? "bg-blue-50/70 border-2 border-blue-800 shadow-sm"
-                                      : "bg-slate-50 border-slate-200 hover:bg-slate-100/70"
-                                  }`}
-                                >
-                                  <div className="flex items-center justify-between">
-                                    <label className="flex items-center gap-2.5 cursor-pointer">
-                                      <input
-                                        type="checkbox"
-                                        checked={isChecked}
-                                        onChange={() => handleSpecialtyChange(spec)}
-                                        className="w-4 h-4 text-blue-900 rounded focus:ring-blue-800"
-                                      />
-                                      <span className="font-semibold text-slate-900 text-xs">{spec}</span>
-                                    </label>
-                                    {isChecked && (
-                                      <span className="text-[10px] text-blue-800 font-bold bg-blue-100 px-2 py-0.5 rounded-full">
-                                        Selected
-                                      </span>
-                                    )}
-                                  </div>
-
-                                  {/* CIDA grading under this specialty area */}
-                                  {isChecked && (
-                                    <div className="mt-2.5 pt-2.5 border-t border-blue-200/80 space-y-1.5">
-                                      <label className="block text-[11px] font-bold text-slate-700">
-                                        CIDA Grading for {spec} *
-                                      </label>
-                                      <select
-                                        required
-                                        value={formData.specialtyGrades?.[spec] || ""}
-                                        onChange={(e) => handleSpecialtyGradeChange(spec, e.target.value)}
-                                        className="w-full p-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-800 shadow-sm"
-                                      >
-                                        <option value="">— Select CIDA Grading for {spec} —</option>
-                                        {CIDA_GRADES.map((g) => (
-                                          <option key={g} value={g}>
-                                            {g}
-                                          </option>
-                                        ))}
-                                      </select>
-                                      {formData.specialtyGrades?.[spec] === "Other" && (
+                          <div
+                            id="input-areasOfSpecialty"
+                            className={`p-1.5 rounded-2xl transition-all ${
+                              fieldErrors.areasOfSpecialty ? "bg-rose-50/40 border-2 border-rose-500" : ""
+                            }`}
+                          >
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              {SPECIALTY_OPTIONS.filter((s) => s !== "Other").map((spec) => {
+                                const isChecked = (formData.areasOfSpecialty || []).includes(spec);
+                                const gradeKey = `specialtyGrades.${spec}`;
+                                const hasGradeError = Boolean(fieldErrors[gradeKey]);
+                                return (
+                                  <div
+                                    key={spec}
+                                    className={`p-3.5 rounded-xl border transition-all ${
+                                      isChecked
+                                        ? hasGradeError
+                                          ? "bg-rose-50/40 border-2 border-rose-500 shadow-sm"
+                                          : "bg-blue-50/70 border-2 border-blue-800 shadow-sm"
+                                        : "bg-slate-50 border-slate-200 hover:bg-slate-100/70"
+                                    }`}
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <label className="flex items-center gap-2.5 cursor-pointer">
                                         <input
-                                          type="text"
-                                          value={formData.specialtyGradesOther?.[spec] || ""}
-                                          onChange={(e) => handleSpecialtyGradeOtherChange(spec, e.target.value)}
-                                          placeholder={`Specify custom CIDA grading for ${spec}...`}
-                                          className="w-full p-1.5 bg-amber-50/60 border border-amber-300 rounded text-slate-900 text-xs focus:ring-1 focus:ring-blue-800 mt-1"
+                                          type="checkbox"
+                                          checked={isChecked}
+                                          onChange={() => {
+                                            handleSpecialtyChange(spec);
+                                            if (fieldErrors.areasOfSpecialty) clearFieldError("areasOfSpecialty");
+                                          }}
+                                          className="w-4 h-4 text-blue-900 rounded focus:ring-blue-800"
                                         />
+                                        <span className="font-semibold text-slate-900 text-xs">{spec}</span>
+                                      </label>
+                                      {isChecked && (
+                                        <span className="text-[10px] text-blue-800 font-bold bg-blue-100 px-2 py-0.5 rounded-full">
+                                          Selected
+                                        </span>
                                       )}
                                     </div>
-                                  )}
-                                </div>
-                              );
-                            })}
 
-                            {/* Other Specialty Card */}
-                            {(() => {
-                              const isOtherChecked = (formData.areasOfSpecialty || []).includes("Other");
-                              return (
-                                <div
-                                  className={`p-3.5 rounded-xl border transition-all sm:col-span-2 ${
-                                    isOtherChecked
-                                      ? "bg-blue-50/70 border-2 border-blue-800 shadow-sm"
-                                      : "bg-slate-50 border-slate-200 hover:bg-slate-100/70"
-                                  }`}
-                                >
-                                  <div className="flex items-center justify-between">
-                                    <label className="flex items-center gap-2.5 cursor-pointer">
-                                      <input
-                                        type="checkbox"
-                                        checked={isOtherChecked}
-                                        onChange={() => handleSpecialtyChange("Other")}
-                                        className="w-4 h-4 text-blue-900 rounded focus:ring-blue-800"
-                                      />
-                                      <span className="font-semibold text-slate-900 text-xs">Other Specialty Area(s)</span>
-                                    </label>
-                                    {isOtherChecked && (
-                                      <span className="text-[10px] text-blue-800 font-bold bg-blue-100 px-2 py-0.5 rounded-full">
-                                        {specialtyOtherList.filter((s) => s.trim()).length} Specified
-                                      </span>
+                                    {/* CIDA grading under this specialty area */}
+                                    {isChecked && (
+                                      <div className="mt-2.5 pt-2.5 border-t border-blue-200/80 space-y-1.5">
+                                        <label htmlFor={getDomIdForField(gradeKey)} className="block text-[11px] font-bold text-slate-700">
+                                          CIDA Grading for {spec} *
+                                        </label>
+                                        <select
+                                          id={getDomIdForField(gradeKey)}
+                                          required
+                                          value={formData.specialtyGrades?.[spec] || ""}
+                                          onChange={(e) => {
+                                            handleSpecialtyGradeChange(spec, e.target.value);
+                                            if (fieldErrors[gradeKey]) clearFieldError(gradeKey);
+                                          }}
+                                          aria-invalid={hasGradeError}
+                                          aria-describedby={hasGradeError ? `error-${getDomIdForField(gradeKey)}` : undefined}
+                                          className={`w-full p-2 rounded-lg text-slate-900 text-xs font-semibold focus:outline-none transition-all ${
+                                            hasGradeError
+                                              ? "bg-rose-50 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                              : "bg-white border border-slate-300 focus:ring-2 focus:ring-blue-800 shadow-sm"
+                                          }`}
+                                        >
+                                          <option value="">— Select CIDA Grading for {spec} —</option>
+                                          {CIDA_GRADES.map((g) => (
+                                            <option key={g} value={g}>
+                                              {g}
+                                            </option>
+                                          ))}
+                                        </select>
+                                        {hasGradeError && (
+                                          <div id={`error-${getDomIdForField(gradeKey)}`} role="alert" className="flex items-start gap-1 mt-1 text-[11px] font-semibold text-rose-600 animate-fadeIn">
+                                            <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                                            <span>{fieldErrors[gradeKey]}</span>
+                                          </div>
+                                        )}
+                                        {formData.specialtyGrades?.[spec] === "Other" && (
+                                          <input
+                                            type="text"
+                                            value={formData.specialtyGradesOther?.[spec] || ""}
+                                            onChange={(e) => handleSpecialtyGradeOtherChange(spec, e.target.value)}
+                                            placeholder={`Specify custom CIDA grading for ${spec}...`}
+                                            className="w-full p-1.5 bg-amber-50/60 border border-amber-300 rounded text-slate-900 text-xs focus:ring-1 focus:ring-blue-800 mt-1"
+                                          />
+                                        )}
+                                      </div>
                                     )}
                                   </div>
+                                );
+                              })}
 
-                                  {/* Under Other specialty: show specialty inputs with their CIDA grading selectors */}
-                                  {isOtherChecked && (
-                                    <div className="mt-3 pt-3 border-t border-blue-200/80 space-y-3">
-                                      <span className="text-[11px] font-bold text-slate-700 block">
-                                        Specify Other Specialty &amp; Select CIDA Grading for Each:
-                                      </span>
+                              {/* Other Specialty Card */}
+                              {(() => {
+                                const isOtherChecked = (formData.areasOfSpecialty || []).includes("Other");
+                                return (
+                                  <div
+                                    id="input-specialtyOther"
+                                    className={`p-3.5 rounded-xl border transition-all sm:col-span-2 ${
+                                      isOtherChecked
+                                        ? fieldErrors.specialtyOther
+                                          ? "bg-rose-50/40 border-2 border-rose-500 shadow-sm"
+                                          : "bg-blue-50/70 border-2 border-blue-800 shadow-sm"
+                                        : "bg-slate-50 border-slate-200 hover:bg-slate-100/70"
+                                    }`}
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <label className="flex items-center gap-2.5 cursor-pointer">
+                                        <input
+                                          type="checkbox"
+                                          checked={isOtherChecked}
+                                          onChange={() => {
+                                            handleSpecialtyChange("Other");
+                                            if (fieldErrors.areasOfSpecialty) clearFieldError("areasOfSpecialty");
+                                            if (fieldErrors.specialtyOther) clearFieldError("specialtyOther");
+                                          }}
+                                          className="w-4 h-4 text-blue-900 rounded focus:ring-blue-800"
+                                        />
+                                        <span className="font-semibold text-slate-900 text-xs">Other Specialty Area(s)</span>
+                                      </label>
+                                      {isOtherChecked && (
+                                        <span className="text-[10px] text-blue-800 font-bold bg-blue-100 px-2 py-0.5 rounded-full">
+                                          {specialtyOtherList.filter((s) => s.trim()).length} Specified
+                                        </span>
+                                      )}
+                                    </div>
 
-                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        {specialtyOtherList.map((item, idx) => {
-                                          const itemKey = item.trim() || `Other_${idx + 1}`;
-                                          return (
-                                            <div
-                                              key={idx}
-                                              className="p-3 bg-white border border-slate-200 rounded-xl space-y-2.5 shadow-sm"
-                                            >
-                                              <div className="flex items-center justify-between">
-                                                <span className="text-[11px] font-bold text-blue-900">
-                                                  Other Specialty #{idx + 1}
-                                                </span>
-                                                {specialtyOtherList.length > 1 && (
-                                                  <button
-                                                    type="button"
-                                                    onClick={() => handleRemoveSpecialtyOther(idx)}
-                                                    className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors"
-                                                    title="Remove specialty"
-                                                  >
-                                                    <X className="w-3.5 h-3.5" />
-                                                  </button>
-                                                )}
-                                              </div>
+                                    {/* Under Other specialty: show specialty inputs with their CIDA grading selectors */}
+                                    {isOtherChecked && (
+                                      <div className="mt-3 pt-3 border-t border-blue-200/80 space-y-3">
+                                        <span className="text-[11px] font-bold text-slate-700 block">
+                                          Specify Other Specialty &amp; Select CIDA Grading for Each:
+                                        </span>
 
-                                              <div>
-                                                <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
-                                                  Specialty Name *
-                                                </label>
-                                                <input
-                                                  type="text"
-                                                  value={item}
-                                                  onChange={(e) => handleUpdateSpecialtyOther(idx, e.target.value)}
-                                                  placeholder={
-                                                    idx === 0
-                                                      ? "e.g. Drainage, Piling, Water Supply"
-                                                      : `Specialty #${idx + 1}`
-                                                  }
-                                                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
-                                                />
-                                              </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                          {specialtyOtherList.map((item, idx) => {
+                                            const itemKey = item.trim() || `Other_${idx + 1}`;
+                                            return (
+                                              <div
+                                                key={idx}
+                                                className="p-3 bg-white border border-slate-200 rounded-xl space-y-2.5 shadow-sm"
+                                              >
+                                                <div className="flex items-center justify-between">
+                                                  <span className="text-[11px] font-bold text-blue-900">
+                                                    Other Specialty #{idx + 1}
+                                                  </span>
+                                                  {specialtyOtherList.length > 1 && (
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => handleRemoveSpecialtyOther(idx)}
+                                                      className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors"
+                                                      title="Remove specialty"
+                                                    >
+                                                      <X className="w-3.5 h-3.5" />
+                                                    </button>
+                                                  )}
+                                                </div>
 
-                                              <div>
-                                                <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
-                                                  CIDA Grading {item.trim() ? `for ${item.trim()}` : ""} *
-                                                </label>
-                                                <select
-                                                  value={formData.specialtyGrades?.[itemKey] || ""}
-                                                  onChange={(e) => handleSpecialtyGradeChange(itemKey, e.target.value)}
-                                                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
-                                                >
-                                                  <option value="">— Select CIDA Grading —</option>
-                                                  {CIDA_GRADES.map((g) => (
-                                                    <option key={g} value={g}>
-                                                      {g}
-                                                    </option>
-                                                  ))}
-                                                </select>
-                                                {formData.specialtyGrades?.[itemKey] === "Other" && (
+                                                <div>
+                                                  <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
+                                                    Specialty Name *
+                                                  </label>
                                                   <input
                                                     type="text"
-                                                    value={formData.specialtyGradesOther?.[itemKey] || ""}
-                                                    onChange={(e) => handleSpecialtyGradeOtherChange(itemKey, e.target.value)}
-                                                    placeholder="Specify custom grading..."
-                                                    className="w-full p-1.5 bg-amber-50/60 border border-amber-300 rounded text-slate-900 text-xs focus:ring-1 focus:ring-blue-800 mt-1"
+                                                    value={item}
+                                                    onChange={(e) => {
+                                                      handleUpdateSpecialtyOther(idx, e.target.value);
+                                                      if (fieldErrors.specialtyOther) clearFieldError("specialtyOther");
+                                                    }}
+                                                    placeholder={
+                                                      idx === 0
+                                                        ? "e.g. Drainage, Piling, Water Supply"
+                                                        : `Specialty #${idx + 1}`
+                                                    }
+                                                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
                                                   />
-                                                )}
-                                              </div>
-                                            </div>
-                                          );
-                                        })}
-                                      </div>
+                                                </div>
 
-                                      <div className="pt-1 flex items-center justify-between">
-                                        <button
-                                          type="button"
-                                          onClick={handleAddSpecialtyOther}
-                                          className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-sm transition-all"
-                                        >
-                                          <Plus className="w-3.5 h-3.5" />
-                                          <span>+ Add Another Other Specialty</span>
-                                        </button>
-                                        <span className="text-[11px] text-slate-400 italic">
-                                          Press Enter to add another specialty
-                                        </span>
+                                                <div>
+                                                  <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
+                                                    CIDA Grading {item.trim() ? `for ${item.trim()}` : ""} *
+                                                  </label>
+                                                  <select
+                                                    value={formData.specialtyGrades?.[itemKey] || ""}
+                                                    onChange={(e) => handleSpecialtyGradeChange(itemKey, e.target.value)}
+                                                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
+                                                  >
+                                                    <option value="">— Select CIDA Grading —</option>
+                                                    {CIDA_GRADES.map((g) => (
+                                                      <option key={g} value={g}>
+                                                        {g}
+                                                      </option>
+                                                    ))}
+                                                  </select>
+                                                  {formData.specialtyGrades?.[itemKey] === "Other" && (
+                                                    <input
+                                                      type="text"
+                                                      value={formData.specialtyGradesOther?.[itemKey] || ""}
+                                                      onChange={(e) => handleSpecialtyGradeOtherChange(itemKey, e.target.value)}
+                                                      placeholder="Specify custom grading..."
+                                                      className="w-full p-1.5 bg-amber-50/60 border border-amber-300 rounded text-slate-900 text-xs focus:ring-1 focus:ring-blue-800 mt-1"
+                                                    />
+                                                  )}
+                                                </div>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+
+                                        {fieldErrors.specialtyOther && (
+                                          <div id="error-specialtyOther" role="alert" className="flex items-start gap-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
+                                            <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                                            <span>{fieldErrors.specialtyOther}</span>
+                                          </div>
+                                        )}
+
+                                        <div className="pt-1 flex items-center justify-between">
+                                          <button
+                                            type="button"
+                                            onClick={handleAddSpecialtyOther}
+                                            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-sm transition-all"
+                                          >
+                                            <Plus className="w-3.5 h-3.5" />
+                                            <span>+ Add Another Other Specialty</span>
+                                          </button>
+                                          <span className="text-[11px] text-slate-400 italic">
+                                            Press Enter to add another specialty
+                                          </span>
+                                        </div>
                                       </div>
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })()}
+                                    )}
+                                  </div>
+                                );
+                              })()}
+                            </div>
                           </div>
+
+                          {fieldErrors.areasOfSpecialty && (
+                            <div id="error-areasOfSpecialty" role="alert" className="flex items-start gap-1.5 mt-2 text-xs font-semibold text-rose-600 animate-fadeIn">
+                              <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                              <span>{fieldErrors.areasOfSpecialty}</span>
+                            </div>
+                          )}
                         </div>
 
                         {/* Dynamic Questions configured for Section 5 (Contractor Details) */}
@@ -3517,14 +3606,22 @@ function RegisterForm() {
                           <label className="block font-semibold text-slate-700 mb-2">
                             Does your company currently have ongoing contracts? *
                           </label>
-                          <div className="flex items-center gap-4 sm:gap-6 flex-wrap">
+                          <div
+                            id="input-hasOngoingContracts"
+                            className={`flex items-center gap-4 sm:gap-6 flex-wrap p-2 rounded-xl transition-all ${
+                              fieldErrors.hasOngoingContracts ? "bg-rose-50/40 border-2 border-rose-500" : ""
+                            }`}
+                          >
                             <label className="inline-flex items-center gap-2 cursor-pointer py-1.5 pr-2">
                               <input
                                 type="radio"
                                 name="hasOngoingContracts"
                                 value="Yes"
                                 checked={formData.hasOngoingContracts === "Yes"}
-                                onChange={() => setFormData({ ...formData, hasOngoingContracts: "Yes" })}
+                                onChange={() => {
+                                  setFormData({ ...formData, hasOngoingContracts: "Yes" });
+                                  if (fieldErrors.hasOngoingContracts) clearFieldError("hasOngoingContracts");
+                                }}
                                 className="w-4 h-4 text-blue-900 focus:ring-blue-800"
                               />
                               <span className="font-medium text-slate-800">Yes</span>
@@ -3535,12 +3632,21 @@ function RegisterForm() {
                                 name="hasOngoingContracts"
                                 value="No"
                                 checked={formData.hasOngoingContracts === "No"}
-                                onChange={() => setFormData({ ...formData, hasOngoingContracts: "No" })}
+                                onChange={() => {
+                                  setFormData({ ...formData, hasOngoingContracts: "No" });
+                                  if (fieldErrors.hasOngoingContracts) clearFieldError("hasOngoingContracts");
+                                }}
                                 className="w-4 h-4 text-blue-900 focus:ring-blue-800"
                               />
                               <span className="font-medium text-slate-800">No</span>
                             </label>
                           </div>
+                          {fieldErrors.hasOngoingContracts && (
+                            <div id="error-hasOngoingContracts" role="alert" className="flex items-start gap-1.5 mt-2 text-xs font-semibold text-rose-600 animate-fadeIn">
+                              <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                              <span>{fieldErrors.hasOngoingContracts}</span>
+                            </div>
+                          )}
                         </div>
 
                         {/* SECTION 8: ONGOING WORKS (Only if hasOngoingContracts === "Yes") */}
@@ -3552,7 +3658,7 @@ function RegisterForm() {
 
                             <div>
                               <div className="flex items-center justify-between mb-1">
-                                <label className="block font-semibold text-slate-700">
+                                <label htmlFor="input-totalOutstandingValueLkrMillion" className="block font-semibold text-slate-700">
                                   Total value of outstanding works as at 1 December 2026 (Total Amount in LKR) *
                                 </label>
                                 {ongoingTotalOutstanding > 0 && (
@@ -3566,6 +3672,7 @@ function RegisterForm() {
                               </p>
                               <div className="flex items-center gap-3">
                                 <input
+                                  id="input-totalOutstandingValueLkrMillion"
                                   type="number"
                                   required
                                   value={formData.totalOutstandingValueLkrMillion ?? ""}
@@ -3575,8 +3682,15 @@ function RegisterForm() {
                                       ...formData,
                                       totalOutstandingValueLkrMillion: val === "" ? null : Number(val),
                                     });
+                                    if (fieldErrors.totalOutstandingValueLkrMillion) clearFieldError("totalOutstandingValueLkrMillion");
                                   }}
-                                  className="w-full sm:w-72 p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono font-bold"
+                                  aria-invalid={Boolean(fieldErrors.totalOutstandingValueLkrMillion)}
+                                  aria-describedby={fieldErrors.totalOutstandingValueLkrMillion ? "error-totalOutstandingValueLkrMillion" : undefined}
+                                  className={`w-full sm:w-72 p-2.5 rounded-lg text-slate-900 focus:outline-none font-mono font-bold transition-all ${
+                                    fieldErrors.totalOutstandingValueLkrMillion
+                                      ? "bg-rose-50/40 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                      : "bg-white border border-slate-300 focus:ring-2 focus:ring-blue-800"
+                                  }`}
                                 />
                                 {formData.totalOutstandingValueLkrMillion !== null &&
                                   formData.totalOutstandingValueLkrMillion !== undefined && (
@@ -3585,6 +3699,12 @@ function RegisterForm() {
                                     </span>
                                   )}
                               </div>
+                              {fieldErrors.totalOutstandingValueLkrMillion && (
+                                <div id="error-totalOutstandingValueLkrMillion" role="alert" className="flex items-start gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
+                                  <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                                  <span>{fieldErrors.totalOutstandingValueLkrMillion}</span>
+                                </div>
+                              )}
                             </div>
 
                             <div className="space-y-3 pt-2">
@@ -3734,18 +3854,26 @@ function RegisterForm() {
 
                       <div className="space-y-4 text-xs">
                         <div>
-                          <label className="block font-semibold text-slate-700 mb-1">
+                          <label htmlFor="input-generalExperience" className="block font-semibold text-slate-700 mb-1">
                             How many years of general experience does your company have in the construction industry? *
                           </label>
                           <select
-                            value={formData.generalExperience}
-                            onChange={(e) =>
+                            id="input-generalExperience"
+                            value={formData.generalExperience || ""}
+                            onChange={(e) => {
                               setFormData({
                                 ...formData,
                                 generalExperience: e.target.value as GeneralExperienceOption,
-                              })
-                            }
-                            className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-medium"
+                              });
+                              if (fieldErrors.generalExperience) clearFieldError("generalExperience");
+                            }}
+                            aria-invalid={Boolean(fieldErrors.generalExperience)}
+                            aria-describedby={fieldErrors.generalExperience ? "error-generalExperience" : undefined}
+                            className={`w-full p-2.5 rounded-lg text-slate-900 focus:outline-none font-medium transition-all ${
+                              fieldErrors.generalExperience
+                                ? "bg-rose-50/40 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
+                            }`}
                           >
                             <option value="">— Select General Construction Experience —</option>
                             {GENERAL_EXP_OPTIONS.map((opt) => (
@@ -3754,6 +3882,12 @@ function RegisterForm() {
                               </option>
                             ))}
                           </select>
+                          {fieldErrors.generalExperience && (
+                            <div id="error-generalExperience" role="alert" className="flex items-start gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
+                              <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                              <span>{fieldErrors.generalExperience}</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -3768,6 +3902,26 @@ function RegisterForm() {
                           </h2>
                         </div>
                       </div>
+
+                      {fieldErrors["similarWorks.descending"] && (
+                        <div id="error-similarWorks-descending" role="alert" className="p-3 bg-rose-50 border-2 border-rose-500 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-rose-900 font-semibold animate-fadeIn">
+                          <div className="flex items-start gap-2">
+                            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                            <span>{fieldErrors["similarWorks.descending"]}</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleSortSimilarWorksDescending();
+                              clearFieldError("similarWorks.descending");
+                            }}
+                            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shrink-0 transition-colors shadow-sm"
+                          >
+                            <ArrowUpDown className="w-3.5 h-3.5" />
+                            <span>Sort by Highest Value First</span>
+                          </button>
+                        </div>
+                      )}
 
                       <div className="p-3.5 bg-amber-50 border border-amber-200/80 rounded-xl text-xs text-amber-900 flex items-start gap-2.5">
                         <HelpCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
@@ -3811,6 +3965,13 @@ function RegisterForm() {
                                 const currentAmount = Number(contract.contractAmount);
                                 const hasValidAmount = !isNA && !isNaN(currentAmount) && contract.contractAmount !== null && contract.contractAmount !== undefined && contract.contractAmount !== "";
 
+                                const nameErr = fieldErrors[`similarWorks.${idx}.contractName`];
+                                const typeErr = fieldErrors[`similarWorks.${idx}.contractType`];
+                                const amtErr = fieldErrors[`similarWorks.${idx}.contractAmount`];
+                                const startErr = fieldErrors[`similarWorks.${idx}.startDate`];
+                                const endErr = fieldErrors[`similarWorks.${idx}.completionDate`];
+                                const statusErr = fieldErrors[`similarWorks.${idx}.completionStatus`];
+
                                 // Check if current contract amount violates descending order compared to previous contract with amount
                                 let prevAmount: number | null = null;
                                 let prevContractNum: number | null = null;
@@ -3834,7 +3995,7 @@ function RegisterForm() {
                                   <tr
                                     key={idx}
                                     className={`hover:bg-slate-50/70 transition-colors ${
-                                      isNA ? "bg-slate-50/40 opacity-70" : isOrderViolation ? "bg-rose-50/30" : ""
+                                      isNA ? "bg-slate-50/40 opacity-70" : isOrderViolation || amtErr || nameErr ? "bg-rose-50/30" : ""
                                     }`}
                                   >
                                     <td className="p-3 text-center font-bold text-blue-900 bg-slate-50/50 align-top pt-4">
@@ -3842,12 +4003,27 @@ function RegisterForm() {
                                     </td>
                                     <td className="p-3 align-top space-y-1">
                                       <input
+                                        id={`input-similarWorks-${idx}-contractName`}
                                         type="text"
                                         value={contract.contractName || ""}
-                                        onChange={(e) => handleContractChange(idx, "contractName", e.target.value)}
+                                        onChange={(e) => {
+                                          handleContractChange(idx, "contractName", e.target.value);
+                                          if (nameErr) clearFieldError(`similarWorks.${idx}.contractName`);
+                                        }}
                                         placeholder={idx === 0 ? "Project Title or enter N/A *" : "Project Title"}
-                                        className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
+                                        aria-invalid={Boolean(nameErr)}
+                                        className={`w-full p-2 rounded text-slate-900 focus:outline-none transition-all ${
+                                          nameErr
+                                            ? "bg-rose-50 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                            : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
+                                        }`}
                                       />
+                                      {nameErr && (
+                                        <div role="alert" className="flex items-start gap-1 text-[11px] font-semibold text-rose-600 animate-fadeIn">
+                                          <AlertCircle className="w-3 h-3 shrink-0 mt-0.5 text-rose-500" />
+                                          <span>{nameErr}</span>
+                                        </div>
+                                      )}
                                       {isNA && (
                                         <span className="text-[10px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded font-mono font-bold inline-block">
                                           Marked N/A
@@ -3856,10 +4032,19 @@ function RegisterForm() {
                                     </td>
                                     <td className="p-3 align-top space-y-1">
                                       <select
+                                        id={`input-similarWorks-${idx}-contractType`}
                                         disabled={isNA}
                                         value={contract.contractType || ""}
-                                        onChange={(e) => handleContractChange(idx, "contractType", e.target.value)}
-                                        className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-medium disabled:opacity-50"
+                                        onChange={(e) => {
+                                          handleContractChange(idx, "contractType", e.target.value);
+                                          if (typeErr) clearFieldError(`similarWorks.${idx}.contractType`);
+                                        }}
+                                        aria-invalid={Boolean(typeErr)}
+                                        className={`w-full p-2 rounded text-slate-900 focus:outline-none font-medium disabled:opacity-50 transition-all ${
+                                          typeErr
+                                            ? "bg-rose-50 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                            : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
+                                        }`}
                                       >
                                         <option value="">— Select Type —</option>
                                         {CONTRACT_TYPE_OPTIONS.map((t) => (
@@ -3868,6 +4053,12 @@ function RegisterForm() {
                                           </option>
                                         ))}
                                       </select>
+                                      {typeErr && (
+                                        <div role="alert" className="flex items-start gap-1 text-[11px] font-semibold text-rose-600 animate-fadeIn">
+                                          <AlertCircle className="w-3 h-3 shrink-0 mt-0.5 text-rose-500" />
+                                          <span>{typeErr}</span>
+                                        </div>
+                                      )}
                                       {contract.contractType === "Other" && (
                                         <input
                                           type="text"
@@ -3881,23 +4072,34 @@ function RegisterForm() {
                                     </td>
                                     <td className="p-3 align-top space-y-1">
                                       <input
+                                        id={`input-similarWorks-${idx}-contractAmount`}
                                         type="number"
                                         disabled={isNA}
                                         value={contract.contractAmount ?? ""}
-                                        onChange={(e) => handleContractChange(idx, "contractAmount", e.target.value)}
+                                        onChange={(e) => {
+                                          handleContractChange(idx, "contractAmount", e.target.value);
+                                          if (amtErr) clearFieldError(`similarWorks.${idx}.contractAmount`);
+                                        }}
                                         placeholder="Amount in LKR"
-                                        className={`w-full p-2 bg-slate-50 border rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 font-mono disabled:opacity-50 ${
-                                          isOrderViolation
-                                            ? "border-rose-400 bg-rose-50/60 focus:ring-rose-500 text-rose-900"
-                                            : "border-slate-300 focus:ring-blue-800"
+                                        aria-invalid={Boolean(amtErr || isOrderViolation)}
+                                        className={`w-full p-2 border rounded text-slate-900 focus:outline-none focus:ring-2 font-mono disabled:opacity-50 transition-all ${
+                                          amtErr || isOrderViolation
+                                            ? "border-2 border-rose-500 bg-rose-50/60 focus:ring-rose-200 text-rose-900 font-bold"
+                                            : "border-slate-300 bg-slate-50 focus:bg-white focus:ring-blue-800"
                                         }`}
                                       />
+                                      {amtErr && (
+                                        <div role="alert" className="flex items-start gap-1 text-[11px] font-semibold text-rose-600 animate-fadeIn">
+                                          <AlertCircle className="w-3 h-3 shrink-0 mt-0.5 text-rose-500" />
+                                          <span>{amtErr}</span>
+                                        </div>
+                                      )}
                                       {!isNA && contract.contractAmount !== null && contract.contractAmount !== undefined && contract.contractAmount !== "" && (
                                         <span className="text-[10px] font-mono text-slate-600 block">
                                           = LKR {Number(contract.contractAmount).toLocaleString()}
                                         </span>
                                       )}
-                                      {isOrderViolation && (
+                                      {isOrderViolation && !amtErr && (
                                         <div className="flex items-start gap-1 p-1.5 mt-1 rounded bg-rose-50 border border-rose-200 text-rose-700 text-[10px] leading-tight font-sans">
                                           <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-rose-600 mt-0.5" />
                                           <span>
@@ -3911,31 +4113,70 @@ function RegisterForm() {
                                         <div className="flex items-center gap-1">
                                           <span className="text-[10px] text-slate-400 w-9 shrink-0 font-medium">Start:</span>
                                           <input
+                                            id={`input-similarWorks-${idx}-startDate`}
                                             type="date"
                                             disabled={isNA}
                                             value={contract.startDate || ""}
-                                            onChange={(e) => handleContractChange(idx, "startDate", e.target.value)}
-                                            className="flex-1 p-1.5 bg-slate-50 border border-slate-300 rounded text-slate-900 text-[11px] focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 disabled:opacity-50"
+                                            onChange={(e) => {
+                                              handleContractChange(idx, "startDate", e.target.value);
+                                              if (startErr) clearFieldError(`similarWorks.${idx}.startDate`);
+                                            }}
+                                            aria-invalid={Boolean(startErr)}
+                                            className={`flex-1 p-1.5 rounded text-slate-900 text-[11px] focus:outline-none transition-all disabled:opacity-50 ${
+                                              startErr
+                                                ? "bg-rose-50 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                                : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
+                                            }`}
                                           />
                                         </div>
+                                        {startErr && (
+                                          <div role="alert" className="flex items-start gap-1 text-[10px] font-semibold text-rose-600 animate-fadeIn">
+                                            <AlertCircle className="w-3 h-3 shrink-0 mt-0.5 text-rose-500" />
+                                            <span>{startErr}</span>
+                                          </div>
+                                        )}
                                         <div className="flex items-center gap-1">
                                           <span className="text-[10px] text-slate-400 w-9 shrink-0 font-medium">End:</span>
                                           <input
+                                            id={`input-similarWorks-${idx}-completionDate`}
                                             type="date"
                                             disabled={isNA}
                                             value={contract.completionDate || ""}
-                                            onChange={(e) => handleContractChange(idx, "completionDate", e.target.value)}
-                                            className="flex-1 p-1.5 bg-slate-50 border border-slate-300 rounded text-slate-900 text-[11px] focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 disabled:opacity-50"
+                                            onChange={(e) => {
+                                              handleContractChange(idx, "completionDate", e.target.value);
+                                              if (endErr) clearFieldError(`similarWorks.${idx}.completionDate`);
+                                            }}
+                                            aria-invalid={Boolean(endErr)}
+                                            className={`flex-1 p-1.5 rounded text-slate-900 text-[11px] focus:outline-none transition-all disabled:opacity-50 ${
+                                              endErr
+                                                ? "bg-rose-50 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                                : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
+                                            }`}
                                           />
                                         </div>
+                                        {endErr && (
+                                          <div role="alert" className="flex items-start gap-1 text-[10px] font-semibold text-rose-600 animate-fadeIn">
+                                            <AlertCircle className="w-3 h-3 shrink-0 mt-0.5 text-rose-500" />
+                                            <span>{endErr}</span>
+                                          </div>
+                                        )}
                                       </div>
                                     </td>
                                     <td className="p-3 align-top">
                                       <select
+                                        id={`input-similarWorks-${idx}-completionStatus`}
                                         disabled={isNA}
                                         value={contract.completionStatus || ""}
-                                        onChange={(e) => handleContractChange(idx, "completionStatus", e.target.value)}
-                                        className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-medium disabled:opacity-50"
+                                        onChange={(e) => {
+                                          handleContractChange(idx, "completionStatus", e.target.value);
+                                          if (statusErr) clearFieldError(`similarWorks.${idx}.completionStatus`);
+                                        }}
+                                        aria-invalid={Boolean(statusErr)}
+                                        className={`w-full p-2 rounded text-slate-900 focus:outline-none font-medium disabled:opacity-50 transition-all ${
+                                          statusErr
+                                            ? "bg-rose-50 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                            : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
+                                        }`}
                                       >
                                         <option value="">— Select Status —</option>
                                         {COMPLETION_STATUS_OPTIONS.map((s) => (
@@ -3944,6 +4185,12 @@ function RegisterForm() {
                                           </option>
                                         ))}
                                       </select>
+                                      {statusErr && (
+                                        <div role="alert" className="flex items-start gap-1 text-[11px] font-semibold text-rose-600 animate-fadeIn">
+                                          <AlertCircle className="w-3 h-3 shrink-0 mt-0.5 text-rose-500" />
+                                          <span>{statusErr}</span>
+                                        </div>
+                                      )}
                                     </td>
                                     <td className="p-3 text-center align-top pt-4">
                                       {(formData.similarWorks || []).length > 1 && (
@@ -4107,6 +4354,42 @@ function RegisterForm() {
                       <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
                     )}
                     <span className="leading-relaxed font-semibold">{formAlert.message}</span>
+                  </div>
+                )}
+
+                {/* Validation Summary Bar (Bottom of Form) */}
+                {Object.keys(fieldErrors).length > 0 && (
+                  <div
+                    id="validation-summary-bottom"
+                    role="alert"
+                    className="p-4 bg-rose-50 border-2 border-rose-500 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-rose-900 shadow-md animate-fadeIn"
+                  >
+                    <div className="flex items-start gap-2.5">
+                      <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-extrabold text-sm text-rose-950">
+                          {Object.keys(fieldErrors).length === 1
+                            ? "1 required field requires your attention"
+                            : `${Object.keys(fieldErrors).length} required fields require your attention`}
+                        </p>
+                        <p className="text-[11px] text-rose-700 mt-0.5">
+                          Please correct the highlighted fields before submitting your official response.
+                        </p>
+                      </div>
+                    </div>
+                    {getNextErrorFieldKey() && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextKey = getNextErrorFieldKey();
+                          if (nextKey) scrollToAndFocusField(nextKey);
+                        }}
+                        className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow transition-colors shrink-0"
+                      >
+                        <ArrowDown className="w-3.5 h-3.5" />
+                        <span>Navigate to First Error</span>
+                      </button>
+                    )}
                   </div>
                 )}
 
@@ -4595,14 +4878,42 @@ function RegisterForm() {
             )}
 
             {/* Attestation & Declaration */}
-            <div className="p-4 bg-emerald-50/60 border border-emerald-200 rounded-xl space-y-2">
-              <div className="flex items-center gap-2 font-bold text-emerald-950 uppercase text-[11px]">
-                <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
-                <span>Authorized Representative Declaration</span>
-              </div>
-              <p className="text-[11px] text-emerald-900/90 leading-relaxed">
-                I hereby confirm that all information provided in this questionnaire filing is true, accurate, and complete to the best of my knowledge, and submitted on behalf of the registered organization for the Road Development Authority Inclusive Connectivity and Development Project (ICDP).
-              </p>
+            <div
+              id="declaration-container"
+              className={`p-4 rounded-xl space-y-2.5 transition-all ${
+                modalDeclarationError
+                  ? "bg-rose-50 border-2 border-rose-500 shadow-sm"
+                  : "bg-emerald-50/70 border border-emerald-300"
+              }`}
+            >
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  id="input-declaration-consent"
+                  type="checkbox"
+                  checked={declarationAccepted}
+                  onChange={(e) => {
+                    setDeclarationAccepted(e.target.checked);
+                    if (modalDeclarationError) setModalDeclarationError(null);
+                  }}
+                  className="w-4 h-4 mt-0.5 text-blue-900 rounded focus:ring-blue-800"
+                />
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 font-bold text-slate-900 uppercase text-[11px]">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
+                    <span>Authorized Representative Declaration *</span>
+                  </div>
+                  <p className="text-[11px] text-slate-700 leading-relaxed">
+                    I hereby confirm that all information provided in this questionnaire filing is true, accurate, and complete to the best of my knowledge, and submitted on behalf of the registered organization for the Road Development Authority Inclusive Connectivity and Development Project (ICDP).
+                  </p>
+                </div>
+              </label>
+
+              {modalDeclarationError && (
+                <div role="alert" className="flex items-center gap-1.5 pt-1 text-xs font-semibold text-rose-600 animate-fadeIn">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{modalDeclarationError}</span>
+                </div>
+              )}
             </div>
           </div>
 
