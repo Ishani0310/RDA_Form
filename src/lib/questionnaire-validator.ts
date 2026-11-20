@@ -209,7 +209,7 @@ export function validateQuestionnaireSubmission(
     }
   }
 
-  // Section 7: Evaluation Criteria - Current Work Commitments
+  // Section 7: Current Work Commitments
   if (
     !data.hasOngoingContracts ||
     (data.hasOngoingContracts !== "Yes" && data.hasOngoingContracts !== "No")
@@ -235,7 +235,7 @@ export function validateQuestionnaireSubmission(
     }
   }
 
-  // Section 9: Evaluation Criteria - General Experience
+  // Section 9: General Experience
   const validExp = [
     "Less than 5 years",
     "5 to 10 years",
@@ -247,7 +247,7 @@ export function validateQuestionnaireSubmission(
     errors.generalExperience = "Please select your general experience in the construction industry.";
   }
 
-  // Section 10: Evaluation Criteria - Similar Work Experience (3 Contracts)
+  // Section 10: Similar Work Experience (3 Contracts)
   const contracts = data.similarWorks || [];
   const c1 = contracts[0];
 

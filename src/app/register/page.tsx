@@ -2947,7 +2947,7 @@ function RegisterForm() {
                       <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
                         <Layers className="w-4 h-4 text-blue-900" />
                         <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
-                          Section 7: Evaluation Criteria – Current Work Commitments
+                          Section 7: Current Work Commitments
                         </h2>
                       </div>
 
@@ -3167,7 +3167,7 @@ function RegisterForm() {
                       <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
                         <Briefcase className="w-4 h-4 text-blue-900" />
                         <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
-                          Section 9: Evaluation Criteria – Experience
+                          Section 9: Experience
                         </h2>
                       </div>
 
@@ -3203,7 +3203,7 @@ function RegisterForm() {
                         <div className="flex items-center gap-2">
                           <FileText className="w-4 h-4 text-blue-900" />
                           <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
-                            Section 10: Evaluation Criteria – Similar Work Experience
+                            Section 10: Similar Work Experience
                           </h2>
                         </div>
                       </div>

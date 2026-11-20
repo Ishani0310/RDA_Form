@@ -475,12 +475,12 @@ export function getBaselineOfficialSections(): IFormSection[] {
     },
 
     // -----------------------------------------------------------------------
-    // SECTION 7: Evaluation Criteria – Current Work Commitments
+    // SECTION 7: Current Work Commitments
     // -----------------------------------------------------------------------
     {
       id: "sec-work-commitments",
       code: "SEC-07",
-      title: "SECTION 7 – EVALUATION CRITERIA: CURRENT WORK COMMITMENTS",
+      title: "SECTION 7 – CURRENT WORK COMMITMENTS",
       description: "Ongoing public and private construction obligations to evaluate spare operational capacity.",
       displayOrder: 8,
       questions: [
@@ -553,12 +553,12 @@ export function getBaselineOfficialSections(): IFormSection[] {
     },
 
     // -----------------------------------------------------------------------
-    // SECTION 9: Evaluation Criteria – Experience
+    // SECTION 9: Experience
     // -----------------------------------------------------------------------
     {
       id: "sec-general-experience",
       code: "SEC-09",
-      title: "SECTION 9 – EVALUATION CRITERIA: EXPERIENCE",
+      title: "SECTION 9 – EXPERIENCE",
       description: "Track record in civil and highway engineering contracting in Sri Lanka.",
       displayOrder: 10,
       questions: [
@@ -588,12 +588,12 @@ export function getBaselineOfficialSections(): IFormSection[] {
     },
 
     // -----------------------------------------------------------------------
-    // SECTION 10: Evaluation Criteria – Similar Work Experience
+    // SECTION 10: Similar Work Experience
     // -----------------------------------------------------------------------
     {
       id: "sec-similar-works",
       code: "SEC-10",
-      title: "SECTION 10 – EVALUATION CRITERIA: SIMILAR WORK EXPERIENCE",
+      title: "SECTION 10 – SIMILAR WORK EXPERIENCE",
       description: "Please provide details of the highest-value contracts your organization has completed within the last five years (December 2021 to November 2026) that are similar in nature to the proposed works.",
       displayOrder: 11,
       questions: [

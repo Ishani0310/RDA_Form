@@ -357,7 +357,7 @@ export function isSectionVisibleInForm(
     return willParticipate === "Yes" && participantCategory === "Contractor";
   }
 
-  // SECTION 7 – EVALUATION CRITERIA: CURRENT WORK COMMITMENTS:
+  // SECTION 7 – CURRENT WORK COMMITMENTS:
   // Contractor only
   if (code === "SEC-07" || title.includes("CURRENT WORK COMMITMENTS")) {
     return willParticipate === "Yes" && participantCategory === "Contractor";
@@ -370,13 +370,13 @@ export function isSectionVisibleInForm(
     return willParticipate === "Yes" && participantCategory === "Contractor" && hasOngoingContracts === "Yes";
   }
 
-  // SECTION 9 – EVALUATION CRITERIA: EXPERIENCE:
+  // SECTION 9 – EXPERIENCE:
   // Contractor only
   if (code === "SEC-09" || (title.includes("EXPERIENCE") && !title.includes("SIMILAR"))) {
     return willParticipate === "Yes" && participantCategory === "Contractor";
   }
 
-  // SECTION 10 – EVALUATION CRITERIA: SIMILAR WORK EXPERIENCE:
+  // SECTION 10 – SIMILAR WORK EXPERIENCE:
   // Contractor only
   if (code === "SEC-10" || title.includes("SIMILAR WORK EXPERIENCE")) {
     return willParticipate === "Yes" && participantCategory === "Contractor";
