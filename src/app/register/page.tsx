@@ -1687,7 +1687,7 @@ function RegisterForm() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto my-6 sm:my-10 lg:my-12 px-3 sm:px-4 lg:px-6 space-y-5 sm:space-y-6">
+    <div className="w-full max-w-4xl mx-auto my-4 sm:my-8 lg:my-12 px-3 sm:px-4 lg:px-6 space-y-4 sm:space-y-6 overflow-x-hidden">
       {/* Header Banner */}
       <div className="bg-gradient-to-br from-[#07162c] via-[#0b1f3a] to-[#0f294d] text-white p-4 pl-3 sm:p-6 sm:pl-4 lg:p-7 lg:pl-4.5 rounded-2xl shadow-xl border border-white/10 relative overflow-hidden">
         {/* Left Vibrant Green Accent Bar (Snug to letters) */}
@@ -1791,45 +1791,52 @@ function RegisterForm() {
         <button
           type="button"
           onClick={() => setShowWorkshopInfo(!showWorkshopInfo)}
-          className="w-full p-4 flex items-center justify-between bg-slate-50 hover:bg-slate-100 transition-colors text-left"
+          className="w-full p-3.5 sm:p-4 flex items-start sm:items-center justify-between gap-3 bg-slate-50 hover:bg-slate-100 transition-colors text-left"
         >
-          <div className="flex items-center gap-2.5">
-            <Info className="w-4 h-4 text-blue-900 shrink-0" />
-            <div>
-              <span className="font-bold text-slate-900 block text-xs sm:text-sm">
+          <div className="flex items-start sm:items-center gap-2.5 min-w-0">
+            <div className="w-7 h-7 rounded-lg bg-blue-100/70 text-blue-900 flex items-center justify-center shrink-0 mt-0.5 sm:mt-0">
+              <Info className="w-4 h-4 text-blue-900" />
+            </div>
+            <div className="min-w-0">
+              <span className="font-bold text-slate-900 block text-xs sm:text-sm leading-snug">
                 About the Workshop &amp; Registration Instructions
               </span>
-              <span className="text-[11px] text-slate-500">
-                Date: 07 Dec 2026 &bull; Time: 9.00 AM &bull; Deadline: 05 Dec 2026 &bull; Click to {showWorkshopInfo ? "hide" : "view"} official details
-              </span>
+              <div className="flex items-center gap-2 flex-wrap text-[11px] text-slate-600 mt-1">
+                <span className="inline-flex items-center gap-1 font-semibold text-slate-800">
+                  <Calendar className="w-3 h-3 text-blue-900 shrink-0" />
+                  <span>07 Dec 2026</span>
+                  <span className="font-normal text-slate-500">(9.00 AM)</span>
+                </span>
+                <span className="text-slate-300 hidden sm:inline">&bull;</span>
+                <span className="inline-flex items-center gap-1 font-semibold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200/60">
+                  <Clock className="w-3 h-3 text-rose-600 shrink-0" />
+                  <span>Deadline: 05 Dec 2026</span>
+                </span>
+              </div>
             </div>
           </div>
-          {showWorkshopInfo ? (
-            <ChevronUp className="w-4 h-4 text-slate-500 shrink-0" />
-          ) : (
-            <ChevronDown className="w-4 h-4 text-slate-500 shrink-0" />
-          )}
+          <div className="shrink-0 flex items-center gap-1 text-[11px] text-slate-500 mt-0.5 sm:mt-0">
+            <span className="hidden md:inline font-medium">{showWorkshopInfo ? "Hide Details" : "View Details"}</span>
+            <div className="p-1 rounded-md bg-white border border-slate-200 shadow-2xs">
+              {showWorkshopInfo ? (
+                <ChevronUp className="w-4 h-4 text-slate-700" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-slate-700" />
+              )}
+            </div>
+          </div>
         </button>
 
         {showWorkshopInfo && (
-          <div className="p-4 sm:p-6 space-y-4 border-t border-slate-200 bg-white leading-relaxed text-slate-700">
-            {/* Provisional Date Check Alert */}
-            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 flex items-start gap-2.5">
-              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-bold text-[11px]">Notice Regarding Workshop Date Schedule</p>
-                <p className="text-[11px] text-amber-800 mt-0.5">
-                  The workshop date specified for registration and planning is <strong>07 December 2026 (9.00 AM)</strong>. An earlier internal draft cited 30 November 2026; in accordance with official project instructions, 07 December 2026 is published provisionally for all stakeholder registration arrangements.
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <h3 className="font-bold text-slate-900 uppercase text-[11px] tracking-wide">
-                  Workshop Overview
+          <div className="p-3.5 sm:p-6 space-y-4 border-t border-slate-200 bg-white leading-relaxed text-slate-700">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-5">
+              {/* Workshop Overview Card */}
+              <div className="p-3.5 sm:p-4 rounded-xl bg-slate-50/70 border border-slate-200/80 space-y-2">
+                <h3 className="font-bold text-slate-900 uppercase text-[11px] tracking-wider flex items-center gap-1.5">
+                  <Building2 className="w-3.5 h-3.5 text-blue-900" />
+                  <span>Workshop Overview</span>
                 </h3>
-                <p>
+                <p className="text-xs text-slate-700 leading-relaxed">
                   <strong className="font-bold text-blue-900">
                     Organized by Inclusive Connectivity and Development Project (ICDP)
                   </strong>
@@ -1837,74 +1844,92 @@ function RegisterForm() {
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <h3 className="font-bold text-slate-900 uppercase text-[11px] tracking-wide">
-                  Key Milestones &amp; Contacts
+              {/* Key Milestones & Contacts Card */}
+              <div className="p-3.5 sm:p-4 rounded-xl bg-slate-50/70 border border-slate-200/80 space-y-2">
+                <h3 className="font-bold text-slate-900 uppercase text-[11px] tracking-wider flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-blue-900" />
+                  <span>Key Milestones &amp; Contacts</span>
                 </h3>
-                <div className="space-y-1.5 text-[11px]">
-                  <p className="flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-blue-900 shrink-0" />
-                    <strong>Workshop Date:</strong> 07 December 2026 at 9.00 AM
-                  </p>
-                  <p className="flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-rose-700 shrink-0" />
-                    <strong>Registration Deadline:</strong> 05 December 2026
-                  </p>
-                  <div className="pt-0.5 space-y-1">
-                    <p className="flex items-center gap-1.5">
+                <div className="space-y-2 text-xs">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="inline-flex items-center gap-1.5 text-slate-800 font-semibold">
+                      <Calendar className="w-3.5 h-3.5 text-blue-900 shrink-0" />
+                      <strong>Date:</strong> 07 December 2026 (9.00 AM)
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 text-rose-700 font-semibold">
+                      <Clock className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                      <strong>Deadline:</strong> 05 December 2026
+                    </span>
+                  </div>
+
+                  <div className="pt-1.5 border-t border-slate-200/70 space-y-1.5">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <Phone className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
-                      <strong>General Number:</strong>{" "}
-                      <a href="tel:0112865766" className="text-blue-900 underline hover:text-blue-700 font-medium">
+                      <span className="font-semibold text-slate-800">General:</span>
+                      <a href="tel:0112865766" className="text-blue-900 font-bold hover:underline">
                         011 286 5766
                       </a>
-                    </p>
-                    <p className="flex items-center gap-1.5">
-                      <Phone className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
-                      <strong>Inquiry Contact:</strong>{" "}
-                      <a href="tel:0706970408" className="text-blue-900 underline hover:text-blue-700 font-medium">
+                      <span className="text-slate-300">&bull;</span>
+                      <span className="font-semibold text-slate-800">Inquiries:</span>
+                      <a href="tel:0706970408" className="text-blue-900 font-bold hover:underline">
                         070 697 0408
-                      </a>{" "}
-                      <span className="text-slate-500">(Thilina Tharinda)</span>
-                    </p>
-
-                    {/* Mr. Indunil Madhusanka Details */}
-                    <div className="p-2 rounded-lg bg-slate-50 border border-slate-200/80 space-y-1 my-1">
-                      <p className="font-bold text-slate-900 flex items-center gap-1.5">
-                        <Users className="w-3.5 h-3.5 text-blue-900 shrink-0" />
-                        Mr. Indunil Madhusanka
-                      </p>
-                      <p className="flex items-center gap-1.5 pl-5">
-                        <Phone className="w-3 h-3 text-emerald-700 shrink-0" />
-                        <span>Phone:</span>{" "}
-                        <a href="tel:0712863433" className="text-blue-900 underline hover:text-blue-700 font-medium">
-                          071 286 3433
-                        </a>
-                      </p>
-                      <p className="flex items-center gap-1.5 pl-5">
-                        <Mail className="w-3 h-3 text-blue-700 shrink-0" />
-                        <span>Email:</span>{" "}
-                        <a href="mailto:amindunil@gmail.com" className="text-blue-900 underline hover:text-blue-700 font-medium">
-                          amindunil@gmail.com
-                        </a>
-                      </p>
+                      </a>
+                      <span className="text-slate-500 text-[11px]">(Thilina Tharinda)</span>
                     </div>
 
-                    <p className="flex items-center gap-1.5 pt-0.5">
+                    {/* Mr. Indunil Madhusanka Dedicated Contact Box */}
+                    <div className="p-2.5 rounded-lg bg-white border border-slate-200 shadow-xs space-y-1 my-1">
+                      <p className="font-bold text-slate-900 flex items-center gap-1.5 text-xs">
+                        <Users className="w-3.5 h-3.5 text-blue-900 shrink-0" />
+                        <span>Mr. Indunil Madhusanka</span>
+                      </p>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-xs pl-5">
+                        <a href="tel:0712863433" className="text-blue-900 hover:underline font-semibold flex items-center gap-1">
+                          <Phone className="w-3 h-3 text-emerald-700" />
+                          <span>071 286 3433</span>
+                        </a>
+                        <span className="text-slate-300 hidden sm:inline">&bull;</span>
+                        <a href="mailto:amindunil@gmail.com" className="text-blue-900 hover:underline font-medium flex items-center gap-1">
+                          <Mail className="w-3 h-3 text-blue-700" />
+                          <span>amindunil@gmail.com</span>
+                        </a>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap pt-0.5">
                       <Mail className="w-3.5 h-3.5 text-blue-700 shrink-0" />
-                      <strong>Registration Email:</strong>{" "}
+                      <span className="font-semibold text-slate-800">Official Registration Email:</span>
                       <a
                         href="mailto:wbicdpbid@gmail.com"
-                        className="text-blue-900 underline hover:text-blue-700 font-medium"
+                        className="text-blue-900 font-bold hover:underline"
                       >
                         wbicdpbid@gmail.com
                       </a>
-                    </p>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         )}
+      </div>
+
+      {/* Prominent Full-Width Start Registration CTA Button */}
+      <div className="w-full">
+        <button
+          type="button"
+          onClick={() => {
+            const target = document.getElementById("registration-form-start") || document.getElementById("section-1");
+            if (target) {
+              target.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+          }}
+          className="w-full py-3.5 sm:py-4 px-5 sm:px-6 rounded-xl sm:rounded-2xl bg-gradient-to-r from-[#0b1f3a] via-[#12335f] to-[#0b1f3a] hover:from-[#0d2749] hover:to-[#0d2749] text-white font-extrabold text-sm sm:text-base shadow-lg hover:shadow-xl border border-white/15 flex items-center justify-center gap-2 sm:gap-2.5 transition-all group active:scale-[0.99] cursor-pointer min-h-[48px]"
+        >
+          <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 shrink-0" />
+          <span>Start Registration &bull; Fill Questionnaire</span>
+          <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 group-hover:translate-x-1 transition-transform shrink-0" />
+        </button>
       </div>
 
       {/* Smart Browser Draft Recovery Screen */}
@@ -2100,7 +2125,7 @@ function RegisterForm() {
         </div>
       </div>
 
-      <div className="space-y-6">
+      <div id="registration-form-start" className="space-y-6 scroll-mt-6">
         {formAlert && (
           <div
             className={`p-4 rounded-xl border text-xs flex items-start gap-2.5 ${

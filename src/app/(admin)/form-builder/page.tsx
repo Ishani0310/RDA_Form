@@ -1405,17 +1405,6 @@ export default function FormBuilderPage() {
 
                   {showWorkshopInfo && (
                     <div className="p-4 sm:p-6 space-y-4 border-t border-slate-200 bg-white leading-relaxed text-slate-700">
-                      {/* Provisional Date Check Alert */}
-                      <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 flex items-start gap-2.5">
-                        <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                        <div>
-                          <p className="font-bold text-[11px]">Notice Regarding Workshop Date Schedule</p>
-                          <p className="text-[11px] text-amber-800 mt-0.5">
-                            The workshop date specified for registration and planning is <strong>07 December 2026 (9.00 AM)</strong>. An earlier internal draft cited 30 November 2026; in accordance with official project instructions, 07 December 2026 is published provisionally for all stakeholder registration arrangements.
-                          </p>
-                        </div>
-                      </div>
-
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <h3 className="font-bold text-slate-900 uppercase text-[11px] tracking-wide">
