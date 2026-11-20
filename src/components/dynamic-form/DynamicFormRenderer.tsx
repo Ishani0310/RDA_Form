@@ -1907,23 +1907,48 @@ function renderFieldInput(
             {(question.options || []).map((opt) => {
               const isChecked = currentSelected.includes(opt.value);
               return (
-                <label
+                <div
                   key={opt.id || opt.value}
-                  className={`flex items-start gap-2.5 p-2.5 rounded-lg border text-xs cursor-pointer transition-colors ${
+                  className={`flex flex-col p-2.5 rounded-lg border text-xs transition-colors ${
                     isChecked
                       ? "bg-blue-50/80 border-blue-800 text-blue-950 font-semibold"
                       : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
                   }`}
                 >
-                  <input
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => handleToggle(opt.value)}
-                    disabled={disabled}
-                    className="w-4 h-4 text-blue-900 rounded focus:ring-blue-800 mt-0.5 shrink-0"
-                  />
-                  <span className="leading-snug">{opt.label}</span>
-                </label>
+                  <label className="flex items-start gap-2.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => handleToggle(opt.value)}
+                      disabled={disabled}
+                      className="w-4 h-4 text-blue-900 rounded focus:ring-blue-800 mt-0.5 shrink-0"
+                    />
+                    <span className="leading-snug">{opt.label}</span>
+                  </label>
+
+                  {/* CIDA Grading under specialty in DynamicFormRenderer */}
+                  {isChecked && (question.id === "areasOfSpecialty" || question.code === "Q18") && opt.value !== "Other" && (
+                    <div className="mt-2 pt-2 border-t border-blue-200/80 space-y-1" onClick={(e) => e.stopPropagation()}>
+                      <span className="block text-[10px] font-bold text-slate-700">
+                        CIDA Grading for {opt.label}:
+                      </span>
+                      <select
+                        value={allValues?.specialtyGrades?.[opt.value] || ""}
+                        onChange={(e) => {
+                          const next = { ...(allValues?.specialtyGrades || {}), [opt.value]: e.target.value };
+                          onGlobalChange?.("specialtyGrades", next);
+                        }}
+                        disabled={disabled}
+                        className="w-full p-1.5 bg-white border border-slate-300 rounded text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-800"
+                      >
+                        <option value="">— Select CIDA Grading —</option>
+                        {["CS2", "CS1", "C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "SP1", "SP2", "SP3", "SP4", "SP5", "Not registered with CIDA", "Other"].map((g) => (
+                          <option key={g} value={g}>{g}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>

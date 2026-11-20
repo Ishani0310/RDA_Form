@@ -1366,14 +1366,17 @@ export default function ContractorsPage() {
                                 .map((item: string) => item.trim())
                                 .filter(Boolean);
                               return others.length > 0 ? (
-                                others.map((oth: string, oIdx: number) => (
-                                  <span
-                                    key={`oth-${oIdx}`}
-                                    className="px-2 py-0.5 rounded bg-blue-100/80 text-blue-900 text-[11px] font-semibold"
-                                  >
-                                    Other: {oth}
-                                  </span>
-                                ))
+                                others.map((oth: string, oIdx: number) => {
+                                  const grade = q.specialtyGrades?.[oth];
+                                  return (
+                                    <span
+                                      key={`oth-${oIdx}`}
+                                      className="px-2 py-0.5 rounded bg-blue-100/80 text-blue-900 text-[11px] font-semibold"
+                                    >
+                                      Other: {oth} {grade ? `• Grade ${grade}` : ""}
+                                    </span>
+                                  );
+                                })
                               ) : (
                                 <span
                                   key={s}
@@ -1383,12 +1386,13 @@ export default function ContractorsPage() {
                                 </span>
                               );
                             }
+                            const spGrade = q.specialtyGrades?.[s];
                             return (
                               <span
                                 key={s}
                                 className="px-2 py-0.5 rounded bg-blue-100/80 text-blue-900 text-[11px] font-semibold"
                               >
-                                {s}
+                                {s} {spGrade ? `• Grade ${spGrade}` : ""}
                               </span>
                             );
                           })}

@@ -132,6 +132,8 @@ function createInitialFormData(): OfficialQuestionnaireData {
     ictadRegistrationNumber: "",
     areasOfSpecialty: [],
     specialtyOther: "",
+    specialtyGrades: {},
+    specialtyGradesOther: {},
     cidaGrade: "",
     cidaGradeOther: "",
     financialStatements: createEmptyFiveYearStatements(),
@@ -991,17 +993,31 @@ function RegisterForm() {
     }
   };
 
-  // Handlers for Contractor Specialities
+  // Handlers for Contractor Specialities & CIDA Gradings
   const handleSpecialtyChange = (spec: AreaOfSpecialty) => {
     const current = formData.areasOfSpecialty || [];
     if (current.includes(spec)) {
       if (spec === "Other") {
         setSpecialtyOtherList([""]);
       }
+      const updatedSpecs = current.filter((s) => s !== spec);
+      const updatedGrades = { ...(formData.specialtyGrades || {}) };
+      delete updatedGrades[spec];
+      const updatedOtherGrades = { ...(formData.specialtyGradesOther || {}) };
+      delete updatedOtherGrades[spec];
+
+      const summary = Object.entries(updatedGrades)
+        .filter(([_, g]) => Boolean(g))
+        .map(([s, g]) => `${s}: ${g}`)
+        .join(", ");
+
       setFormData({
         ...formData,
-        areasOfSpecialty: current.filter((s) => s !== spec),
+        areasOfSpecialty: updatedSpecs,
         specialtyOther: spec === "Other" ? "" : formData.specialtyOther,
+        specialtyGrades: updatedGrades,
+        specialtyGradesOther: updatedOtherGrades,
+        cidaGrade: summary,
       });
     } else {
       if (spec === "Other") {
@@ -1014,6 +1030,37 @@ function RegisterForm() {
         areasOfSpecialty: [...current, spec],
       });
     }
+  };
+
+  const handleSpecialtyGradeChange = (spec: string, grade: string) => {
+    const updatedGrades = {
+      ...(formData.specialtyGrades || {}),
+      [spec]: grade,
+    };
+    if (!grade) {
+      delete updatedGrades[spec];
+    }
+    const summary = Object.entries(updatedGrades)
+      .filter(([_, g]) => Boolean(g))
+      .map(([s, g]) => `${s}: ${g}`)
+      .join(", ");
+
+    setFormData({
+      ...formData,
+      specialtyGrades: updatedGrades,
+      cidaGrade: summary || (grade as any),
+    });
+  };
+
+  const handleSpecialtyGradeOtherChange = (spec: string, otherGrade: string) => {
+    const updatedOther = {
+      ...(formData.specialtyGradesOther || {}),
+      [spec]: otherGrade,
+    };
+    setFormData({
+      ...formData,
+      specialtyGradesOther: updatedOther,
+    });
   };
 
   // Handlers for Supplier Materials & Capacity
@@ -2515,213 +2562,214 @@ function RegisterForm() {
 
                         <div>
                           <div className="flex items-center justify-between mb-2">
-                            <label className="block font-semibold text-slate-700">
-                              Areas of specialty * (Select all that apply)
-                            </label>
+                            <div>
+                              <label className="block font-semibold text-slate-800 text-xs">
+                                Areas of specialty &amp; CIDA grading * (Select all that apply)
+                              </label>
+                              <p className="text-[11px] text-slate-500">
+                                Select one or more specialty areas and choose the corresponding CIDA grading under each.
+                              </p>
+                            </div>
                             <button
                               type="button"
                               onClick={handleAddSpecialtyOther}
-                              className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-900 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-3 py-1 rounded-lg transition-colors"
-                              title="Click to add an Other technical specialty"
+                              className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-900 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-3 py-1 rounded-lg transition-colors shrink-0"
+                              title="Click to add custom specialty"
                             >
                               <Plus className="w-3.5 h-3.5" />
                               <span>+ Add Other Specialty</span>
                             </button>
                           </div>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                            {SPECIALTY_OPTIONS.map((spec) => {
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {SPECIALTY_OPTIONS.filter((s) => s !== "Other").map((spec) => {
                               const isChecked = (formData.areasOfSpecialty || []).includes(spec);
                               return (
-                                <label
+                                <div
                                   key={spec}
-                                  className={`flex items-center gap-2 p-2.5 border rounded-lg cursor-pointer transition-all ${
+                                  className={`p-3.5 rounded-xl border transition-all ${
                                     isChecked
-                                      ? "bg-blue-50/80 border-blue-800 text-blue-950 font-semibold"
-                                      : "bg-slate-50 border-slate-200 text-slate-800 hover:bg-slate-100"
+                                      ? "bg-blue-50/70 border-2 border-blue-800 shadow-sm"
+                                      : "bg-slate-50 border-slate-200 hover:bg-slate-100/70"
                                   }`}
                                 >
-                                  <input
-                                    type="checkbox"
-                                    checked={isChecked}
-                                    onChange={() => handleSpecialtyChange(spec)}
-                                    className="w-4 h-4 text-blue-900 rounded focus:ring-blue-800"
-                                  />
-                                  <span className="font-medium text-slate-800">{spec}</span>
-                                </label>
+                                  <div className="flex items-center justify-between">
+                                    <label className="flex items-center gap-2.5 cursor-pointer">
+                                      <input
+                                        type="checkbox"
+                                        checked={isChecked}
+                                        onChange={() => handleSpecialtyChange(spec)}
+                                        className="w-4 h-4 text-blue-900 rounded focus:ring-blue-800"
+                                      />
+                                      <span className="font-semibold text-slate-900 text-xs">{spec}</span>
+                                    </label>
+                                    {isChecked && (
+                                      <span className="text-[10px] text-blue-800 font-bold bg-blue-100 px-2 py-0.5 rounded-full">
+                                        Selected
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {/* CIDA grading under this specialty area */}
+                                  {isChecked && (
+                                    <div className="mt-2.5 pt-2.5 border-t border-blue-200/80 space-y-1.5">
+                                      <label className="block text-[11px] font-bold text-slate-700">
+                                        CIDA Grading for {spec} *
+                                      </label>
+                                      <select
+                                        required
+                                        value={formData.specialtyGrades?.[spec] || ""}
+                                        onChange={(e) => handleSpecialtyGradeChange(spec, e.target.value)}
+                                        className="w-full p-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-800 shadow-sm"
+                                      >
+                                        <option value="">— Select CIDA Grading for {spec} —</option>
+                                        {CIDA_GRADES.map((g) => (
+                                          <option key={g} value={g}>
+                                            {g}
+                                          </option>
+                                        ))}
+                                      </select>
+                                      {formData.specialtyGrades?.[spec] === "Other" && (
+                                        <input
+                                          type="text"
+                                          value={formData.specialtyGradesOther?.[spec] || ""}
+                                          onChange={(e) => handleSpecialtyGradeOtherChange(spec, e.target.value)}
+                                          placeholder={`Specify custom CIDA grading for ${spec}...`}
+                                          className="w-full p-1.5 bg-amber-50/60 border border-amber-300 rounded text-slate-900 text-xs focus:ring-1 focus:ring-blue-800 mt-1"
+                                        />
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
                               );
                             })}
-                          </div>
-                          {(formData.areasOfSpecialty || []).includes("Other") && (
-                            <div className="mt-3 p-4 bg-slate-50 border-2 border-dashed border-blue-200 rounded-xl space-y-3">
-                              <div className="flex items-center justify-between pb-1 border-b border-slate-200/80">
-                                <div>
-                                  <label className="block text-xs font-bold text-blue-950 uppercase tracking-wide">
-                                    Other Technical Specialty Area(s)
-                                  </label>
-                                  <span className="text-[11px] text-slate-500">
-                                    Specify each custom specialty below. You can add as many as needed.
-                                  </span>
-                                </div>
-                                <span className="text-[10px] bg-blue-100 text-blue-900 font-bold px-2 py-0.5 rounded-full">
-                                  {specialtyOtherList.filter((s) => s.trim()).length} Specified
-                                </span>
-                              </div>
 
-                              <div className="space-y-2.5">
-                                {specialtyOtherList.map((item, idx) => (
-                                  <div key={idx} className="flex items-center gap-2">
-                                    <span className="text-xs font-bold text-slate-400 w-5 text-right shrink-0">
-                                      #{idx + 1}
-                                    </span>
-                                    <input
-                                      type="text"
-                                      value={item}
-                                      onChange={(e) => handleUpdateSpecialtyOther(idx, e.target.value)}
-                                      onKeyDown={(e) => {
-                                        if (e.key === "Enter") {
-                                          e.preventDefault();
-                                          handleAddSpecialtyOther();
-                                        }
-                                      }}
-                                      placeholder={
-                                        idx === 0
-                                          ? "If Other, please specify your area of specialty (e.g. Drainage, Piling)"
-                                          : `Specify additional area of specialty #${idx + 1}`
-                                      }
-                                      className="flex-1 p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-800 shadow-sm"
-                                    />
-                                    {specialtyOtherList.length > 1 && (
-                                      <button
-                                        type="button"
-                                        onClick={() => handleRemoveSpecialtyOther(idx)}
-                                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg border border-transparent hover:border-rose-200 transition-colors shrink-0"
-                                        title="Remove this specialty"
-                                      >
-                                        <X className="w-4 h-4" />
-                                      </button>
+                            {/* Other Specialty Card */}
+                            {(() => {
+                              const isOtherChecked = (formData.areasOfSpecialty || []).includes("Other");
+                              return (
+                                <div
+                                  className={`p-3.5 rounded-xl border transition-all sm:col-span-2 ${
+                                    isOtherChecked
+                                      ? "bg-blue-50/70 border-2 border-blue-800 shadow-sm"
+                                      : "bg-slate-50 border-slate-200 hover:bg-slate-100/70"
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <label className="flex items-center gap-2.5 cursor-pointer">
+                                      <input
+                                        type="checkbox"
+                                        checked={isOtherChecked}
+                                        onChange={() => handleSpecialtyChange("Other")}
+                                        className="w-4 h-4 text-blue-900 rounded focus:ring-blue-800"
+                                      />
+                                      <span className="font-semibold text-slate-900 text-xs">Other Specialty Area(s)</span>
+                                    </label>
+                                    {isOtherChecked && (
+                                      <span className="text-[10px] text-blue-800 font-bold bg-blue-100 px-2 py-0.5 rounded-full">
+                                        {specialtyOtherList.filter((s) => s.trim()).length} Specified
+                                      </span>
                                     )}
                                   </div>
-                                ))}
-                              </div>
 
-                              <div className="pt-1 flex flex-wrap items-center justify-between gap-2">
-                                <button
-                                  type="button"
-                                  onClick={handleAddSpecialtyOther}
-                                  className="inline-flex items-center gap-2 px-4 py-2 text-xs font-extrabold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-md transition-all active:scale-[0.98]"
-                                >
-                                  <Plus className="w-4 h-4" />
-                                  <span>+ Add Another Other Specialty</span>
-                                </button>
-                                <span className="text-[11px] text-slate-500 italic">
-                                  Press Enter to add the next specialty
-                                </span>
-                              </div>
-                            </div>
-                          )}
-                        </div>
+                                  {/* Under Other specialty: show specialty inputs with their CIDA grading selectors */}
+                                  {isOtherChecked && (
+                                    <div className="mt-3 pt-3 border-t border-blue-200/80 space-y-3">
+                                      <span className="text-[11px] font-bold text-slate-700 block">
+                                        Specify Other Specialty &amp; Select CIDA Grading for Each:
+                                      </span>
 
-                        <div>
-                          <div className="flex items-center justify-between mb-1">
-                            <label className="block font-semibold text-slate-700">
-                              CIDA grading *
-                            </label>
-                            <button
-                              type="button"
-                              onClick={handleAddCidaGradeOther}
-                              className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-900 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-3 py-1 rounded-lg transition-colors"
-                              title="Click to specify other CIDA grading"
-                            >
-                              <Plus className="w-3.5 h-3.5" />
-                              <span>+ Add Other Grade</span>
-                            </button>
-                          </div>
-                          <select
-                            value={formData.cidaGrade}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                cidaGrade: e.target.value as CidaGradeOption,
-                                cidaGradeOther: e.target.value !== "Other" ? "" : formData.cidaGradeOther,
-                              })
-                            }
-                            className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-medium"
-                          >
-                            <option value="">— Select CIDA Grading —</option>
-                            {CIDA_GRADES.map((g) => (
-                              <option key={g} value={g}>
-                                {g}
-                              </option>
-                            ))}
-                          </select>
-                          {formData.cidaGrade === "Other" && (
-                            <div className="mt-3 p-4 bg-slate-50 border-2 border-dashed border-blue-200 rounded-xl space-y-3">
-                              <div className="flex items-center justify-between pb-1 border-b border-slate-200/80">
-                                <div>
-                                  <label className="block text-xs font-bold text-blue-950 uppercase tracking-wide">
-                                    Other CIDA Grading / Classification(s)
-                                  </label>
-                                  <span className="text-[11px] text-slate-500">
-                                    Specify each custom grading below. You can add as many as needed.
-                                  </span>
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {specialtyOtherList.map((item, idx) => {
+                                          const itemKey = item.trim() || `Other_${idx + 1}`;
+                                          return (
+                                            <div
+                                              key={idx}
+                                              className="p-3 bg-white border border-slate-200 rounded-xl space-y-2.5 shadow-sm"
+                                            >
+                                              <div className="flex items-center justify-between">
+                                                <span className="text-[11px] font-bold text-blue-900">
+                                                  Other Specialty #{idx + 1}
+                                                </span>
+                                                {specialtyOtherList.length > 1 && (
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => handleRemoveSpecialtyOther(idx)}
+                                                    className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors"
+                                                    title="Remove specialty"
+                                                  >
+                                                    <X className="w-3.5 h-3.5" />
+                                                  </button>
+                                                )}
+                                              </div>
+
+                                              <div>
+                                                <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
+                                                  Specialty Name *
+                                                </label>
+                                                <input
+                                                  type="text"
+                                                  value={item}
+                                                  onChange={(e) => handleUpdateSpecialtyOther(idx, e.target.value)}
+                                                  placeholder={
+                                                    idx === 0
+                                                      ? "e.g. Drainage, Piling, Water Supply"
+                                                      : `Specialty #${idx + 1}`
+                                                  }
+                                                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
+                                                />
+                                              </div>
+
+                                              <div>
+                                                <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
+                                                  CIDA Grading {item.trim() ? `for ${item.trim()}` : ""} *
+                                                </label>
+                                                <select
+                                                  value={formData.specialtyGrades?.[itemKey] || ""}
+                                                  onChange={(e) => handleSpecialtyGradeChange(itemKey, e.target.value)}
+                                                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
+                                                >
+                                                  <option value="">— Select CIDA Grading —</option>
+                                                  {CIDA_GRADES.map((g) => (
+                                                    <option key={g} value={g}>
+                                                      {g}
+                                                    </option>
+                                                  ))}
+                                                </select>
+                                                {formData.specialtyGrades?.[itemKey] === "Other" && (
+                                                  <input
+                                                    type="text"
+                                                    value={formData.specialtyGradesOther?.[itemKey] || ""}
+                                                    onChange={(e) => handleSpecialtyGradeOtherChange(itemKey, e.target.value)}
+                                                    placeholder="Specify custom grading..."
+                                                    className="w-full p-1.5 bg-amber-50/60 border border-amber-300 rounded text-slate-900 text-xs focus:ring-1 focus:ring-blue-800 mt-1"
+                                                  />
+                                                )}
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+
+                                      <div className="pt-1 flex items-center justify-between">
+                                        <button
+                                          type="button"
+                                          onClick={handleAddSpecialtyOther}
+                                          className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-sm transition-all"
+                                        >
+                                          <Plus className="w-3.5 h-3.5" />
+                                          <span>+ Add Another Other Specialty</span>
+                                        </button>
+                                        <span className="text-[11px] text-slate-400 italic">
+                                          Press Enter to add another specialty
+                                        </span>
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
-                                <span className="text-[10px] bg-blue-100 text-blue-900 font-bold px-2 py-0.5 rounded-full">
-                                  {cidaGradeOtherList.filter((s) => s.trim()).length} Specified
-                                </span>
-                              </div>
-
-                              <div className="space-y-2.5">
-                                {cidaGradeOtherList.map((item, idx) => (
-                                  <div key={idx} className="flex items-center gap-2">
-                                    <span className="text-xs font-bold text-slate-400 w-5 text-right shrink-0">
-                                      #{idx + 1}
-                                    </span>
-                                    <input
-                                      type="text"
-                                      value={item}
-                                      onChange={(e) => handleUpdateCidaGradeOther(idx, e.target.value)}
-                                      onKeyDown={(e) => {
-                                        if (e.key === "Enter") {
-                                          e.preventDefault();
-                                          handleAddCidaGradeOther();
-                                        }
-                                      }}
-                                      placeholder={
-                                        idx === 0
-                                          ? "If Other, please specify your CIDA grading"
-                                          : `Additional CIDA grading #${idx + 1}`
-                                      }
-                                      className="flex-1 p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-800 shadow-sm"
-                                    />
-                                    {cidaGradeOtherList.length > 1 && (
-                                      <button
-                                        type="button"
-                                        onClick={() => handleRemoveCidaGradeOther(idx)}
-                                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg border border-transparent hover:border-rose-200 transition-colors shrink-0"
-                                        title="Remove this grading"
-                                      >
-                                        <X className="w-4 h-4" />
-                                      </button>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-
-                              <div className="pt-1 flex flex-wrap items-center justify-between gap-2">
-                                <button
-                                  type="button"
-                                  onClick={handleAddCidaGradeOther}
-                                  className="inline-flex items-center gap-2 px-4 py-2 text-xs font-extrabold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-md transition-all active:scale-[0.98]"
-                                >
-                                  <Plus className="w-4 h-4" />
-                                  <span>+ Add Another CIDA Grade</span>
-                                </button>
-                                <span className="text-[11px] text-slate-500 italic">
-                                  Press Enter to add the next grading
-                                </span>
-                              </div>
-                            </div>
-                          )}
+                              );
+                            })()}
+                          </div>
                         </div>
 
                         {/* Dynamic Questions configured for Section 5 (Contractor Details) */}

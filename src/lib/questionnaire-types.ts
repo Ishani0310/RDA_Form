@@ -202,6 +202,8 @@ export interface OfficialQuestionnaireData {
   ictadRegistrationNumber?: string;
   areasOfSpecialty?: AreaOfSpecialty[];
   specialtyOther?: string;
+  specialtyGrades?: Record<string, string>; // CIDA grading per specialty area
+  specialtyGradesOther?: Record<string, string>; // Custom CIDA grading when grade is 'Other'
   cidaGrade?: CidaGradeOption | string;
   cidaGradeOther?: string;
 

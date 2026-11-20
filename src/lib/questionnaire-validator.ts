@@ -148,10 +148,26 @@ export function validateQuestionnaireSubmission(
     errors.specialtyOther = "Please specify your other area of specialty.";
   }
 
+  // Validate CIDA grading for each selected specialty area
+  const specs = data.areasOfSpecialty || [];
+  const specialtyGrades = data.specialtyGrades || {};
+  for (const s of specs) {
+    if (!specialtyGrades[s] || !specialtyGrades[s].trim()) {
+      errors[`specialtyGrades.${s}`] = `Please select CIDA grading for ${s}.`;
+    }
+  }
+
+  // Ensure cidaGrade is populated for backward compatibility with existing admin views
   if (!data.cidaGrade || !data.cidaGrade.trim()) {
-    errors.cidaGrade = "Please select your CIDA grading.";
-  } else if (data.cidaGrade === "Other" && !data.cidaGradeOther?.trim()) {
-    errors.cidaGradeOther = "Please specify your other CIDA grading.";
+    const gradeSummary = Object.entries(specialtyGrades)
+      .filter(([_, g]) => Boolean(g))
+      .map(([s, g]) => `${s}: ${g}`)
+      .join(", ");
+    if (gradeSummary) {
+      data.cidaGrade = gradeSummary;
+    } else if (specs.length > 0) {
+      errors.cidaGrade = "Please select CIDA grading under each selected specialty area.";
+    }
   }
 
   // Section 5 & 6: Financial Statements (40 Fields) & Loan Commitments
@@ -398,7 +414,17 @@ export function normalizeQuestionnaireData(
     ictadRegistrationNumber: String(raw.ictadRegistrationNumber || "").trim(),
     areasOfSpecialty: Array.isArray(raw.areasOfSpecialty) ? raw.areasOfSpecialty : [],
     specialtyOther: String(raw.specialtyOther || "").trim(),
-    cidaGrade: String(raw.cidaGrade || "").trim(),
+    specialtyGrades: typeof raw.specialtyGrades === "object" && raw.specialtyGrades !== null ? (raw.specialtyGrades as Record<string, string>) : {},
+    specialtyGradesOther: typeof raw.specialtyGradesOther === "object" && raw.specialtyGradesOther !== null ? (raw.specialtyGradesOther as Record<string, string>) : {},
+    cidaGrade: String(
+      raw.cidaGrade ||
+      (typeof raw.specialtyGrades === "object" && raw.specialtyGrades !== null
+        ? Object.entries(raw.specialtyGrades)
+            .filter(([_, g]) => Boolean(g))
+            .map(([s, g]) => `${s}: ${g}`)
+            .join(", ")
+        : "")
+    ).trim(),
     cidaGradeOther: String(raw.cidaGradeOther || "").trim(),
     financialStatements,
     loanCommitments: {

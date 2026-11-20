@@ -578,10 +578,16 @@ function generateSubmissionHtml(sub: FormattedSubmission): string {
               if (sp === "Other" && q.specialtyOther) {
                 const others = q.specialtyOther.split(",").map((item: string) => item.trim()).filter(Boolean);
                 return others.length > 0
-                  ? others.map((oth: string) => `<span class="badge">Other: ${escapeHtml(oth)}</span>`).join("")
+                  ? others.map((oth: string) => {
+                      const grade = q.specialtyGrades?.[oth] || q.specialtyGrades?.[`Other_${oth}`] || "";
+                      const gradeSuffix = grade ? ` (Grade: ${escapeHtml(grade === "Other" && q.specialtyGradesOther?.[oth] ? q.specialtyGradesOther[oth] : grade)})` : "";
+                      return `<span class="badge">Other: ${escapeHtml(oth)}${gradeSuffix}</span>`;
+                    }).join("")
                   : `<span class="badge">Other</span>`;
               }
-              return `<span class="badge">${escapeHtml(sp)}</span>`;
+              const spGrade = q.specialtyGrades?.[sp] || "";
+              const spGradeSuffix = spGrade ? ` (Grade: ${escapeHtml(spGrade === "Other" && q.specialtyGradesOther?.[sp] ? q.specialtyGradesOther[sp] : spGrade)})` : "";
+              return `<span class="badge">${escapeHtml(sp)}${spGradeSuffix}</span>`;
             }).join("")}
           </div>
         </div>
@@ -1734,14 +1740,17 @@ function SubmissionsContent() {
                                   .map((item: string) => item.trim())
                                   .filter(Boolean);
                                 return others.length > 0 ? (
-                                  others.map((oth: string, oIdx: number) => (
-                                    <span
-                                      key={`oth-${oIdx}`}
-                                      className="px-2 py-0.5 rounded bg-blue-100/80 text-blue-900 text-[11px] font-medium"
-                                    >
-                                      Other: {oth}
-                                    </span>
-                                  ))
+                                  others.map((oth: string, oIdx: number) => {
+                                    const grade = selectedSub.questionnaireData?.specialtyGrades?.[oth];
+                                    return (
+                                      <span
+                                        key={`oth-${oIdx}`}
+                                        className="px-2 py-0.5 rounded bg-blue-100/80 text-blue-900 text-[11px] font-medium"
+                                      >
+                                        Other: {oth} {grade ? `• Grade: ${grade}` : ""}
+                                      </span>
+                                    );
+                                  })
                                 ) : (
                                   <span
                                     key={s}
@@ -1751,9 +1760,10 @@ function SubmissionsContent() {
                                   </span>
                                 );
                               }
+                              const spGrade = selectedSub.questionnaireData?.specialtyGrades?.[s];
                               return (
                                 <span key={s} className="px-2 py-0.5 rounded bg-blue-100/80 text-blue-900 text-[11px] font-medium">
-                                  {s}
+                                  {s} {spGrade ? `• Grade: ${spGrade}` : ""}
                                 </span>
                               );
                             })}
