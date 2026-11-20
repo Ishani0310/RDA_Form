@@ -1142,7 +1142,9 @@ export default function ContractorsPage() {
                       </span>
                       <div className="mt-1 flex items-center gap-2">
                         <span className="text-base font-black text-blue-950">
-                          Grade {cidaGrade}
+                          {cidaGrade === "Other" && (q.cidaGradeOther || selectedContractor.cidaGrade === "Other")
+                            ? `Other (${q.cidaGradeOther || "Specified"})`
+                            : `Grade ${cidaGrade}`}
                         </span>
                       </div>
                     </div>

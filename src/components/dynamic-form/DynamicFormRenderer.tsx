@@ -876,18 +876,58 @@ function renderSupplierMaterialsList(
       </div>
 
       {selectedMaterials.includes("Other") && (
-        <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-lg space-y-1">
-          <label className="block text-[11px] font-semibold text-amber-950">
-            Please specify other material type:
-          </label>
-          <input
-            type="text"
-            placeholder="Specify your material..."
-            value={allValues?.["supplierDetails.materialsOther"] || ""}
-            onChange={(e) => onGlobalChange?.("supplierDetails.materialsOther", e.target.value)}
-            disabled={disabled}
-            className="w-full p-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:ring-1 focus:ring-blue-800"
-          />
+        <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-lg space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="block text-[11px] font-semibold text-amber-950">
+              Please specify other material type(s):
+            </label>
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => {
+                const current = (allValues?.["supplierDetails.materialsOther"] || "").split(",").map((s: string) => s.trim()).filter(Boolean);
+                onGlobalChange?.("supplierDetails.materialsOther", [...current, ""].join(", "));
+              }}
+              className="text-[11px] font-bold text-amber-900 hover:text-amber-800 underline"
+            >
+              + Add another material
+            </button>
+          </div>
+          <div className="space-y-1.5">
+            {((allValues?.["supplierDetails.materialsOther"] || "").split(",").map((s: string) => s.trim()).filter(Boolean).length > 0
+              ? (allValues?.["supplierDetails.materialsOther"] || "").split(",").map((s: string) => s.trim()).filter(Boolean)
+              : [""]
+            ).map((item: string, idx: number, arr: string[]) => (
+              <div key={idx} className="flex items-center gap-1.5">
+                <input
+                  type="text"
+                  placeholder={idx === 0 ? "Specify your material..." : `Additional material #${idx + 1}...`}
+                  value={item}
+                  onChange={(e) => {
+                    const list = [...arr];
+                    list[idx] = e.target.value;
+                    onGlobalChange?.("supplierDetails.materialsOther", list.filter(Boolean).join(", "));
+                  }}
+                  disabled={disabled}
+                  className="flex-1 p-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:ring-1 focus:ring-blue-800"
+                />
+                {arr.length > 1 && (
+                  <button
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => {
+                      const list = arr.filter((_, i) => i !== idx);
+                      onGlobalChange?.("supplierDetails.materialsOther", list.filter(Boolean).join(", "));
+                    }}
+                    className="p-1.5 text-slate-400 hover:text-rose-600 rounded"
+                    title="Remove"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -1482,18 +1522,58 @@ function renderFieldInput(
 
           {/* Google Form Specification for CIDA Grading Other */}
           {(question.id === "cidaGrade" || question.code === "Q19") && value === "Other" && (
-            <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-lg space-y-1">
-              <label className="block text-[11px] font-semibold text-amber-950">
-                Please specify your CIDA grading:
-              </label>
-              <input
-                type="text"
-                placeholder="If Other, please specify your CIDA grading..."
-                value={allValues?.["cidaGradeOther"] || ""}
-                onChange={(e) => onGlobalChange?.("cidaGradeOther", e.target.value)}
-                disabled={disabled}
-                className="w-full p-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:ring-1 focus:ring-blue-800"
-              />
+            <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-lg space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-[11px] font-semibold text-amber-950">
+                  Please specify your CIDA grading(s):
+                </label>
+                <button
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => {
+                    const current = (allValues?.["cidaGradeOther"] || "").split(",").map((s: string) => s.trim()).filter(Boolean);
+                    onGlobalChange?.("cidaGradeOther", [...current, ""].join(", "));
+                  }}
+                  className="text-[11px] font-bold text-amber-900 hover:text-amber-800 underline"
+                >
+                  + Add another grade
+                </button>
+              </div>
+              <div className="space-y-1.5">
+                {((allValues?.["cidaGradeOther"] || "").split(",").map((s: string) => s.trim()).filter(Boolean).length > 0
+                  ? (allValues?.["cidaGradeOther"] || "").split(",").map((s: string) => s.trim()).filter(Boolean)
+                  : [""]
+                ).map((item: string, idx: number, arr: string[]) => (
+                  <div key={idx} className="flex items-center gap-1.5">
+                    <input
+                      type="text"
+                      placeholder={idx === 0 ? "If Other, please specify your CIDA grading..." : `Additional grade #${idx + 1}...`}
+                      value={item}
+                      onChange={(e) => {
+                        const list = [...arr];
+                        list[idx] = e.target.value;
+                        onGlobalChange?.("cidaGradeOther", list.filter(Boolean).join(", "));
+                      }}
+                      disabled={disabled}
+                      className="flex-1 p-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:ring-1 focus:ring-blue-800"
+                    />
+                    {arr.length > 1 && (
+                      <button
+                        type="button"
+                        disabled={disabled}
+                        onClick={() => {
+                          const list = arr.filter((_, i) => i !== idx);
+                          onGlobalChange?.("cidaGradeOther", list.filter(Boolean).join(", "));
+                        }}
+                        className="p-1.5 text-slate-400 hover:text-rose-600 rounded"
+                        title="Remove"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -1541,18 +1621,58 @@ function renderFieldInput(
 
           {/* Google Form Specification for Areas of Specialty Other */}
           {(question.id === "areasOfSpecialty" || question.code === "Q18") && currentSelected.includes("Other") && (
-            <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-lg space-y-1">
-              <label className="block text-[11px] font-semibold text-amber-950">
-                Please specify your area of specialty:
-              </label>
-              <input
-                type="text"
-                placeholder="If Other, please specify your area of specialty..."
-                value={allValues?.["specialtyOther"] || ""}
-                onChange={(e) => onGlobalChange?.("specialtyOther", e.target.value)}
-                disabled={disabled}
-                className="w-full p-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:ring-1 focus:ring-blue-800"
-              />
+            <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-lg space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-[11px] font-semibold text-amber-950">
+                  Please specify your area(s) of specialty:
+                </label>
+                <button
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => {
+                    const current = (allValues?.["specialtyOther"] || "").split(",").map((s: string) => s.trim()).filter(Boolean);
+                    onGlobalChange?.("specialtyOther", [...current, ""].join(", "));
+                  }}
+                  className="text-[11px] font-bold text-amber-900 hover:text-amber-800 underline"
+                >
+                  + Add another specialty
+                </button>
+              </div>
+              <div className="space-y-1.5">
+                {((allValues?.["specialtyOther"] || "").split(",").map((s: string) => s.trim()).filter(Boolean).length > 0
+                  ? (allValues?.["specialtyOther"] || "").split(",").map((s: string) => s.trim()).filter(Boolean)
+                  : [""]
+                ).map((item: string, idx: number, arr: string[]) => (
+                  <div key={idx} className="flex items-center gap-1.5">
+                    <input
+                      type="text"
+                      placeholder={idx === 0 ? "If Other, please specify your area of specialty..." : `Additional specialty #${idx + 1}...`}
+                      value={item}
+                      onChange={(e) => {
+                        const list = [...arr];
+                        list[idx] = e.target.value;
+                        onGlobalChange?.("specialtyOther", list.filter(Boolean).join(", "));
+                      }}
+                      disabled={disabled}
+                      className="flex-1 p-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:ring-1 focus:ring-blue-800"
+                    />
+                    {arr.length > 1 && (
+                      <button
+                        type="button"
+                        disabled={disabled}
+                        onClick={() => {
+                          const list = arr.filter((_, i) => i !== idx);
+                          onGlobalChange?.("specialtyOther", list.filter(Boolean).join(", "));
+                        }}
+                        className="p-1.5 text-slate-400 hover:text-rose-600 rounded"
+                        title="Remove"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>

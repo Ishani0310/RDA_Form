@@ -220,6 +220,7 @@ function RegisterForm() {
   const [formData, setFormData] = useState<OfficialQuestionnaireData>(createInitialFormData);
   const [specialtyOtherList, setSpecialtyOtherList] = useState<string[]>([""]);
   const [supplierMaterialsOtherList, setSupplierMaterialsOtherList] = useState<string[]>([""]);
+  const [cidaGradeOtherList, setCidaGradeOtherList] = useState<string[]>([""]);
 
   // Multi-item helper: parse comma-separated string into list of items
   const parseOtherSpecialties = (str?: string): string[] => {
@@ -251,6 +252,18 @@ function RegisterForm() {
       }
     }
   }, [formData.supplierDetails?.materialsOther]);
+
+  // Sync contractor CIDA grade other list when formData.cidaGradeOther changes
+  useEffect(() => {
+    if (formData.cidaGradeOther && formData.cidaGradeOther.trim()) {
+      const parsed = parseOtherSpecialties(formData.cidaGradeOther);
+      const currentCombined = cidaGradeOtherList.map((s) => s.trim()).filter(Boolean).join(", ");
+      const newCombined = parsed.join(", ");
+      if (currentCombined !== newCombined) {
+        setCidaGradeOtherList(parsed);
+      }
+    }
+  }, [formData.cidaGradeOther]);
 
   const handleUpdateSpecialtyOther = (index: number, value: string) => {
     setSpecialtyOtherList((prev) => {
@@ -328,6 +341,33 @@ function RegisterForm() {
           materialsOther: combined,
         },
       }));
+      return finalList;
+    });
+  };
+
+  const handleUpdateCidaGradeOther = (index: number, value: string) => {
+    setCidaGradeOtherList((prev) => {
+      const updated = [...prev];
+      updated[index] = value;
+      const combined = updated.map((s) => s.trim()).filter(Boolean).join(", ");
+      setFormData((f) => ({ ...f, cidaGradeOther: combined }));
+      return updated;
+    });
+  };
+
+  const handleAddCidaGradeOther = () => {
+    if (formData.cidaGrade !== "Other") {
+      setFormData((f) => ({ ...f, cidaGrade: "Other" }));
+    }
+    setCidaGradeOtherList((prev) => [...prev, ""]);
+  };
+
+  const handleRemoveCidaGradeOther = (index: number) => {
+    setCidaGradeOtherList((prev) => {
+      const updated = prev.filter((_, i) => i !== index);
+      const finalList = updated.length > 0 ? updated : [""];
+      const combined = finalList.map((s) => s.trim()).filter(Boolean).join(", ");
+      setFormData((f) => ({ ...f, cidaGradeOther: combined }));
       return finalList;
     });
   };
@@ -612,6 +652,8 @@ function RegisterForm() {
         lastSavedJsonRef.current = JSON.stringify(restoredData);
         setFormData(restoredData);
         setSpecialtyOtherList(parseOtherSpecialties(restoredData.specialtyOther));
+        setSupplierMaterialsOtherList(parseOtherSpecialties(restoredData.supplierDetails?.materialsOther));
+        setCidaGradeOtherList(parseOtherSpecialties(restoredData.cidaGradeOther));
         setCurrentDraftToken(clean);
 
         const ref = data.draft.submissionReference || data.draft.reference || "";
@@ -801,6 +843,8 @@ function RegisterForm() {
     isInitialLoadRef.current = true;
     setFormData(createInitialFormData());
     setSpecialtyOtherList([""]);
+    setSupplierMaterialsOtherList([""]);
+    setCidaGradeOtherList([""]);
     setCurrentDraftToken("");
     setCurrentReference("");
     setAutoSaveStatus("idle");
@@ -1161,6 +1205,8 @@ function RegisterForm() {
               onClick={() => {
                 setSubmissionSuccess(null);
                 setSpecialtyOtherList([""]);
+                setSupplierMaterialsOtherList([""]);
+                setCidaGradeOtherList([""]);
                 setFormData({
                   organizationName: "",
                   contactNumber: "",
@@ -2484,9 +2530,20 @@ function RegisterForm() {
                         </div>
 
                         <div>
-                          <label className="block font-semibold text-slate-700 mb-1">
-                            CIDA grading *
-                          </label>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="block font-semibold text-slate-700">
+                              CIDA grading *
+                            </label>
+                            <button
+                              type="button"
+                              onClick={handleAddCidaGradeOther}
+                              className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-900 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-3 py-1 rounded-lg transition-colors"
+                              title="Click to specify other CIDA grading"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              <span>+ Add Other Grade</span>
+                            </button>
+                          </div>
                           <select
                             value={formData.cidaGrade}
                             onChange={(e) =>
@@ -2506,16 +2563,71 @@ function RegisterForm() {
                             ))}
                           </select>
                           {formData.cidaGrade === "Other" && (
-                            <div className="mt-2.5">
-                              <input
-                                type="text"
-                                value={formData.cidaGradeOther || ""}
-                                onChange={(e) =>
-                                  setFormData({ ...formData, cidaGradeOther: e.target.value })
-                                }
-                                placeholder="If Other, please specify your CIDA grading"
-                                className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
-                              />
+                            <div className="mt-3 p-4 bg-slate-50 border-2 border-dashed border-blue-200 rounded-xl space-y-3">
+                              <div className="flex items-center justify-between pb-1 border-b border-slate-200/80">
+                                <div>
+                                  <label className="block text-xs font-bold text-blue-950 uppercase tracking-wide">
+                                    Other CIDA Grading / Classification(s)
+                                  </label>
+                                  <span className="text-[11px] text-slate-500">
+                                    Specify each custom grading below. You can add as many as needed.
+                                  </span>
+                                </div>
+                                <span className="text-[10px] bg-blue-100 text-blue-900 font-bold px-2 py-0.5 rounded-full">
+                                  {cidaGradeOtherList.filter((s) => s.trim()).length} Specified
+                                </span>
+                              </div>
+
+                              <div className="space-y-2.5">
+                                {cidaGradeOtherList.map((item, idx) => (
+                                  <div key={idx} className="flex items-center gap-2">
+                                    <span className="text-xs font-bold text-slate-400 w-5 text-right shrink-0">
+                                      #{idx + 1}
+                                    </span>
+                                    <input
+                                      type="text"
+                                      value={item}
+                                      onChange={(e) => handleUpdateCidaGradeOther(idx, e.target.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                          e.preventDefault();
+                                          handleAddCidaGradeOther();
+                                        }
+                                      }}
+                                      placeholder={
+                                        idx === 0
+                                          ? "If Other, please specify your CIDA grading"
+                                          : `Additional CIDA grading #${idx + 1}`
+                                      }
+                                      className="flex-1 p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-800 shadow-sm"
+                                    />
+                                    {cidaGradeOtherList.length > 1 && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRemoveCidaGradeOther(idx)}
+                                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg border border-transparent hover:border-rose-200 transition-colors shrink-0"
+                                        title="Remove this grading"
+                                      >
+                                        <X className="w-4 h-4" />
+                                      </button>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+
+                              <div className="pt-1 flex flex-wrap items-center justify-between gap-2">
+                                <button
+                                  type="button"
+                                  onClick={handleAddCidaGradeOther}
+                                  className="inline-flex items-center gap-2 px-4 py-2 text-xs font-extrabold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-md transition-all active:scale-[0.98]"
+                                >
+                                  <Plus className="w-4 h-4" />
+                                  <span>+ Add Another CIDA Grade</span>
+                                </button>
+                                <span className="text-[11px] text-slate-500 italic">
+                                  Press Enter to add the next grading
+                                </span>
+                              </div>
                             </div>
                           )}
                         </div>
@@ -2823,6 +2935,17 @@ function RegisterForm() {
                                             ))}
                                           </select>
                                         </div>
+                                        {contract.currency === "Other" && (
+                                          <div className="mt-1.5">
+                                            <input
+                                              type="text"
+                                              value={(contract as any).currencyOther || ""}
+                                              onChange={(e) => handleOngoingContractChange(idx, "currencyOther", e.target.value)}
+                                              placeholder="Specify custom currency (e.g. AUD, SGD)..."
+                                              className="w-full p-2 text-xs bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
+                                            />
+                                          </div>
+                                        )}
                                         {contract.contractAmount !== null && contract.contractAmount !== undefined && contract.contractAmount !== "" && (
                                           <span className="text-[10px] font-mono text-slate-600 block mt-1">
                                             = {contract.currency || "LKR"} {Number(contract.contractAmount).toLocaleString()}
@@ -2964,6 +3087,18 @@ function RegisterForm() {
                                       </option>
                                     ))}
                                   </select>
+                                  {contract.contractType === "Other" && (
+                                    <div className="mt-2">
+                                      <input
+                                        type="text"
+                                        disabled={isNA}
+                                        value={(contract as any).contractTypeOther || ""}
+                                        onChange={(e) => handleContractChange(idx, "contractTypeOther", e.target.value)}
+                                        placeholder="Specify contract type (e.g. Tunneling, Marine Works)..."
+                                        className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-800 disabled:opacity-50"
+                                      />
+                                    </div>
+                                  )}
                                 </div>
 
                                 <div>

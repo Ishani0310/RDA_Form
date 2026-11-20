@@ -559,7 +559,7 @@ function generateSubmissionHtml(sub: FormattedSubmission): string {
           </div>
           <div>
             <div class="field-label">CIDA Grade Classification</div>
-            <div class="field-value" style="font-weight: 800; color: #1e3a8a;">${escapeHtml(q.cidaGrade || sub.grade || "N/A")}</div>
+            <div class="field-value" style="font-weight: 800; color: #1e3a8a;">${escapeHtml(q.cidaGrade === "Other" && q.cidaGradeOther ? `Other (${q.cidaGradeOther})` : (q.cidaGrade || sub.grade || "N/A"))}</div>
           </div>
           <div>
             <div class="field-label">General Civil Construction Experience</div>
@@ -1699,7 +1699,11 @@ function SubmissionsContent() {
                         {selectedSub.questionnaireData.cidaGrade && (
                           <div>
                             <span className="text-slate-500 text-[10px] uppercase font-bold">CIDA Grade</span>
-                            <p className="font-bold text-slate-800">{selectedSub.questionnaireData.cidaGrade}</p>
+                            <p className="font-bold text-slate-800">
+                              {selectedSub.questionnaireData.cidaGrade === "Other" && selectedSub.questionnaireData.cidaGradeOther
+                                ? `Other (${selectedSub.questionnaireData.cidaGradeOther})`
+                                : selectedSub.questionnaireData.cidaGrade}
+                            </p>
                           </div>
                         )}
                         {selectedSub.questionnaireData.generalExperience && (

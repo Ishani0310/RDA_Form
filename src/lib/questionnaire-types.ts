@@ -117,6 +117,7 @@ export interface OngoingWorkContract {
   contractName: string;
   contractAmount: number | string | null;
   currency: string; // e.g. "LKR", "USD", etc.
+  currencyOther?: string;
   completionDate: string | null;
 }
 
@@ -133,6 +134,7 @@ export type SimilarWorkCompletionStatus =
 export interface SimilarWorkContract {
   contractIndex: number; // 1, 2, 3
   contractType: SimilarWorkContractType | "";
+  contractTypeOther?: string;
   contractName: string; // or "N/A"
   contractAmount: number | null | string;
   startDate: string | null;
