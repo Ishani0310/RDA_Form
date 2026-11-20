@@ -570,7 +570,15 @@ function generateSubmissionHtml(sub: FormattedSubmission): string {
         <div style="margin-top: 6px;">
           <div class="field-label">Registered Technical Specialties:</div>
           <div style="margin-top: 2px;">
-            ${q.areasOfSpecialty.map((sp: string) => `<span class="badge">${escapeHtml(sp)}</span>`).join("")}
+            ${q.areasOfSpecialty.map((sp: string) => {
+              if (sp === "Other" && q.specialtyOther) {
+                const others = q.specialtyOther.split(",").map((item: string) => item.trim()).filter(Boolean);
+                return others.length > 0
+                  ? others.map((oth: string) => `<span class="badge">Other: ${escapeHtml(oth)}</span>`).join("")
+                  : `<span class="badge">Other</span>`;
+              }
+              return `<span class="badge">${escapeHtml(sp)}</span>`;
+            }).join("")}
           </div>
         </div>
         ` : ""}
@@ -1711,11 +1719,36 @@ function SubmissionsContent() {
                         <div className="pt-2">
                           <span className="text-slate-500 text-[10px] uppercase font-bold">Specialties:</span>
                           <div className="flex flex-wrap gap-1.5 mt-1">
-                            {selectedSub.questionnaireData.areasOfSpecialty.map((s: string) => (
-                              <span key={s} className="px-2 py-0.5 rounded bg-blue-100/80 text-blue-900 text-[11px] font-medium">
-                                {s}
-                              </span>
-                            ))}
+                            {selectedSub.questionnaireData.areasOfSpecialty.map((s: string) => {
+                              if (s === "Other" && selectedSub.questionnaireData.specialtyOther) {
+                                const others = selectedSub.questionnaireData.specialtyOther
+                                  .split(",")
+                                  .map((item: string) => item.trim())
+                                  .filter(Boolean);
+                                return others.length > 0 ? (
+                                  others.map((oth: string, oIdx: number) => (
+                                    <span
+                                      key={`oth-${oIdx}`}
+                                      className="px-2 py-0.5 rounded bg-blue-100/80 text-blue-900 text-[11px] font-medium"
+                                    >
+                                      Other: {oth}
+                                    </span>
+                                  ))
+                                ) : (
+                                  <span
+                                    key={s}
+                                    className="px-2 py-0.5 rounded bg-blue-100/80 text-blue-900 text-[11px] font-medium"
+                                  >
+                                    Other
+                                  </span>
+                                );
+                              }
+                              return (
+                                <span key={s} className="px-2 py-0.5 rounded bg-blue-100/80 text-blue-900 text-[11px] font-medium">
+                                  {s}
+                                </span>
+                              );
+                            })}
                           </div>
                         </div>
                       )}

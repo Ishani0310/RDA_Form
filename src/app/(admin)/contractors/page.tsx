@@ -1354,11 +1354,39 @@ export default function ContractorsPage() {
                       <div className="pt-2 border-t border-slate-100">
                         <span className="text-slate-500 font-medium text-[11px]">Areas of Technical Specialty:</span>
                         <div className="flex flex-wrap gap-1.5 mt-1">
-                          {specialties.map((s: string) => (
-                            <span key={s} className="px-2 py-0.5 rounded bg-blue-100/80 text-blue-900 text-[11px] font-semibold">
-                              {s}
-                            </span>
-                          ))}
+                          {specialties.map((s: string) => {
+                            if (s === "Other" && q.specialtyOther) {
+                              const others = q.specialtyOther
+                                .split(",")
+                                .map((item: string) => item.trim())
+                                .filter(Boolean);
+                              return others.length > 0 ? (
+                                others.map((oth: string, oIdx: number) => (
+                                  <span
+                                    key={`oth-${oIdx}`}
+                                    className="px-2 py-0.5 rounded bg-blue-100/80 text-blue-900 text-[11px] font-semibold"
+                                  >
+                                    Other: {oth}
+                                  </span>
+                                ))
+                              ) : (
+                                <span
+                                  key={s}
+                                  className="px-2 py-0.5 rounded bg-blue-100/80 text-blue-900 text-[11px] font-semibold"
+                                >
+                                  Other
+                                </span>
+                              );
+                            }
+                            return (
+                              <span
+                                key={s}
+                                className="px-2 py-0.5 rounded bg-blue-100/80 text-blue-900 text-[11px] font-semibold"
+                              >
+                                {s}
+                              </span>
+                            );
+                          })}
                         </div>
                       </div>
                     )}

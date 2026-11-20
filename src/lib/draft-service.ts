@@ -493,7 +493,9 @@ export async function submitFinalDeclaration(
         contractor.cidaGrade = normalizedQ.cidaGrade as any;
       }
       if (normalizedQ.areasOfSpecialty?.length) {
-        contractor.primarySpeciality = normalizedQ.areasOfSpecialty.join(", ");
+        contractor.primarySpeciality = normalizedQ.areasOfSpecialty
+          .map((s) => (s === "Other" && normalizedQ.specialtyOther ? `Other (${normalizedQ.specialtyOther})` : s))
+          .join(", ");
       }
     } else if (normalizedQ.willParticipate === "No") {
       contractor.primarySpeciality = "Non-Attendee";

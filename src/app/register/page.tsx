@@ -218,6 +218,40 @@ function RegisterForm() {
 
   // Questionnaire Form State
   const [formData, setFormData] = useState<OfficialQuestionnaireData>(createInitialFormData);
+  const [specialtyOtherList, setSpecialtyOtherList] = useState<string[]>([""]);
+
+  // Multi-specialty helper: parse comma-separated string into list of items
+  const parseOtherSpecialties = (str?: string): string[] => {
+    if (!str || !str.trim()) return [""];
+    const items = str.split(",").map((s) => s.trim()).filter(Boolean);
+    return items.length > 0 ? items : [""];
+  };
+
+  const handleUpdateSpecialtyOther = (index: number, value: string) => {
+    const updated = [...specialtyOtherList];
+    updated[index] = value;
+    setSpecialtyOtherList(updated);
+    const combined = updated
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .join(", ");
+    setFormData((prev) => ({ ...prev, specialtyOther: combined }));
+  };
+
+  const handleAddSpecialtyOther = () => {
+    setSpecialtyOtherList((prev) => [...prev, ""]);
+  };
+
+  const handleRemoveSpecialtyOther = (index: number) => {
+    const updated = specialtyOtherList.filter((_, i) => i !== index);
+    const finalList = updated.length > 0 ? updated : [""];
+    setSpecialtyOtherList(finalList);
+    const combined = finalList
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .join(", ");
+    setFormData((prev) => ({ ...prev, specialtyOther: combined }));
+  };
 
   // UI States
   const [loading, setLoading] = useState(false);
@@ -498,6 +532,7 @@ function RegisterForm() {
         isInitialLoadRef.current = true;
         lastSavedJsonRef.current = JSON.stringify(restoredData);
         setFormData(restoredData);
+        setSpecialtyOtherList(parseOtherSpecialties(restoredData.specialtyOther));
         setCurrentDraftToken(clean);
 
         const ref = data.draft.submissionReference || data.draft.reference || "";
@@ -686,6 +721,7 @@ function RegisterForm() {
 
     isInitialLoadRef.current = true;
     setFormData(createInitialFormData());
+    setSpecialtyOtherList([""]);
     setCurrentDraftToken("");
     setCurrentReference("");
     setAutoSaveStatus("idle");
@@ -827,12 +863,20 @@ function RegisterForm() {
   const handleSpecialtyChange = (spec: AreaOfSpecialty) => {
     const current = formData.areasOfSpecialty || [];
     if (current.includes(spec)) {
+      if (spec === "Other") {
+        setSpecialtyOtherList([""]);
+      }
       setFormData({
         ...formData,
         areasOfSpecialty: current.filter((s) => s !== spec),
         specialtyOther: spec === "Other" ? "" : formData.specialtyOther,
       });
     } else {
+      if (spec === "Other") {
+        setSpecialtyOtherList(
+          formData.specialtyOther ? parseOtherSpecialties(formData.specialtyOther) : [""]
+        );
+      }
       setFormData({
         ...formData,
         areasOfSpecialty: [...current, spec],
@@ -1037,6 +1081,7 @@ function RegisterForm() {
             <button
               onClick={() => {
                 setSubmissionSuccess(null);
+                setSpecialtyOtherList([""]);
                 setFormData({
                   organizationName: "",
                   contactNumber: "",
@@ -2234,16 +2279,54 @@ function RegisterForm() {
                             ))}
                           </div>
                           {(formData.areasOfSpecialty || []).includes("Other") && (
-                            <div className="mt-2.5">
-                              <input
-                                type="text"
-                                value={formData.specialtyOther || ""}
-                                onChange={(e) =>
-                                  setFormData({ ...formData, specialtyOther: e.target.value })
-                                }
-                                placeholder="If Other, please specify your area of specialty"
-                                className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
-                              />
+                            <div className="mt-3 p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                              <div className="flex items-center justify-between">
+                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
+                                  Specify Other Area(s) of Specialty
+                                </label>
+                                <span className="text-[11px] text-slate-500">
+                                  Add one or more technical specialties
+                                </span>
+                              </div>
+
+                              <div className="space-y-2">
+                                {specialtyOtherList.map((item, idx) => (
+                                  <div key={idx} className="flex items-center gap-2">
+                                    <input
+                                      type="text"
+                                      value={item}
+                                      onChange={(e) => handleUpdateSpecialtyOther(idx, e.target.value)}
+                                      placeholder={
+                                        idx === 0
+                                          ? "If Other, please specify your area of specialty"
+                                          : `Additional area of specialty #${idx + 1}`
+                                      }
+                                      className="flex-1 p-2 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800"
+                                    />
+                                    {specialtyOtherList.length > 1 && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRemoveSpecialtyOther(idx)}
+                                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg border border-transparent hover:border-rose-200 transition-colors"
+                                        title="Remove this specialty"
+                                      >
+                                        <X className="w-4 h-4" />
+                                      </button>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+
+                              <div>
+                                <button
+                                  type="button"
+                                  onClick={handleAddSpecialtyOther}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-900 hover:text-blue-700 bg-white hover:bg-blue-50 border border-blue-200 rounded-lg shadow-sm transition-colors"
+                                >
+                                  <Plus className="w-3.5 h-3.5" />
+                                  <span>+ Add another specialty</span>
+                                </button>
+                              </div>
                             </div>
                           )}
                         </div>
