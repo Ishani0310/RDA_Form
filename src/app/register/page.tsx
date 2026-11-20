@@ -1689,9 +1689,9 @@ function RegisterForm() {
   return (
     <div className="max-w-4xl mx-auto my-6 sm:my-10 lg:my-12 px-3 sm:px-4 lg:px-6 space-y-5 sm:space-y-6">
       {/* Header Banner */}
-      <div className="bg-gradient-to-br from-[#07162c] via-[#0b1f3a] to-[#0f294d] text-white p-4 pl-4.5 sm:p-7 sm:pl-8 lg:p-8 lg:pl-9 rounded-2xl shadow-xl border border-white/10 relative overflow-hidden">
-        {/* Left Vibrant Green Accent Bar */}
-        <div className="absolute left-0 top-0 bottom-0 w-1.5 sm:w-2 bg-gradient-to-b from-emerald-400 via-green-400 to-emerald-500 shadow-[0_0_14px_rgba(34,197,94,0.6)] z-20" />
+      <div className="bg-gradient-to-br from-[#07162c] via-[#0b1f3a] to-[#0f294d] text-white p-4 pl-3 sm:p-6 sm:pl-4 lg:p-7 lg:pl-4.5 rounded-2xl shadow-xl border border-white/10 relative overflow-hidden">
+        {/* Left Vibrant Green Accent Bar (Snug to letters) */}
+        <div className="absolute left-0 top-0 bottom-0 w-1 sm:w-1.25 bg-gradient-to-b from-emerald-400 via-green-400 to-emerald-500 shadow-[0_0_12px_rgba(34,197,94,0.65)] z-20" />
 
         <div className="absolute -right-16 -top-16 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -left-16 -bottom-16 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
