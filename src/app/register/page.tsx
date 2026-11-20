@@ -1461,11 +1461,11 @@ function RegisterForm() {
             {/* Top Row: Left Emblem & Govt/Portal Badges, Right Official Logo */}
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-white p-1 shadow-sm flex items-center justify-center shrink-0 border border-white/20">
+                <div className="w-11 h-11 rounded-xl bg-white p-1 shadow-sm flex items-center justify-center shrink-0 border border-white/20">
                   <img
-                    src="/rda-emblem.png"
-                    alt="RDA Official Emblem"
-                    className="w-full h-full object-contain"
+                    src="/icdp-logo.jpg"
+                    alt="ICDP - World Bank Funded Project"
+                    className="w-full h-full object-contain rounded-lg"
                   />
                 </div>
                 <div className="min-w-0">
@@ -1502,11 +1502,11 @@ function RegisterForm() {
           {/* Tablet & Desktop Layout (>= sm / >= 640px) */}
           <div className="hidden sm:flex sm:items-center sm:justify-between sm:gap-4 lg:gap-6">
             <div className="flex items-center gap-3.5 lg:gap-4 min-w-0 flex-1">
-              <div className="w-12 h-12 lg:w-14 lg:h-14 rounded-xl bg-white p-1.5 shadow-md flex items-center justify-center shrink-0 border border-white/20">
+              <div className="w-13 h-13 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-xl bg-white p-1.5 shadow-md flex items-center justify-center shrink-0 border border-white/20">
                 <img
-                  src="/rda-emblem.png"
-                  alt="RDA Official Emblem"
-                  className="w-full h-full object-contain"
+                  src="/icdp-logo.jpg"
+                  alt="ICDP - World Bank Funded Project"
+                  className="w-full h-full object-contain rounded-lg"
                 />
               </div>
               <div className="min-w-0 flex-1">
@@ -3606,7 +3606,7 @@ function RegisterForm() {
           <div className="bg-[#0b1f3a] text-white px-5 py-4 sm:px-6 sm:py-5 flex items-center justify-between shrink-0 border-b border-white/10">
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-10 h-10 rounded-xl bg-white p-1 shadow-sm flex items-center justify-center shrink-0">
-                <img src="/rda-emblem.png" alt="RDA Emblem" className="w-full h-full object-contain" />
+                <img src="/icdp-logo.jpg" alt="ICDP Logo" className="w-full h-full object-contain rounded-lg" />
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
