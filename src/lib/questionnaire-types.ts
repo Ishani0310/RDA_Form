@@ -224,6 +224,7 @@ export interface OfficialQuestionnaireData {
 
   // SECTION 11: Matters for Discussion (All Attendees)
   mattersForDiscussion?: string;
+  mattersForDiscussionList?: string[];
 }
 
 // -----------------------------------------------------------------------------

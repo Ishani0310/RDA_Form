@@ -149,6 +149,7 @@ function createInitialFormData(): OfficialQuestionnaireData {
     generalExperience: "",
     similarWorks: createEmptySimilarWorks(),
     mattersForDiscussion: "",
+    mattersForDiscussionList: [""],
   };
 }
 
@@ -663,6 +664,15 @@ function RegisterForm() {
               ? q.similarWorks
               : createEmptySimilarWorks(),
           mattersForDiscussion: q.mattersForDiscussion || "",
+          mattersForDiscussionList:
+            Array.isArray(q.mattersForDiscussionList) && q.mattersForDiscussionList.length > 0
+              ? q.mattersForDiscussionList
+              : q.mattersForDiscussion
+              ? q.mattersForDiscussion
+                  .split(/\r?\n/)
+                  .map((s: string) => s.replace(/^\d+[\.\)]\s*/, "").trim())
+                  .filter(Boolean)
+              : [""],
         };
 
         isInitialLoadRef.current = true;
@@ -1435,6 +1445,56 @@ function RegisterForm() {
     setFormData({ ...formData, similarWorks: reindexed });
   };
 
+  // Handlers for Section 11: Matters for Discussion (One by One)
+  const handleMatterChange = (index: number, value: string) => {
+    const list = [...(formData.mattersForDiscussionList || [""])];
+    list[index] = value;
+    const combined = list
+      .map((m) => m.trim())
+      .filter(Boolean)
+      .map((m, idx) => `${idx + 1}. ${m}`)
+      .join("\n\n");
+
+    setFormData({
+      ...formData,
+      mattersForDiscussionList: list,
+      mattersForDiscussion: combined,
+    });
+  };
+
+  const handleAddMatter = () => {
+    const list = [...(formData.mattersForDiscussionList || [""])];
+    list.push("");
+    setFormData({
+      ...formData,
+      mattersForDiscussionList: list,
+    });
+  };
+
+  const handleRemoveMatter = (index: number) => {
+    const list = [...(formData.mattersForDiscussionList || [""])];
+    if (list.length <= 1) {
+      setFormData({
+        ...formData,
+        mattersForDiscussionList: [""],
+        mattersForDiscussion: "",
+      });
+      return;
+    }
+    const filtered = list.filter((_, i) => i !== index);
+    const combined = filtered
+      .map((m) => m.trim())
+      .filter(Boolean)
+      .map((m, idx) => `${idx + 1}. ${m}`)
+      .join("\n\n");
+
+    setFormData({
+      ...formData,
+      mattersForDiscussionList: filtered,
+      mattersForDiscussion: combined,
+    });
+  };
+
   // Official receipt screen upon completed submission
   if (submissionSuccess) {
     return (
@@ -1512,6 +1572,7 @@ function RegisterForm() {
                   generalExperience: "",
                   similarWorks: createEmptySimilarWorks(),
                   mattersForDiscussion: "",
+                  mattersForDiscussionList: [""],
                 });
               }}
               className="min-h-[44px] px-4 py-2.5 text-xs font-semibold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-sm"
@@ -3634,21 +3695,75 @@ function RegisterForm() {
                     </h2>
                   </div>
 
-                  <div className="space-y-2 text-xs">
-                    <label className="block font-semibold text-slate-700">
-                      Do you have any specific matters, concerns or suggestions that you would like to be discussed during the Early Market Engagement Workshop? (Optional)
-                    </label>
-                    <p className="text-slate-500 text-[11px] leading-relaxed">
-                      Participants are encouraged to share any matters relating to market conditions, technical requirements, procurement arrangements, implementation challenges or other issues relevant to the anticipated ICDP activities.
-                    </p>
-                    <textarea
-                      rows={4}
-                      value={formData.mattersForDiscussion || ""}
-                      onChange={(e) => setFormData({ ...formData, mattersForDiscussion: e.target.value })}
-                      placeholder="Share key topics, challenges, supply issues, or suggestions for the agenda on 07 December 2026..."
-                      className="w-full p-3 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
-                    />
-                    {getDynamicQuestionsForSection("SEC-11").concat(getDynamicQuestionsForSection("sec-matters-discussion")).map(renderDynamicQuestionField)}
+                  <div className="space-y-3 text-xs">
+                    <div>
+                      <label className="block font-semibold text-slate-700">
+                        Do you have any specific matters, concerns or suggestions that you would like to be discussed during the Early Market Engagement Workshop? (Optional)
+                      </label>
+                      <p className="text-slate-500 text-[11px] leading-relaxed mt-0.5">
+                        Please add each matter, concern, or suggestion separately below. Participants are encouraged to share topics relating to market conditions, technical requirements, procurement arrangements, implementation challenges, or other issues relevant to ICDP activities.
+                      </p>
+                    </div>
+
+                    <div className="space-y-3">
+                      {(formData.mattersForDiscussionList && formData.mattersForDiscussionList.length > 0
+                        ? formData.mattersForDiscussionList
+                        : [""]
+                      ).map((matter, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-start gap-2.5 p-3 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-slate-50 transition-colors focus-within:bg-white focus-within:border-blue-700 focus-within:ring-2 focus-within:ring-blue-800/10 shadow-sm"
+                        >
+                          <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-blue-900 text-white font-bold text-xs shrink-0 shadow-sm mt-0.5">
+                            #{idx + 1}
+                          </div>
+
+                          <div className="flex-1 space-y-1">
+                            <label className="text-[11px] font-bold text-slate-700 block">
+                              Matter / Suggestion #{idx + 1}
+                            </label>
+                            <textarea
+                              rows={2}
+                              value={matter}
+                              onChange={(e) => handleMatterChange(idx, e.target.value)}
+                              placeholder={`Enter specific matter, concern, or suggestion #${idx + 1}...`}
+                              className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:outline-none focus:ring-1 focus:ring-blue-800 placeholder:text-slate-400"
+                            />
+                          </div>
+
+                          <div className="pt-6 shrink-0">
+                            {(formData.mattersForDiscussionList || [""]).length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveMatter(idx)}
+                                className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                title="Remove this matter"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="pt-1 flex flex-wrap items-center justify-between gap-2">
+                      <button
+                        type="button"
+                        onClick={handleAddMatter}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-sm transition-all"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>+ Add Another Matter / Suggestion</span>
+                      </button>
+                      <span className="text-[10px] text-slate-400 italic">
+                        You can add multiple separate discussion matters as needed
+                      </span>
+                    </div>
+
+                    {getDynamicQuestionsForSection("SEC-11")
+                      .concat(getDynamicQuestionsForSection("sec-matters-discussion"))
+                      .map(renderDynamicQuestionField)}
                   </div>
                 </div>
 
@@ -4130,14 +4245,46 @@ function RegisterForm() {
 
             {/* Section 11: Matters for Discussion */}
             {formData.willParticipate === "Yes" && (
-              <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-2">
+              <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3">
                 <div className="flex items-center gap-2 pb-2 border-b border-slate-100 font-bold text-blue-950 uppercase tracking-wide text-[11px]">
                   <HelpCircle className="w-3.5 h-3.5 text-blue-900" />
                   <span>Section 11: Matters for Discussion at the Workshop</span>
                 </div>
-                <p className="text-slate-800 font-medium leading-relaxed">
-                  {formData.mattersForDiscussion || "No specific matters or concerns submitted."}
-                </p>
+                {(() => {
+                  const matters = (formData.mattersForDiscussionList || [])
+                    .map((m) => m.trim())
+                    .filter(Boolean);
+                  if (matters.length === 0 && !formData.mattersForDiscussion?.trim()) {
+                    return (
+                      <p className="text-slate-500 italic font-medium leading-relaxed text-xs">
+                        No specific matters or concerns submitted.
+                      </p>
+                    );
+                  }
+                  return (
+                    <div className="space-y-2 pt-0.5">
+                      {matters.length > 0 ? (
+                        matters.map((m, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-start gap-2.5 p-2 rounded-lg bg-slate-50 border border-slate-100 text-xs"
+                          >
+                            <span className="font-bold text-blue-900 bg-blue-100/70 px-2 py-0.5 rounded text-[10px] shrink-0">
+                              #{idx + 1}
+                            </span>
+                            <span className="text-slate-800 leading-relaxed font-medium">
+                              {m}
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-slate-800 font-medium leading-relaxed whitespace-pre-line text-xs">
+                          {formData.mattersForDiscussion}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             )}
 

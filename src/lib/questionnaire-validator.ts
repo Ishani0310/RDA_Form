@@ -459,6 +459,16 @@ export function normalizeQuestionnaireData(
     ongoingContracts,
     generalExperience: (raw.generalExperience as any) || "",
     similarWorks,
-    mattersForDiscussion: String(raw.mattersForDiscussion || "").trim(),
+    mattersForDiscussion: Array.isArray(raw.mattersForDiscussionList) && (raw.mattersForDiscussionList as any[]).length > 0
+      ? (raw.mattersForDiscussionList as any[]).map((m) => String(m || "").trim()).filter(Boolean).map((m, i) => `${i + 1}. ${m}`).join("\n\n")
+      : String(raw.mattersForDiscussion || "").trim(),
+    mattersForDiscussionList: Array.isArray(raw.mattersForDiscussionList)
+      ? (raw.mattersForDiscussionList as any[]).map((m) => String(m || "").trim()).filter(Boolean)
+      : (raw.mattersForDiscussion
+          ? String(raw.mattersForDiscussion)
+              .split(/\r?\n/)
+              .map((s) => s.replace(/^\d+[\.\)]\s*/, "").trim())
+              .filter(Boolean)
+          : []),
   };
 }
