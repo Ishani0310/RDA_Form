@@ -1351,15 +1351,12 @@ export default function FormBuilderPage() {
                           <span className="text-[10px] tracking-widest font-bold text-amber-400 uppercase">
                             Road Development Authority &bull; Sri Lanka
                           </span>
-                          <span className="px-2 py-0.5 rounded text-[9px] bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-400/30">
-                            ICDP OFFICIAL QUESTIONNAIRE
-                          </span>
                         </div>
-                        <h2 className="text-base sm:text-lg lg:text-xl font-extrabold tracking-tight mt-0.5 leading-snug">
-                          Inclusive Connectivity and Development Project (ICDP)
+                        <h2 className="text-base sm:text-lg lg:text-xl font-black tracking-tight mt-0.5 leading-snug">
+                          Early Market Engagement Workshop
                         </h2>
                         <p className="text-xs text-slate-300 mt-0.5 leading-relaxed">
-                          Early Market Engagement Workshop &bull; 07 December 2026
+                          Organized by Inclusive Connectivity and Development Project (ICDP) &bull; 07 December 2026
                         </p>
                       </div>
                     </div>
