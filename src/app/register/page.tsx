@@ -1713,9 +1713,10 @@ function RegisterForm() {
               </h1>
             </div>
 
-            {/* 3. Subtitle: Organized by Inclusive Connectivity and Development Project (ICDP) */}
-            <p className="text-[11px] min-[360px]:text-xs text-slate-300 font-medium leading-relaxed">
-              Organized by Inclusive Connectivity and Development Project (ICDP)
+            {/* 3. Subtitle: Highlighted Organized by Inclusive Connectivity and Development Project (ICDP) */}
+            <p className="text-[11.5px] min-[360px]:text-xs text-slate-200 leading-relaxed">
+              <span className="text-slate-300 font-normal">Organized by </span>
+              <span className="text-amber-300 font-bold tracking-wide">Inclusive Connectivity and Development Project (ICDP)</span>
             </p>
 
             {/* 4. Bottom Row: 07 December 2026 and logo (closer to the subtitle) */}
@@ -1753,8 +1754,9 @@ function RegisterForm() {
               <h1 className="text-xl sm:text-2xl md:text-[25px] lg:text-[28px] xl:text-[30px] font-black tracking-tight text-white leading-tight whitespace-nowrap">
                 Early Market Engagement Workshop
               </h1>
-              <p className="text-xs sm:text-sm text-slate-300 font-medium leading-relaxed">
-                Organized by Inclusive Connectivity and Development Project (ICDP)
+              <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
+                <span className="text-slate-300 font-normal">Organized by </span>
+                <span className="text-amber-300 font-bold tracking-wide">Inclusive Connectivity and Development Project (ICDP)</span>
               </p>
               <div className="pt-1 flex items-center gap-3">
                 <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/15 text-xs font-semibold text-amber-300 shadow-sm">
@@ -1828,7 +1830,11 @@ function RegisterForm() {
                   Workshop Overview
                 </h3>
                 <p>
-                  Organized by Inclusive Connectivity and Development Project (ICDP), Road Development Authority (RDA). This Early Market Engagement Workshop engages prospective contractors, materials suppliers, and institutional stakeholders in the development and procurement framework.
+                  <strong className="text-slate-900 font-bold bg-amber-50 text-amber-950 px-1.5 py-0.5 rounded border border-amber-200 inline-block mb-1">
+                    Organized by Inclusive Connectivity and Development Project (ICDP)
+                  </strong>
+                  <br />
+                  Road Development Authority (RDA) Early Market Engagement Workshop engages prospective contractors, materials suppliers, and institutional stakeholders in the development and procurement framework.
                 </p>
               </div>
 

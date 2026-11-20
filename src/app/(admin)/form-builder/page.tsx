@@ -1356,8 +1356,10 @@ export default function FormBuilderPage() {
                         <h2 className="text-base sm:text-lg lg:text-xl font-black tracking-tight mt-0.5 leading-snug">
                           Early Market Engagement Workshop
                         </h2>
-                        <p className="text-xs text-slate-300 mt-0.5 leading-relaxed">
-                          Organized by Inclusive Connectivity and Development Project (ICDP) &bull; 07 December 2026
+                        <p className="text-xs text-slate-200 mt-0.5 leading-relaxed">
+                          <span className="text-slate-300 font-normal">Organized by </span>
+                          <span className="text-amber-300 font-bold">Inclusive Connectivity and Development Project (ICDP)</span>
+                          <span className="text-slate-400"> &bull; 07 December 2026</span>
                         </p>
                       </div>
                     </div>
@@ -1420,7 +1422,11 @@ export default function FormBuilderPage() {
                             Workshop Overview
                           </h3>
                           <p>
-                            Organized by Inclusive Connectivity and Development Project (ICDP), Road Development Authority (RDA). This Early Market Engagement Workshop engages prospective contractors, materials suppliers, and institutional stakeholders in the development and procurement framework.
+                            <strong className="text-slate-900 font-bold bg-amber-50 text-amber-950 px-1.5 py-0.5 rounded border border-amber-200 inline-block mb-1">
+                              Organized by Inclusive Connectivity and Development Project (ICDP)
+                            </strong>
+                            <br />
+                            Road Development Authority (RDA) Early Market Engagement Workshop engages prospective contractors, materials suppliers, and institutional stakeholders in the development and procurement framework.
                           </p>
                         </div>
 
