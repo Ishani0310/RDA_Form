@@ -1387,10 +1387,12 @@ function RegisterForm() {
         <div className="absolute right-0 top-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 p-0.5 shadow-md flex items-center justify-center shrink-0">
-              <div className="w-full h-full bg-[#0b1f3a] rounded-[10px] flex items-center justify-center text-amber-400 font-black text-xs tracking-wider">
-                RDA
-              </div>
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white p-1 shadow-md flex items-center justify-center shrink-0 border border-white/20">
+              <img
+                src="/rda-emblem.png"
+                alt="RDA Official Emblem"
+                className="w-full h-full object-contain"
+              />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
@@ -1410,14 +1412,15 @@ function RegisterForm() {
             </div>
           </div>
 
+          {/* Official RDA Logo on top-right */}
           <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
-            <Link
-              href="/login"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/10 hover:bg-white/20 text-slate-200 border border-white/20 transition-colors"
-            >
-              <span>Officer Login</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
+            <div className="bg-white rounded-xl px-3 py-1.5 shadow-md border border-white/30 flex items-center">
+              <img
+                src="/rda-logo.png"
+                alt="Road Development Authority Sri Lanka"
+                className="h-8 sm:h-9 w-auto object-contain"
+              />
+            </div>
           </div>
         </div>
       </div>
