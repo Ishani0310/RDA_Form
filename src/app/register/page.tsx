@@ -1828,7 +1828,7 @@ function RegisterForm() {
                   Workshop Overview
                 </h3>
                 <p>
-                  The Road Development Authority (RDA) under the Inclusive Connectivity and Development Project (ICDP) is conducting an Early Market Engagement Workshop to engage prospective contractors, materials suppliers, and institutional stakeholders in the development and procurement framework.
+                  Organized by Inclusive Connectivity and Development Project (ICDP), Road Development Authority (RDA). This Early Market Engagement Workshop engages prospective contractors, materials suppliers, and institutional stakeholders in the development and procurement framework.
                 </p>
               </div>
 
@@ -1838,27 +1838,56 @@ function RegisterForm() {
                 </h3>
                 <div className="space-y-1.5 text-[11px]">
                   <p className="flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-blue-900" />
+                    <Calendar className="w-3.5 h-3.5 text-blue-900 shrink-0" />
                     <strong>Workshop Date:</strong> 07 December 2026 at 9.00 AM
                   </p>
                   <p className="flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-rose-700" />
+                    <Clock className="w-3.5 h-3.5 text-rose-700 shrink-0" />
                     <strong>Registration Deadline:</strong> 05 December 2026
                   </p>
-                  <p className="flex items-center gap-1.5">
-                    <Phone className="w-3.5 h-3.5 text-emerald-700" />
-                    <strong>Inquiry Contact:</strong> 070 697 0408 (Thilina Tharinda)
-                  </p>
-                  <p className="flex items-center gap-1.5">
-                    <Mail className="w-3.5 h-3.5 text-blue-700" />
-                    <strong>Registration Email:</strong>{" "}
-                    <a
-                      href="mailto:amindunil@gmail.com"
-                      className="text-blue-900 underline hover:text-blue-700 font-medium"
-                    >
-                      amindunil@gmail.com
-                    </a>
-                  </p>
+                  <div className="pt-0.5 space-y-1">
+                    <p className="flex items-center gap-1.5">
+                      <Phone className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                      <strong>General Number:</strong>{" "}
+                      <a href="tel:0112865766" className="text-blue-900 underline hover:text-blue-700 font-medium">
+                        011 286 5766
+                      </a>
+                    </p>
+                    <p className="flex items-center gap-1.5">
+                      <Phone className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                      <strong>Indunil:</strong>{" "}
+                      <a href="tel:0712863433" className="text-blue-900 underline hover:text-blue-700 font-medium">
+                        071 286 3433
+                      </a>
+                    </p>
+                    <p className="flex items-center gap-1.5">
+                      <Phone className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                      <strong>Inquiry Contact:</strong>{" "}
+                      <a href="tel:0706970408" className="text-blue-900 underline hover:text-blue-700 font-medium">
+                        070 697 0408
+                      </a>{" "}
+                      <span className="text-slate-500">(Thilina Tharinda)</span>
+                    </p>
+                  </div>
+                  <div className="pt-0.5 space-y-1">
+                    <p className="flex items-center gap-1.5 flex-wrap">
+                      <Mail className="w-3.5 h-3.5 text-blue-700 shrink-0" />
+                      <strong>Registration Emails:</strong>
+                      <a
+                        href="mailto:wbicdpbid@gmail.com"
+                        className="text-blue-900 underline hover:text-blue-700 font-medium"
+                      >
+                        wbicdpbid@gmail.com
+                      </a>
+                      <span className="text-slate-400">&bull;</span>
+                      <a
+                        href="mailto:amindunil@gmail.com"
+                        className="text-blue-900 underline hover:text-blue-700 font-medium"
+                      >
+                        amindunil@gmail.com
+                      </a>
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
