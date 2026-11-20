@@ -1715,12 +1715,18 @@ function RegisterForm() {
                 </div>
               </div>
 
-              {/* RDA Official Logo on mobile top-right */}
-              <div className="bg-white rounded-xl px-2.5 py-1 shadow-sm border border-white/30 shrink-0">
+              {/* Ministry & RDA Official Logos on mobile top-right */}
+              <div className="bg-white rounded-xl px-2 py-1.5 shadow-sm border border-white/30 shrink-0 flex flex-col items-center gap-1 max-w-[150px]">
+                <img
+                  src="/ministry-logo.png"
+                  alt="Ministry of Transport, Highways and Urban Development"
+                  className="h-4.5 w-auto object-contain"
+                />
+                <div className="w-full border-t border-slate-200/80" />
                 <img
                   src="/rda-logo.png"
                   alt="Road Development Authority Sri Lanka"
-                  className="h-7 w-auto object-contain"
+                  className="h-5.5 w-auto object-contain"
                 />
               </div>
             </div>
@@ -1764,13 +1770,19 @@ function RegisterForm() {
               </div>
             </div>
 
-            {/* Official RDA Logo on Tablet & Desktop */}
+            {/* Official Ministry & RDA Logos on Tablet & Desktop */}
             <div className="shrink-0 flex items-center">
-              <div className="bg-white rounded-xl px-3.5 py-1.5 lg:px-4 lg:py-2 shadow-md border border-white/30 flex items-center">
+              <div className="bg-white rounded-xl px-3 py-2 lg:px-4 lg:py-2.5 shadow-md border border-white/30 flex flex-col items-center gap-1.5 max-w-[210px] sm:max-w-[230px] lg:max-w-[260px]">
+                <img
+                  src="/ministry-logo.png"
+                  alt="Ministry of Transport, Highways and Urban Development"
+                  className="h-6 sm:h-7 lg:h-8 w-auto object-contain"
+                />
+                <div className="w-full border-t border-slate-200/80" />
                 <img
                   src="/rda-logo.png"
                   alt="Road Development Authority Sri Lanka"
-                  className="h-8 sm:h-9 lg:h-10 w-auto object-contain"
+                  className="h-7 sm:h-8 lg:h-9 w-auto object-contain"
                 />
               </div>
             </div>
