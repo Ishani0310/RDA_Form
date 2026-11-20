@@ -409,6 +409,14 @@ function RegisterForm() {
       .catch(() => {});
   }, []);
 
+  const ongoingTotalOutstanding = useMemo(() => {
+    const contracts = formData.ongoingContracts || [];
+    return contracts.reduce((acc, c) => {
+      const val = Number(c.contractAmount);
+      return acc + (!isNaN(val) && val > 0 ? val : 0);
+    }, 0);
+  }, [formData.ongoingContracts]);
+
   const BASELINE_QUESTION_IDS = useMemo(
     () =>
       new Set([
@@ -1119,7 +1127,18 @@ function RegisterForm() {
       }),
       [field]: parsedValue,
     };
-    setFormData({ ...formData, ongoingContracts: list });
+
+    // Automatically calculate total value across all ongoing contracts
+    const calculatedSum = list.reduce((sum, item) => {
+      const n = Number(item.contractAmount);
+      return sum + (!isNaN(n) && n > 0 ? n : 0);
+    }, 0);
+
+    setFormData({
+      ...formData,
+      ongoingContracts: list,
+      totalOutstandingValueLkrMillion: calculatedSum > 0 ? calculatedSum : null,
+    });
   };
 
   // Similar Works Change Handler
@@ -1182,7 +1201,15 @@ function RegisterForm() {
       ...c,
       contractIndex: i + 1,
     }));
-    setFormData({ ...formData, ongoingContracts: filtered });
+    const calculatedSum = filtered.reduce((sum, item) => {
+      const n = Number(item.contractAmount);
+      return sum + (!isNaN(n) && n > 0 ? n : 0);
+    }, 0);
+    setFormData({
+      ...formData,
+      ongoingContracts: filtered,
+      totalOutstandingValueLkrMillion: calculatedSum > 0 ? calculatedSum : null,
+    });
   };
 
   const handleAddSimilarWork = () => {
@@ -2912,31 +2939,40 @@ function RegisterForm() {
                             </span>
 
                             <div>
-                              <label className="block font-semibold text-slate-700 mb-1">
-                                Total value of outstanding works as at 1 December 2026 (Total Amount in LKR) *
-                              </label>
-                              <p className="text-[11px] text-slate-500 mb-2">
-                                Please enter the total value of works that remain to be completed under all your ongoing contracts as at 1 December 2026 in full LKR. Enter total amount (e.g. for 1 Lakh enter <strong>100000</strong>, not 1 Lakh; for 10 Million enter <strong>10000000</strong>. If you have no outstanding works, please enter 0).
-                              </p>
-                              <input
-                                type="number"
-                                required
-                                value={formData.totalOutstandingValueLkrMillion ?? ""}
-                                onChange={(e) => {
-                                  const val = e.target.value.trim();
-                                  setFormData({
-                                    ...formData,
-                                    totalOutstandingValueLkrMillion: val === "" ? null : Number(val),
-                                  });
-                                }}
-                                className="w-full sm:w-72 p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
-                              />
-                              {formData.totalOutstandingValueLkrMillion !== null &&
-                                formData.totalOutstandingValueLkrMillion !== undefined && (
-                                  <span className="text-[11px] font-mono font-semibold text-blue-900 bg-blue-100/70 px-2 py-0.5 rounded block mt-1 w-fit">
-                                    = LKR {Number(formData.totalOutstandingValueLkrMillion).toLocaleString()}
+                              <div className="flex items-center justify-between mb-1">
+                                <label className="block font-semibold text-slate-700">
+                                  Total value of outstanding works as at 1 December 2026 (Total Amount in LKR) *
+                                </label>
+                                {ongoingTotalOutstanding > 0 && (
+                                  <span className="text-[10px] text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full font-bold">
+                                    ✓ Auto-calculated from table below
                                   </span>
                                 )}
+                              </div>
+                              <p className="text-[11px] text-slate-500 mb-2">
+                                Please enter the total value of works that remain to be completed under all your ongoing contracts as at 1 December 2026 in full LKR. (Calculates automatically as you enter amounts in the table below).
+                              </p>
+                              <div className="flex items-center gap-3">
+                                <input
+                                  type="number"
+                                  required
+                                  value={formData.totalOutstandingValueLkrMillion ?? ""}
+                                  onChange={(e) => {
+                                    const val = e.target.value.trim();
+                                    setFormData({
+                                      ...formData,
+                                      totalOutstandingValueLkrMillion: val === "" ? null : Number(val),
+                                    });
+                                  }}
+                                  className="w-full sm:w-72 p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono font-bold"
+                                />
+                                {formData.totalOutstandingValueLkrMillion !== null &&
+                                  formData.totalOutstandingValueLkrMillion !== undefined && (
+                                    <span className="text-xs font-mono font-bold text-blue-900 bg-blue-100/70 px-2.5 py-1.5 rounded-lg border border-blue-200">
+                                      = LKR {Number(formData.totalOutstandingValueLkrMillion).toLocaleString()}
+                                    </span>
+                                  )}
+                              </div>
                             </div>
 
                             <div className="space-y-3 pt-2">
@@ -3033,6 +3069,26 @@ function RegisterForm() {
                                       </tr>
                                     ))}
                                   </tbody>
+                                  <tfoot>
+                                    <tr className="bg-blue-50/80 border-t-2 border-blue-200 text-xs font-bold">
+                                      <td colSpan={4} className="p-3 text-right text-blue-950 font-bold uppercase tracking-wider">
+                                        <div className="flex items-center justify-end gap-2">
+                                          <span className="text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-mono font-bold">
+                                            AUTO-CALCULATED
+                                          </span>
+                                          <span>Total Value of Outstanding Work:</span>
+                                        </div>
+                                      </td>
+                                      <td className="p-3">
+                                        <div className="p-2 bg-white border-2 border-blue-600 rounded-lg text-blue-950 font-mono font-bold text-sm shadow-sm">
+                                          LKR {ongoingTotalOutstanding.toLocaleString()}
+                                        </div>
+                                      </td>
+                                      <td colSpan={2} className="p-3 text-slate-500 text-[11px] font-normal italic">
+                                        Sum of all ongoing contracts as at 1st Dec
+                                      </td>
+                                    </tr>
+                                  </tfoot>
                                 </table>
                               </div>
 

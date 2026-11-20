@@ -1130,6 +1130,11 @@ function renderOngoingWorksContracts(
     onChange(list);
   };
 
+  const totalOutstanding = contracts.reduce((acc, c) => {
+    const val = Number(c.contractAmount);
+    return acc + (!isNaN(val) && val > 0 ? val : 0);
+  }, 0);
+
   return (
     <div className="space-y-3">
       <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -1227,6 +1232,26 @@ function renderOngoingWorksContracts(
               </tr>
             ))}
           </tbody>
+          <tfoot>
+            <tr className="bg-blue-50/80 border-t-2 border-blue-200 text-xs font-bold">
+              <td colSpan={4} className="p-3 text-right text-blue-950 font-bold uppercase tracking-wider">
+                <div className="flex items-center justify-end gap-2">
+                  <span className="text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-mono font-bold">
+                    AUTO-CALCULATED
+                  </span>
+                  <span>Total Value of Outstanding Work:</span>
+                </div>
+              </td>
+              <td className="p-3">
+                <div className="p-2 bg-white border-2 border-blue-600 rounded-lg text-blue-950 font-mono font-bold text-sm shadow-sm">
+                  LKR {totalOutstanding.toLocaleString()}
+                </div>
+              </td>
+              <td colSpan={2} className="p-3 text-slate-500 text-[11px] font-normal italic">
+                Sum of all ongoing contracts as at 1st Dec
+              </td>
+            </tr>
+          </tfoot>
         </table>
       </div>
 
