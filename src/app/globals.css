@@ -7,12 +7,33 @@
   --foreground: #0f172a;
 }
 
+/* Global root typography scale: slightly enlarged across the entire system for optimal clarity */
+html {
+  font-size: 17px;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   color: var(--foreground);
   background: var(--background);
   font-feature-settings: "rlig" 1, "calt" 1;
   /* Prevent horizontal overflow at the page level */
   overflow-x: hidden;
+  line-height: 1.55;
+}
+
+/* Gracefully scale micro-utility typography across the full application for enhanced legibility */
+.text-\[8px\] {
+  font-size: 9.5px !important;
+}
+.text-\[9px\] {
+  font-size: 10.5px !important;
+}
+.text-\[10px\] {
+  font-size: 11.5px !important;
+}
+.text-\[11px\] {
+  font-size: 12.5px !important;
 }
 
 /* Smooth momentum scrolling for touch devices on scrollable containers */
