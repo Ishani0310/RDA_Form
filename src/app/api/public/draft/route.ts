@@ -79,19 +79,20 @@ export async function POST(request: NextRequest) {
     const tokenFromHeader = request.headers.get("x-resume-token") || "";
     const activeToken = (body.resumeToken || body.token || tokenFromHeader || "").trim();
 
+    const questionnaireData = body.questionnaireData || body.data;
+    const businessName = body.businessName || body.organizationName;
+
     const {
       registrationNumber,
-      businessName,
       businessRegistrationNumber,
       cidaGrade,
       primarySpeciality,
       province,
       district,
-      questionnaireData,
     } = body;
 
     // Contact officer normalization (handles nested object or flat fields)
-    let contactOfficer = body.contactOfficer;
+    let contactOfficer = body.contactOfficer || body.primaryContact;
     if (!contactOfficer) {
       const email = body.contactEmail || body.email;
       const phone = body.contactPhone || body.phone;
@@ -115,16 +116,6 @@ export async function POST(request: NextRequest) {
           },
           { status: 400 }
         );
-      }
-
-      if (contactOfficer?.email) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(String(contactOfficer.email).trim())) {
-          return NextResponse.json(
-            { success: false, message: "Please provide a valid official email address format." },
-            { status: 400 }
-          );
-        }
       }
     }
 

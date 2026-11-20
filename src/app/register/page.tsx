@@ -288,6 +288,12 @@ function mapServerErrorMessageToField(message: string): { key: string; message: 
   if (/province/i.test(clean)) return { key: "supplierDetails.province", message: clean };
   if (/district/i.test(clean)) return { key: "supplierDetails.district", message: clean };
   if (/ictad/i.test(clean) || /registration number/i.test(clean)) return { key: "ictadRegistrationNumber", message: clean };
+  const cidaGradeMatch = clean.match(/CIDA grade for (.+?)\.?$/i);
+  if (cidaGradeMatch) {
+    const spec = cidaGradeMatch[1].trim();
+    return { key: `specialtyGrades.${spec}`, message: clean };
+  }
+  if (/CIDA grade/i.test(clean)) return { key: "cidaGrade", message: clean };
   if (/area.*specialty/i.test(clean)) return { key: "areasOfSpecialty", message: clean };
   if (/general experience/i.test(clean)) return { key: "generalExperience", message: clean };
   if (/contract 1/i.test(clean) || /similar work/i.test(clean)) return { key: "similarWorks.0.contractName", message: clean };
@@ -976,6 +982,8 @@ function RegisterForm() {
           ictadRegistrationNumber: q.ictadRegistrationNumber || c.registrationNumber || "",
           areasOfSpecialty: Array.isArray(q.areasOfSpecialty) ? q.areasOfSpecialty : [],
           specialtyOther: q.specialtyOther || "",
+          specialtyGrades: q.specialtyGrades || {},
+          specialtyGradesOther: q.specialtyGradesOther || {},
           cidaGrade: q.cidaGrade || c.cidaGrade || "",
           cidaGradeOther: q.cidaGradeOther || "",
           financialStatements: restoredFinancials,
@@ -1309,8 +1317,19 @@ function RegisterForm() {
 
       // Step 1: Sync all form inputs to server to obtain/refresh token
       const payload: any = {
+        questionnaireData: formData,
         data: formData,
+        businessName: orgName || "RDA Participant",
         organizationName: orgName || "RDA Participant",
+        registrationNumber: formData.ictadRegistrationNumber?.trim() || undefined,
+        cidaGrade: formData.cidaGrade?.trim() || undefined,
+        province: formData.supplierDetails?.province?.trim() || "Western Province",
+        district: formData.supplierDetails?.district?.trim() || undefined,
+        contactOfficer: {
+          name: formData.participant1?.fullName?.trim() || "Authorized Representative",
+          phone: formData.participant1?.mobileNumber?.trim() || formData.contactNumber?.trim() || "+94 11 000 0000",
+          email: formData.participant1?.email?.trim() || formData.email?.trim() || "contact@rda.gov.lk",
+        },
         primaryContact: {
           fullName: formData.participant1?.fullName?.trim() || "Authorized Representative",
           mobileNumber: formData.participant1?.mobileNumber?.trim() || formData.contactNumber?.trim() || "0112865766",
