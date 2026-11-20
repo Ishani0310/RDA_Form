@@ -1689,7 +1689,7 @@ function RegisterForm() {
   return (
     <div className="max-w-4xl mx-auto my-6 sm:my-10 lg:my-12 px-3 sm:px-4 lg:px-6 space-y-5 sm:space-y-6">
       {/* Header Banner */}
-      <div className="bg-gradient-to-br from-[#07162c] via-[#0b1f3a] to-[#0f294d] text-white p-5 sm:p-7 lg:p-8 rounded-2xl shadow-xl border border-white/10 relative overflow-hidden">
+      <div className="bg-gradient-to-br from-[#07162c] via-[#0b1f3a] to-[#0f294d] text-white p-4 sm:p-7 lg:p-8 rounded-2xl shadow-xl border border-white/10 relative overflow-hidden">
         <div className="absolute -right-16 -top-16 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -left-16 -bottom-16 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -1698,18 +1698,20 @@ function RegisterForm() {
           <div className="sm:hidden space-y-2.5">
             {/* 1. Top: Single line Road Development Authority • Sri Lanka */}
             <div className="w-full">
-              <span className="text-[10.5px] min-[380px]:text-[11.5px] tracking-wider font-bold text-amber-400 uppercase block whitespace-nowrap">
+              <span className="text-[10px] min-[360px]:text-[11px] min-[400px]:text-[11.5px] tracking-wider font-bold text-amber-400 uppercase block whitespace-nowrap">
                 Road Development Authority &bull; Sri Lanka
               </span>
             </div>
 
-            {/* 2. Heading 1: Early Market Engagement Workshop */}
-            <h1 className="text-xl font-black tracking-tight text-white leading-snug">
-              Early Market Engagement Workshop
-            </h1>
+            {/* 2. Heading 1: Early Market Engagement Workshop (Single unbroken line) */}
+            <div className="w-full overflow-hidden">
+              <h1 className="text-[14.5px] min-[360px]:text-[15.5px] min-[390px]:text-[17px] min-[430px]:text-lg font-black tracking-tight text-white leading-snug whitespace-nowrap">
+                Early Market Engagement Workshop
+              </h1>
+            </div>
 
             {/* 3. Subtitle: Organized by Inclusive Connectivity and Development Project (ICDP) */}
-            <p className="text-xs text-slate-300 font-medium leading-relaxed">
+            <p className="text-[11px] min-[360px]:text-xs text-slate-300 font-medium leading-relaxed">
               Organized by Inclusive Connectivity and Development Project (ICDP)
             </p>
 
