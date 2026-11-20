@@ -1695,24 +1695,15 @@ function RegisterForm() {
         <div className="relative z-10">
           {/* Mobile Layout (< sm / < 640px) */}
           <div className="sm:hidden space-y-3">
-            {/* Top Row: Left Emblem & Govt/Portal Badges, Right Official Logo */}
+            {/* Top Row: Govt/Portal Badges, Right Official Logos */}
             <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-11 h-11 rounded-xl bg-white p-1 shadow-sm flex items-center justify-center shrink-0 border border-white/20">
-                  <img
-                    src="/icdp-logo.jpg"
-                    alt="ICDP - World Bank Funded Project"
-                    className="w-full h-full object-contain rounded-lg"
-                  />
-                </div>
-                <div className="min-w-0">
-                  <span className="text-[10px] tracking-wider font-bold text-amber-400 uppercase block truncate">
-                    RDA &bull; Sri Lanka
-                  </span>
-                  <span className="inline-block px-1.5 py-0.5 rounded text-[8px] bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-400/30">
-                    ICDP OFFICIAL PORTAL
-                  </span>
-                </div>
+              <div className="min-w-0">
+                <span className="text-[10px] tracking-wider font-bold text-amber-400 uppercase block truncate">
+                  RDA &bull; Sri Lanka
+                </span>
+                <span className="inline-block px-1.5 py-0.5 rounded text-[8px] bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-400/30">
+                  ICDP OFFICIAL PORTAL
+                </span>
               </div>
 
               {/* Ministry & RDA Official Logos on mobile top-right */}
@@ -1744,30 +1735,21 @@ function RegisterForm() {
 
           {/* Tablet & Desktop Layout (>= sm / >= 640px) */}
           <div className="hidden sm:flex sm:items-center sm:justify-between sm:gap-4 lg:gap-6">
-            <div className="flex items-center gap-3.5 lg:gap-4 min-w-0 flex-1">
-              <div className="w-13 h-13 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-xl bg-white p-1.5 shadow-md flex items-center justify-center shrink-0 border border-white/20">
-                <img
-                  src="/icdp-logo.jpg"
-                  alt="ICDP - World Bank Funded Project"
-                  className="w-full h-full object-contain rounded-lg"
-                />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] lg:text-[11px] tracking-widest font-bold text-amber-400 uppercase">
+                  Road Development Authority &bull; Sri Lanka
+                </span>
+                <span className="px-2 py-0.5 rounded text-[9px] bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-400/30">
+                  ICDP OFFICIAL PORTAL
+                </span>
               </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] lg:text-[11px] tracking-widest font-bold text-amber-400 uppercase">
-                    Road Development Authority &bull; Sri Lanka
-                  </span>
-                  <span className="px-2 py-0.5 rounded text-[9px] bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-400/30">
-                    ICDP OFFICIAL PORTAL
-                  </span>
-                </div>
-                <h1 className="text-base sm:text-lg lg:text-xl font-extrabold tracking-tight mt-0.5 leading-snug">
-                  Inclusive Connectivity and Development Project (ICDP)
-                </h1>
-                <p className="text-xs text-slate-300 mt-0.5 leading-relaxed">
-                  Early Market Engagement Workshop &bull; 07 December 2026
-                </p>
-              </div>
+              <h1 className="text-base sm:text-lg lg:text-xl font-extrabold tracking-tight mt-0.5 leading-snug">
+                Inclusive Connectivity and Development Project (ICDP)
+              </h1>
+              <p className="text-xs text-slate-300 mt-0.5 leading-relaxed">
+                Early Market Engagement Workshop &bull; 07 December 2026
+              </p>
             </div>
 
             {/* Official Ministry & RDA Logos on Tablet & Desktop */}
@@ -4092,23 +4074,18 @@ function RegisterForm() {
         <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-4xl w-full max-h-[92vh] flex flex-col overflow-hidden">
           {/* Modal Header */}
           <div className="bg-[#0b1f3a] text-white px-5 py-4 sm:px-6 sm:py-5 flex items-center justify-between shrink-0 border-b border-white/10">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-white p-1 shadow-sm flex items-center justify-center shrink-0">
-                <img src="/icdp-logo.jpg" alt="ICDP Logo" className="w-full h-full object-contain rounded-lg" />
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] tracking-wider font-bold text-amber-400 uppercase">
+                  RDA Sri Lanka &bull; Verification Area
+                </span>
+                <span className="px-2 py-0.5 rounded text-[8px] bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-400/30">
+                  PRE-SUBMISSION REVIEW
+                </span>
               </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] tracking-wider font-bold text-amber-400 uppercase">
-                    RDA Sri Lanka &bull; Verification Area
-                  </span>
-                  <span className="px-2 py-0.5 rounded text-[8px] bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-400/30">
-                    PRE-SUBMISSION REVIEW
-                  </span>
-                </div>
-                <h2 className="text-base sm:text-lg font-bold tracking-tight text-white mt-0.5 truncate">
-                  Review All Registration Details
-                </h2>
-              </div>
+              <h2 className="text-base sm:text-lg font-bold tracking-tight text-white mt-0.5 truncate">
+                Review All Registration Details
+              </h2>
             </div>
             <button
               type="button"
