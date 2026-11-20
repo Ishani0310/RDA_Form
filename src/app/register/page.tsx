@@ -118,7 +118,7 @@ function saveBrowserDraft(draft: BrowserSavedDraft) {
     );
     existing.unshift(draft);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(existing.slice(0, 10)));
-  } catch {}
+  } catch { }
 }
 
 function removeBrowserDraft(tokenOrRef: string) {
@@ -128,7 +128,7 @@ function removeBrowserDraft(tokenOrRef: string) {
       (d) => d.token !== tokenOrRef && d.reference !== tokenOrRef
     );
     localStorage.setItem(STORAGE_KEY, JSON.stringify(remaining));
-  } catch {}
+  } catch { }
 }
 
 function createInitialFormData(): OfficialQuestionnaireData {
@@ -482,13 +482,11 @@ function RegisterForm() {
           placeholder={placeholder}
           aria-invalid={Boolean(errorMsg)}
           aria-describedby={errorMsg ? `error-${errorKey}` : undefined}
-          className={`w-full p-2.5 rounded-lg text-slate-900 text-xs focus:outline-none transition-all ${
-            type === "tel" ? "font-mono" : ""
-          } ${
-            errorMsg
+          className={`w-full p-2.5 rounded-lg text-slate-900 text-xs focus:outline-none transition-all ${type === "tel" ? "font-mono" : ""
+            } ${errorMsg
               ? "bg-rose-50/30 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
               : "bg-white border border-slate-300 focus:ring-2 focus:ring-blue-800"
-          }`}
+            }`}
         />
         {errorMsg && (
           <div
@@ -698,7 +696,7 @@ function RegisterForm() {
           setPublishedQuestionnaire(d.questionnaire);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const ongoingTotalOutstanding = useMemo(() => {
@@ -823,11 +821,10 @@ function RegisterForm() {
             placeholder={q.placeholder || ""}
             aria-invalid={Boolean(errorMsg)}
             aria-describedby={errorMsg ? `error-${errorKey}` : undefined}
-            className={`w-full p-2.5 rounded-lg text-slate-900 focus:outline-none transition-all ${
-              errorMsg
-                ? "bg-rose-50/30 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
-                : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
-            }`}
+            className={`w-full p-2.5 rounded-lg text-slate-900 focus:outline-none transition-all ${errorMsg
+              ? "bg-rose-50/30 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+              : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
+              }`}
           />
         ) : q.fieldType === "dropdown" ? (
           <select
@@ -836,11 +833,10 @@ function RegisterForm() {
             onChange={(e) => setVal(e.target.value)}
             aria-invalid={Boolean(errorMsg)}
             aria-describedby={errorMsg ? `error-${errorKey}` : undefined}
-            className={`w-full p-2.5 rounded-lg text-slate-900 focus:outline-none transition-all ${
-              errorMsg
-                ? "bg-rose-50/30 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
-                : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
-            }`}
+            className={`w-full p-2.5 rounded-lg text-slate-900 focus:outline-none transition-all ${errorMsg
+              ? "bg-rose-50/30 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+              : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
+              }`}
           >
             <option value="">-- Select an option --</option>
             {(q.options || []).map((opt: any) => (
@@ -852,9 +848,8 @@ function RegisterForm() {
         ) : q.fieldType === "radio" ? (
           <div
             id={domId}
-            className={`space-y-2 p-2 rounded-xl transition-all ${
-              errorMsg ? "bg-rose-50/30 border-2 border-rose-500" : ""
-            }`}
+            className={`space-y-2 p-2 rounded-xl transition-all ${errorMsg ? "bg-rose-50/30 border-2 border-rose-500" : ""
+              }`}
           >
             {(q.options || []).map((opt: any) => (
               <label
@@ -876,9 +871,8 @@ function RegisterForm() {
         ) : q.fieldType === "yes_no" ? (
           <div
             id={domId}
-            className={`flex gap-3 p-1 rounded-xl transition-all ${
-              errorMsg ? "bg-rose-50/30 border-2 border-rose-500" : ""
-            }`}
+            className={`flex gap-3 p-1 rounded-xl transition-all ${errorMsg ? "bg-rose-50/30 border-2 border-rose-500" : ""
+              }`}
           >
             {["Yes", "No"].map((c) => (
               <label
@@ -904,27 +898,26 @@ function RegisterForm() {
               q.fieldType === "email"
                 ? "email"
                 : q.fieldType === "url"
-                ? "url"
-                : q.fieldType === "telephone"
-                ? "tel"
-                : q.fieldType === "integer" ||
-                  q.fieldType === "decimal" ||
-                  q.fieldType === "currency"
-                ? "number"
-                : q.fieldType === "date"
-                ? "date"
-                : "text"
+                  ? "url"
+                  : q.fieldType === "telephone"
+                    ? "tel"
+                    : q.fieldType === "integer" ||
+                      q.fieldType === "decimal" ||
+                      q.fieldType === "currency"
+                      ? "number"
+                      : q.fieldType === "date"
+                        ? "date"
+                        : "text"
             }
             value={val}
             onChange={(e) => setVal(e.target.value)}
             placeholder={q.placeholder || ""}
             aria-invalid={Boolean(errorMsg)}
             aria-describedby={errorMsg ? `error-${errorKey}` : undefined}
-            className={`w-full p-2.5 rounded-lg text-slate-900 focus:outline-none transition-all font-mono ${
-              errorMsg
-                ? "bg-rose-50/30 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
-                : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
-            }`}
+            className={`w-full p-2.5 rounded-lg text-slate-900 focus:outline-none transition-all font-mono ${errorMsg
+              ? "bg-rose-50/30 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+              : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
+              }`}
           />
         )}
         {errorMsg && (
@@ -1004,11 +997,11 @@ function RegisterForm() {
             Array.isArray(q.mattersForDiscussionList) && q.mattersForDiscussionList.length > 0
               ? q.mattersForDiscussionList
               : q.mattersForDiscussion
-              ? q.mattersForDiscussion
+                ? q.mattersForDiscussion
                   .split(/\r?\n/)
                   .map((s: string) => s.replace(/^\d+[\.\)]\s*/, "").trim())
                   .filter(Boolean)
-              : [""],
+                : [""],
         };
 
         isInitialLoadRef.current = true;
@@ -1128,9 +1121,8 @@ function RegisterForm() {
         if (!isAutoSave) {
           setFormAlert({
             type: "success",
-            message: `Draft successfully saved! Permanent Reference: ${
-              assignedRef || "Assigned"
-            }. You can close this browser anytime and continue when you return.`,
+            message: `Draft successfully saved! Permanent Reference: ${assignedRef || "Assigned"
+              }. You can close this browser anytime and continue when you return.`,
           });
         }
         return true;
@@ -2228,850 +2220,420 @@ function RegisterForm() {
 
           {/* Live Auto-Save Status Bar and Quick Controls */}
           <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        {/* Left: Auto-save status */}
-        <div className="flex items-center gap-2.5">
-          {autoSaveStatus === "saving" ? (
-            <div className="flex items-center gap-2 text-xs font-semibold text-blue-900">
-              <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-900" />
-              <span>Saving draft progress...</span>
+            {/* Left: Auto-save status */}
+            <div className="flex items-center gap-2.5">
+              {autoSaveStatus === "saving" ? (
+                <div className="flex items-center gap-2 text-xs font-semibold text-blue-900">
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-900" />
+                  <span>Saving draft progress...</span>
+                </div>
+              ) : autoSaveStatus === "saved" ? (
+                <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>
+                    Saved {currentReference ? `&bull; Ref: ${currentReference}` : ""}
+                    {lastSavedTime
+                      ? ` (${lastSavedTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })})`
+                      : ""}
+                  </span>
+                </div>
+              ) : autoSaveStatus === "error" ? (
+                <div className="flex items-center gap-2 text-xs font-semibold text-rose-700">
+                  <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+                  <span>Save failed. Check connection.</span>
+                  <button
+                    type="button"
+                    onClick={() => performDraftSave(false)}
+                    className="underline hover:text-rose-900 ml-1 text-xs"
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
+                  <Clock className="w-3.5 h-3.5 text-slate-400" />
+                  <span>
+                    {currentReference ? `Draft Ref: ${currentReference}` : "Auto-saving active (saves while you fill)"}
+                  </span>
+                </div>
+              )}
             </div>
-          ) : autoSaveStatus === "saved" ? (
-            <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-              <span>
-                Saved {currentReference ? `&bull; Ref: ${currentReference}` : ""}
-                {lastSavedTime
-                  ? ` (${lastSavedTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })})`
-                  : ""}
-              </span>
-            </div>
-          ) : autoSaveStatus === "error" ? (
-            <div className="flex items-center gap-2 text-xs font-semibold text-rose-700">
-              <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
-              <span>Save failed. Check connection.</span>
+
+            {/* Right: Quick actions */}
+            <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
+              {/* Manual Save as Draft button */}
               <button
                 type="button"
                 onClick={() => performDraftSave(false)}
-                className="underline hover:text-rose-900 ml-1 text-xs"
+                disabled={loading}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-sm transition-all"
+                title="Explicitly save form draft now"
               >
-                Retry
+                <Save className="w-3.5 h-3.5 text-blue-900" />
+                <span>Save as Draft</span>
+              </button>
+
+              {/* If other saved drafts exist in browser, allow switching */}
+              {savedDraftsList.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowRecoveryPrompt(!showRecoveryPrompt)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-sm transition-all"
+                  title="View all drafts saved in this browser"
+                >
+                  <History className="w-3.5 h-3.5 text-slate-600" />
+                  <span>Saved Drafts ({savedDraftsList.length})</span>
+                </button>
+              )}
+
+              {/* Start New Registration button */}
+              <button
+                type="button"
+                onClick={handleStartNewRegistration}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs shadow-sm transition-all"
+                title="Start a separate blank registration"
+              >
+                <Plus className="w-3.5 h-3.5 text-emerald-600" />
+                <span>+ New</span>
               </button>
             </div>
-          ) : (
-            <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
-              <Clock className="w-3.5 h-3.5 text-slate-400" />
-              <span>
-                {currentReference ? `Draft Ref: ${currentReference}` : "Auto-saving active (saves while you fill)"}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Right: Quick actions */}
-        <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
-          {/* Manual Save as Draft button */}
-          <button
-            type="button"
-            onClick={() => performDraftSave(false)}
-            disabled={loading}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-sm transition-all"
-            title="Explicitly save form draft now"
-          >
-            <Save className="w-3.5 h-3.5 text-blue-900" />
-            <span>Save as Draft</span>
-          </button>
-
-          {/* If other saved drafts exist in browser, allow switching */}
-          {savedDraftsList.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setShowRecoveryPrompt(!showRecoveryPrompt)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-sm transition-all"
-              title="View all drafts saved in this browser"
-            >
-              <History className="w-3.5 h-3.5 text-slate-600" />
-              <span>Saved Drafts ({savedDraftsList.length})</span>
-            </button>
-          )}
-
-          {/* Start New Registration button */}
-          <button
-            type="button"
-            onClick={handleStartNewRegistration}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs shadow-sm transition-all"
-            title="Start a separate blank registration"
-          >
-            <Plus className="w-3.5 h-3.5 text-emerald-600" />
-            <span>+ New</span>
-          </button>
-        </div>
-      </div>
-
-      <div id="registration-form-start" className="space-y-6 scroll-mt-6">
-        {/* Global Error Summary Banner when validation errors exist */}
-        {Object.keys(fieldErrors).length > 0 && (
-          <div
-            role="alert"
-            className="p-4 rounded-xl border-2 border-rose-300 bg-rose-50 text-rose-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md animate-fadeIn"
-          >
-            <div className="flex items-start gap-2.5">
-              <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-extrabold text-xs sm:text-sm text-rose-900">
-                  Validation Required ({Object.keys(fieldErrors).length} {Object.keys(fieldErrors).length === 1 ? "field needs" : "fields need"} attention)
-                </p>
-                <p className="text-xs text-rose-700 mt-0.5">
-                  Please correct the highlighted inputs below before proceeding.
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                const firstKey = getNextErrorFieldKey();
-                if (firstKey) scrollToAndFocusField(firstKey);
-              }}
-              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-sm transition-all shrink-0 cursor-pointer"
-            >
-              <span>Jump to Next Error</span>
-              <ArrowDown className="w-3.5 h-3.5" />
-            </button>
           </div>
-        )}
 
-        {formAlert && (
-          <div
-            className={`p-4 rounded-xl border text-xs flex items-start gap-2.5 ${
-              formAlert.type === "success"
-                ? "bg-emerald-50 border-emerald-200 text-emerald-900"
-                : "bg-rose-50 border-rose-200 text-rose-900"
-            }`}
-          >
-            {formAlert.type === "success" ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-            ) : (
-              <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+          <div id="registration-form-start" className="space-y-6 scroll-mt-6">
+            {/* Global Error Summary Banner when validation errors exist */}
+            {Object.keys(fieldErrors).length > 0 && (
+              <div
+                role="alert"
+                className="p-4 rounded-xl border-2 border-rose-300 bg-rose-50 text-rose-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md animate-fadeIn"
+              >
+                <div className="flex items-start gap-2.5">
+                  <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-extrabold text-xs sm:text-sm text-rose-900">
+                      Validation Required ({Object.keys(fieldErrors).length} {Object.keys(fieldErrors).length === 1 ? "field needs" : "fields need"} attention)
+                    </p>
+                    <p className="text-xs text-rose-700 mt-0.5">
+                      Please correct the highlighted inputs below before proceeding.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const firstKey = getNextErrorFieldKey();
+                    if (firstKey) scrollToAndFocusField(firstKey);
+                  }}
+                  className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-sm transition-all shrink-0 cursor-pointer"
+                >
+                  <span>Jump to Next Error</span>
+                  <ArrowDown className="w-3.5 h-3.5" />
+                </button>
+              </div>
             )}
-            <span className="leading-relaxed font-semibold">{formAlert.message}</span>
-          </div>
-        )}
 
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6 lg:p-8 space-y-8">
-            {/* SECTION 1: BASIC INFORMATION */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-                <Building2 className="w-4 h-4 text-blue-900" />
-                <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
-                  Section 1: Basic Information
-                </h2>
+            {formAlert && (
+              <div
+                className={`p-4 rounded-xl border text-xs flex items-start gap-2.5 ${formAlert.type === "success"
+                  ? "bg-emerald-50 border-emerald-200 text-emerald-900"
+                  : "bg-rose-50 border-rose-200 text-rose-900"
+                  }`}
+              >
+                {formAlert.type === "success" ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                ) : (
+                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                )}
+                <span className="leading-relaxed font-semibold">{formAlert.message}</span>
               </div>
+            )}
 
-              <div className="space-y-4 text-xs">
-                <div>
-                  <label htmlFor="input-organizationName" className="block font-semibold text-slate-700 mb-1">
-                    Name of your Organization / Company / Institution *
-                  </label>
-                  <input
-                    id="input-organizationName"
-                    type="text"
-                    required
-                    value={formData.organizationName}
-                    onChange={(e) => {
-                      setFormData({ ...formData, organizationName: e.target.value });
-                      if (fieldErrors.organizationName) clearFieldError("organizationName");
-                    }}
-                    placeholder="e.g. State Engineering Corporation / ABC Constructions Ltd"
-                    aria-invalid={Boolean(fieldErrors.organizationName)}
-                    aria-describedby={fieldErrors.organizationName ? "error-organizationName" : undefined}
-                    className={`w-full p-2.5 rounded-lg text-slate-900 focus:outline-none transition-all ${
-                      fieldErrors.organizationName
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6 lg:p-8 space-y-8">
+              {/* SECTION 1: BASIC INFORMATION */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                  <Building2 className="w-4 h-4 text-blue-900" />
+                  <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
+                    Section 1: Basic Information
+                  </h2>
+                </div>
+
+                <div className="space-y-4 text-xs">
+                  <div>
+                    <label htmlFor="input-organizationName" className="block font-semibold text-slate-700 mb-1">
+                      Name of your Organization / Company / Institution *
+                    </label>
+                    <input
+                      id="input-organizationName"
+                      type="text"
+                      required
+                      value={formData.organizationName}
+                      onChange={(e) => {
+                        setFormData({ ...formData, organizationName: e.target.value });
+                        if (fieldErrors.organizationName) clearFieldError("organizationName");
+                      }}
+                      placeholder="e.g. State Engineering Corporation / ABC Constructions Ltd"
+                      aria-invalid={Boolean(fieldErrors.organizationName)}
+                      aria-describedby={fieldErrors.organizationName ? "error-organizationName" : undefined}
+                      className={`w-full p-2.5 rounded-lg text-slate-900 focus:outline-none transition-all ${fieldErrors.organizationName
                         ? "bg-rose-50/30 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
                         : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
-                    }`}
-                  />
-                  {fieldErrors.organizationName && (
-                    <div id="error-organizationName" role="alert" className="flex items-start gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
-                      <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
-                      <span>{fieldErrors.organizationName}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="input-contactNumber" className="block font-semibold text-slate-700 mb-1">
-                      Contact number *
-                    </label>
-                    <input
-                      id="input-contactNumber"
-                      type="tel"
-                      required
-                      value={formData.contactNumber}
-                      onChange={(e) => {
-                        setFormData({ ...formData, contactNumber: e.target.value });
-                        if (fieldErrors.contactNumber) clearFieldError("contactNumber");
-                      }}
-                      placeholder="e.g. 0112123456 / 0771234567"
-                      aria-invalid={Boolean(fieldErrors.contactNumber)}
-                      aria-describedby={fieldErrors.contactNumber ? "error-contactNumber" : undefined}
-                      className={`w-full p-2.5 rounded-lg text-slate-900 focus:outline-none font-mono transition-all ${
-                        fieldErrors.contactNumber
-                          ? "bg-rose-50/30 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
-                          : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
-                      }`}
+                        }`}
                     />
-                    {fieldErrors.contactNumber && (
-                      <div id="error-contactNumber" role="alert" className="flex items-start gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
+                    {fieldErrors.organizationName && (
+                      <div id="error-organizationName" role="alert" className="flex items-start gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
                         <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
-                        <span>{fieldErrors.contactNumber}</span>
+                        <span>{fieldErrors.organizationName}</span>
                       </div>
                     )}
                   </div>
 
-                  <div>
-                    <label htmlFor="input-email" className="block font-semibold text-slate-700 mb-1">
-                      Email address *
-                    </label>
-                    <input
-                      id="input-email"
-                      type="email"
-                      required
-                      value={formData.email}
-                      onChange={(e) => {
-                        setFormData({ ...formData, email: e.target.value });
-                        if (fieldErrors.email) clearFieldError("email");
-                      }}
-                      placeholder="e.g. info@company.lk"
-                      aria-invalid={Boolean(fieldErrors.email)}
-                      aria-describedby={fieldErrors.email ? "error-email" : undefined}
-                      className={`w-full p-2.5 rounded-lg text-slate-900 focus:outline-none font-mono transition-all ${
-                        fieldErrors.email
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="input-contactNumber" className="block font-semibold text-slate-700 mb-1">
+                        Contact number *
+                      </label>
+                      <input
+                        id="input-contactNumber"
+                        type="tel"
+                        required
+                        value={formData.contactNumber}
+                        onChange={(e) => {
+                          setFormData({ ...formData, contactNumber: e.target.value });
+                          if (fieldErrors.contactNumber) clearFieldError("contactNumber");
+                        }}
+                        placeholder="e.g. 0112123456 / 0771234567"
+                        aria-invalid={Boolean(fieldErrors.contactNumber)}
+                        aria-describedby={fieldErrors.contactNumber ? "error-contactNumber" : undefined}
+                        className={`w-full p-2.5 rounded-lg text-slate-900 focus:outline-none font-mono transition-all ${fieldErrors.contactNumber
                           ? "bg-rose-50/30 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
                           : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
-                      }`}
-                    />
-                    {fieldErrors.email && (
-                      <div id="error-email" role="alert" className="flex items-start gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
+                          }`}
+                      />
+                      {fieldErrors.contactNumber && (
+                        <div id="error-contactNumber" role="alert" className="flex items-start gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                          <span>{fieldErrors.contactNumber}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <label htmlFor="input-email" className="block font-semibold text-slate-700 mb-1">
+                        Email address *
+                      </label>
+                      <input
+                        id="input-email"
+                        type="email"
+                        required
+                        value={formData.email}
+                        onChange={(e) => {
+                          setFormData({ ...formData, email: e.target.value });
+                          if (fieldErrors.email) clearFieldError("email");
+                        }}
+                        placeholder="e.g. info@company.lk"
+                        aria-invalid={Boolean(fieldErrors.email)}
+                        aria-describedby={fieldErrors.email ? "error-email" : undefined}
+                        className={`w-full p-2.5 rounded-lg text-slate-900 focus:outline-none font-mono transition-all ${fieldErrors.email
+                          ? "bg-rose-50/30 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                          : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
+                          }`}
+                      />
+                      {fieldErrors.email && (
+                        <div id="error-email" role="alert" className="flex items-start gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                          <span>{fieldErrors.email}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-2">
+                      Will you be participating in the workshop on 07 December 2026? *
+                    </label>
+                    <div
+                      id="input-willParticipate"
+                      className={`flex items-center gap-4 sm:gap-6 flex-wrap p-2 rounded-xl transition-all ${fieldErrors.willParticipate ? "bg-rose-50/30 border-2 border-rose-500" : ""
+                        }`}
+                    >
+                      <label className="inline-flex items-center gap-2 cursor-pointer py-1.5 pr-2">
+                        <input
+                          type="radio"
+                          name="willParticipate"
+                          value="Yes"
+                          checked={formData.willParticipate === "Yes"}
+                          onChange={() => {
+                            setFormData({ ...formData, willParticipate: "Yes" });
+                            if (fieldErrors.willParticipate) clearFieldError("willParticipate");
+                          }}
+                          className="w-4 h-4 text-blue-900 focus:ring-blue-800"
+                        />
+                        <span className="font-medium text-slate-800">Yes</span>
+                      </label>
+                      <label className="inline-flex items-center gap-2 cursor-pointer py-1.5 pr-2">
+                        <input
+                          type="radio"
+                          name="willParticipate"
+                          value="No"
+                          checked={formData.willParticipate === "No"}
+                          onChange={() => {
+                            setFormData({ ...formData, willParticipate: "No" });
+                            if (fieldErrors.willParticipate) clearFieldError("willParticipate");
+                          }}
+                          className="w-4 h-4 text-blue-900 focus:ring-blue-800"
+                        />
+                        <span className="font-medium text-slate-800">No</span>
+                      </label>
+                    </div>
+                    {fieldErrors.willParticipate && (
+                      <div id="error-willParticipate" role="alert" className="flex items-start gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
                         <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
-                        <span>{fieldErrors.email}</span>
+                        <span>{fieldErrors.willParticipate}</span>
                       </div>
                     )}
                   </div>
-                </div>
 
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-2">
-                    Will you be participating in the workshop on 07 December 2026? *
-                  </label>
-                  <div
-                    id="input-willParticipate"
-                    className={`flex items-center gap-4 sm:gap-6 flex-wrap p-2 rounded-xl transition-all ${
-                      fieldErrors.willParticipate ? "bg-rose-50/30 border-2 border-rose-500" : ""
-                    }`}
-                  >
-                    <label className="inline-flex items-center gap-2 cursor-pointer py-1.5 pr-2">
-                      <input
-                        type="radio"
-                        name="willParticipate"
-                        value="Yes"
-                        checked={formData.willParticipate === "Yes"}
-                        onChange={() => {
-                          setFormData({ ...formData, willParticipate: "Yes" });
-                          if (fieldErrors.willParticipate) clearFieldError("willParticipate");
-                        }}
-                        className="w-4 h-4 text-blue-900 focus:ring-blue-800"
-                      />
-                      <span className="font-medium text-slate-800">Yes</span>
-                    </label>
-                    <label className="inline-flex items-center gap-2 cursor-pointer py-1.5 pr-2">
-                      <input
-                        type="radio"
-                        name="willParticipate"
-                        value="No"
-                        checked={formData.willParticipate === "No"}
-                        onChange={() => {
-                          setFormData({ ...formData, willParticipate: "No" });
-                          if (fieldErrors.willParticipate) clearFieldError("willParticipate");
-                        }}
-                        className="w-4 h-4 text-blue-900 focus:ring-blue-800"
-                      />
-                      <span className="font-medium text-slate-800">No</span>
-                    </label>
-                  </div>
-                  {fieldErrors.willParticipate && (
-                    <div id="error-willParticipate" role="alert" className="flex items-start gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
-                      <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
-                      <span>{fieldErrors.willParticipate}</span>
-                    </div>
-                  )}
-                </div>
+                  {/* EARLY SUBMISSION PATH IF WILL NOT PARTICIPATE */}
+                  {formData.willParticipate === "No" && (
+                    <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+                      <p className="text-slate-600 leading-relaxed">
+                        Thank you. Since you are not participating in the workshop on 07 December 2026, you may proceed to submit your basic organizational record immediately.
+                      </p>
 
-                {/* EARLY SUBMISSION PATH IF WILL NOT PARTICIPATE */}
-                {formData.willParticipate === "No" && (
-                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
-                    <p className="text-slate-600 leading-relaxed">
-                      Thank you. Since you are not participating in the workshop on 07 December 2026, you may proceed to submit your basic organizational record immediately.
-                    </p>
-
-                    {formAlert && (
-                      <div
-                        className={`p-3 rounded-lg border text-xs flex items-start gap-2 ${
-                          formAlert.type === "success"
+                      {formAlert && (
+                        <div
+                          className={`p-3 rounded-lg border text-xs flex items-start gap-2 ${formAlert.type === "success"
                             ? "bg-emerald-50 border-emerald-200 text-emerald-900"
                             : "bg-rose-50 border-rose-200 text-rose-900"
-                        }`}
-                      >
-                        {formAlert.type === "success" ? (
-                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                        ) : (
-                          <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-                        )}
-                        <span className="leading-relaxed font-semibold">{formAlert.message}</span>
-                      </div>
-                    )}
+                            }`}
+                        >
+                          {formAlert.type === "success" ? (
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                          ) : (
+                            <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                          )}
+                          <span className="leading-relaxed font-semibold">{formAlert.message}</span>
+                        </div>
+                      )}
 
-                    <div className="flex flex-wrap items-center gap-2.5 pt-1">
+                      <div className="flex flex-wrap items-center gap-2.5 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => performDraftSave(false)}
+                          disabled={loading}
+                          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-sm transition-all min-h-[44px]"
+                        >
+                          <Save className="w-3.5 h-3.5 text-blue-900" />
+                          <span>Save as Draft</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={handleInitiateReview}
+                          disabled={loading}
+                          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs shadow-md transition-all disabled:opacity-60 min-h-[44px]"
+                        >
+                          {loading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Eye className="w-3.5 h-3.5 text-amber-400" />}
+                          <span>Review &amp; Submit Response</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* INITIAL PATH WHEN PARTICIPATION IS NOT YET SELECTED */}
+                  {!formData.willParticipate && (
+                    <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                       <button
                         type="button"
                         onClick={() => performDraftSave(false)}
                         disabled={loading}
-                        className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-sm transition-all min-h-[44px]"
+                        className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-sm transition-all min-h-[44px]"
                       >
                         <Save className="w-3.5 h-3.5 text-blue-900" />
-                        <span>Save as Draft</span>
+                        <span>{currentReference ? `Save Draft (${currentReference})` : "Save as Draft"}</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={handleInitiateReview}
                         disabled={loading}
-                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs shadow-md transition-all disabled:opacity-60 min-h-[44px]"
+                        className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-900 to-blue-800 hover:from-blue-800 hover:to-blue-700 text-white font-extrabold text-xs shadow-md transition-all disabled:opacity-60 min-h-[44px]"
                       >
                         {loading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Eye className="w-3.5 h-3.5 text-amber-400" />}
-                        <span>Review &amp; Submit Response</span>
+                        <span>Review &amp; Submit Questionnaire Response</span>
                       </button>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {/* INITIAL PATH WHEN PARTICIPATION IS NOT YET SELECTED */}
-                {!formData.willParticipate && (
-                  <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                    <button
-                      type="button"
-                      onClick={() => performDraftSave(false)}
-                      disabled={loading}
-                      className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-sm transition-all min-h-[44px]"
-                    >
-                      <Save className="w-3.5 h-3.5 text-blue-900" />
-                      <span>{currentReference ? `Save Draft (${currentReference})` : "Save as Draft"}</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handleInitiateReview}
-                      disabled={loading}
-                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-900 to-blue-800 hover:from-blue-800 hover:to-blue-700 text-white font-extrabold text-xs shadow-md transition-all disabled:opacity-60 min-h-[44px]"
-                    >
-                      {loading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Eye className="w-3.5 h-3.5 text-amber-400" />}
-                      <span>Review &amp; Submit Questionnaire Response</span>
-                    </button>
-                  </div>
-                )}
-
-                {/* Dynamic Questions configured for Section 1 */}
-                {getDynamicQuestionsForSection("SEC-01").map(renderDynamicQuestionField)}
-              </div>
-            </div>
-
-            {/* IF PARTICIPATING === "YES" */}
-            {formData.willParticipate === "Yes" && (
-              <>
-                {/* SECTION 2: PARTICIPANT CATEGORY */}
-                <div className="space-y-4 pt-4 border-t border-slate-100">
-                  <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-                    <Users className="w-4 h-4 text-blue-900" />
-                    <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
-                      Section 2: Participant Category
-                    </h2>
-                  </div>
-
-                  <div className="space-y-4 text-xs">
-                    <div>
-                      <label className="block font-semibold text-slate-700 mb-2">
-                        Which category do you represent? *
-                      </label>
-                      <div
-                        id="input-participantCategory"
-                        className={`grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 p-1.5 rounded-2xl transition-all ${
-                          fieldErrors.participantCategory ? "bg-rose-50/40 border-2 border-rose-500" : ""
-                        }`}
-                      >
-                        {(["Contractor", "Supplier", "Government Officer"] as const).map((cat) => (
-                          <label
-                            key={cat}
-                            className={`p-3 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all min-h-[44px] ${
-                              formData.participantCategory === cat
-                                ? "bg-blue-50/80 border-blue-900 text-blue-950 font-bold"
-                                : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
-                            }`}
-                          >
-                            <input
-                              type="radio"
-                              name="participantCategory"
-                              value={cat}
-                              checked={formData.participantCategory === cat}
-                              onChange={() => {
-                                setFormData({ ...formData, participantCategory: cat });
-                                if (fieldErrors.participantCategory) clearFieldError("participantCategory");
-                              }}
-                              className="w-4 h-4 text-blue-900 focus:ring-blue-800"
-                            />
-                            <span>{cat}</span>
-                          </label>
-                        ))}
-                      </div>
-                      {fieldErrors.participantCategory && (
-                        <div id="error-participantCategory" role="alert" className="flex items-start gap-1.5 mt-2 text-xs font-semibold text-rose-600 animate-fadeIn">
-                          <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
-                          <span>{fieldErrors.participantCategory}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  {/* Dynamic Questions configured for Section 1 */}
+                  {getDynamicQuestionsForSection("SEC-01").map(renderDynamicQuestionField)}
                 </div>
+              </div>
 
-                {/* ------------------------------------------------------------- */}
-                {/* BRANCH A: GOVERNMENT OFFICER PARTICIPANT DETAILS (SECTION 3A) */}
-                {/* ------------------------------------------------------------- */}
-                {formData.participantCategory === "Government Officer" && (
+              {/* IF PARTICIPATING === "YES" */}
+              {formData.willParticipate === "Yes" && (
+                <>
+                  {/* SECTION 2: PARTICIPANT CATEGORY */}
                   <div className="space-y-4 pt-4 border-t border-slate-100">
                     <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
                       <Users className="w-4 h-4 text-blue-900" />
                       <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
-                        Section 3A: Government Officer Participant Details
+                        Section 2: Participant Category
                       </h2>
                     </div>
 
                     <div className="space-y-4 text-xs">
-                      {/* Participant 1 (Required) */}
-                      <div className="p-4 bg-slate-50/70 border border-slate-200 rounded-xl space-y-3">
-                        <span className="text-[11px] font-bold text-blue-900 uppercase">
-                          Participant 1 (Required)
-                        </span>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                          {renderParticipantField(1, "fullName", "Full Name", "e.g. Eng. Sunil Perera", true)}
-                          {renderParticipantField(1, "mobileNumber", "Mobile Number", "e.g. 0771234567", true, "tel")}
-                          {renderParticipantField(1, "email", "Email Address", "e.g. sunil@example.com", true, "email")}
-                          {renderParticipantField(1, "designation", "Designation", "e.g. Executive Engineer", true)}
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-2">
+                          Which category do you represent? *
+                        </label>
+                        <div
+                          id="input-participantCategory"
+                          className={`grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 p-1.5 rounded-2xl transition-all ${fieldErrors.participantCategory ? "bg-rose-50/40 border-2 border-rose-500" : ""
+                            }`}
+                        >
+                          {(["Contractor", "Supplier", "Government Officer"] as const).map((cat) => (
+                            <label
+                              key={cat}
+                              className={`p-3 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all min-h-[44px] ${formData.participantCategory === cat
+                                ? "bg-blue-50/80 border-blue-900 text-blue-950 font-bold"
+                                : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
+                                }`}
+                            >
+                              <input
+                                type="radio"
+                                name="participantCategory"
+                                value={cat}
+                                checked={formData.participantCategory === cat}
+                                onChange={() => {
+                                  setFormData({ ...formData, participantCategory: cat });
+                                  if (fieldErrors.participantCategory) clearFieldError("participantCategory");
+                                }}
+                                className="w-4 h-4 text-blue-900 focus:ring-blue-800"
+                              />
+                              <span>{cat}</span>
+                            </label>
+                          ))}
                         </div>
-                      </div>
-
-                      {/* Participant 2 (Optional) */}
-                      <div className="p-4 bg-slate-50/70 border border-slate-200 rounded-xl space-y-3">
-                        <span className="text-[11px] font-bold text-slate-600 uppercase">
-                          Participant 2 (Optional)
-                        </span>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                          {renderParticipantField(2, "fullName", "Full Name", "Second attendee name", false)}
-                          {renderParticipantField(2, "mobileNumber", "Mobile Number", "e.g. 0719876543", false, "tel")}
-                          {renderParticipantField(2, "email", "Email Address", "e.g. attendee2@example.com", false, "email")}
-                          {renderParticipantField(2, "designation", "Designation", "e.g. Assistant Director", false)}
-                        </div>
+                        {fieldErrors.participantCategory && (
+                          <div id="error-participantCategory" role="alert" className="flex items-start gap-1.5 mt-2 text-xs font-semibold text-rose-600 animate-fadeIn">
+                            <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                            <span>{fieldErrors.participantCategory}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
-                )}
 
-                {/* ------------------------------------------------------------- */}
-                {/* BRANCH B: SUPPLIER PARTICIPANT & SUPPLIER DETAILS (SECTIONS 3B & 4) */}
-                {/* ------------------------------------------------------------- */}
-                {formData.participantCategory === "Supplier" && (
-                  <>
-                    {/* SECTION 3B: PARTICIPANT DETAILS (SUPPLIER - ONLY 1 REP) */}
+                  {/* ------------------------------------------------------------- */}
+                  {/* BRANCH A: GOVERNMENT OFFICER PARTICIPANT DETAILS (SECTION 3A) */}
+                  {/* ------------------------------------------------------------- */}
+                  {formData.participantCategory === "Government Officer" && (
                     <div className="space-y-4 pt-4 border-t border-slate-100">
                       <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
                         <Users className="w-4 h-4 text-blue-900" />
                         <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
-                          Section 3B: Supplier Representative Details
-                        </h2>
-                      </div>
-
-                      <div className="p-4 bg-slate-50/70 border border-slate-200 rounded-xl space-y-3 text-xs">
-                        <span className="text-[11px] font-bold text-blue-900 uppercase">
-                          Representative Details (Required)
-                        </span>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                          {renderParticipantField(1, "fullName", "Full Name", "e.g. K. L. Wickramasinghe", true)}
-                          {renderParticipantField(1, "mobileNumber", "Mobile Number", "e.g. 0779876543", true, "tel")}
-                          {renderParticipantField(1, "email", "Email Address", "e.g. supplier@example.com", true, "email")}
-                          {renderParticipantField(1, "designation", "Designation", "e.g. Sales Director / General Manager", true)}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* SECTION 4: SUPPLIER DETAILS */}
-                    <div className="space-y-4 pt-4 border-t border-slate-100">
-                      <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-                        <Truck className="w-4 h-4 text-blue-900" />
-                        <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
-                          Section 4: Supplier Details
-                        </h2>
-                      </div>
-
-                      <div className="p-3.5 bg-blue-50 border border-blue-200/80 rounded-xl text-xs text-blue-950">
-                        <p className="leading-relaxed">
-                          Please provide details of the materials you supply and your production/supply capacity.
-                        </p>
-                      </div>
-
-                      <div className="space-y-4 text-xs">
-                        {/* Material Selection */}
-                        <div id="input-supplierDetails-materialsSupplied">
-                          <label className="block font-semibold text-slate-700 mb-2">
-                            Please select the material(s) you supply * (Multiple selection allowed)
-                          </label>
-                          <div
-                            className={`grid grid-cols-2 sm:grid-cols-3 gap-2.5 p-1.5 rounded-xl transition-all ${
-                              fieldErrors["supplierDetails.materialsSupplied"] ? "bg-rose-50/40 border-2 border-rose-500" : ""
-                            }`}
-                          >
-                            {SUPPLIER_MATERIALS.map((mat) => {
-                              const isChecked = (formData.supplierDetails?.materialsSupplied || []).includes(mat);
-                              return (
-                                <label
-                                  key={mat}
-                                  className={`flex items-center gap-2 p-2.5 border rounded-lg cursor-pointer transition-colors ${
-                                    isChecked
-                                      ? "bg-blue-50/80 border-blue-800 text-blue-950 font-semibold"
-                                      : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
-                                  }`}
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={isChecked}
-                                    onChange={() => {
-                                      handleSupplierMaterialToggle(mat);
-                                      if (fieldErrors["supplierDetails.materialsSupplied"]) clearFieldError("supplierDetails.materialsSupplied");
-                                    }}
-                                    className="w-4 h-4 text-blue-900 rounded focus:ring-blue-800"
-                                  />
-                                  <span>{mat}</span>
-                                </label>
-                              );
-                            })}
-                          </div>
-                          {fieldErrors["supplierDetails.materialsSupplied"] && (
-                            <div id="error-supplierDetails-materialsSupplied" role="alert" className="flex items-start gap-1.5 mt-2 text-xs font-semibold text-rose-600 animate-fadeIn">
-                              <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
-                              <span>{fieldErrors["supplierDetails.materialsSupplied"]}</span>
-                            </div>
-                          )}
-
-                          {(formData.supplierDetails?.materialsSupplied || []).includes("Other") && (
-                            <div id="input-supplierDetails-materialsOther" className="mt-3 p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
-                              <div className="flex items-center justify-between">
-                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
-                                  Specify Other Supplied Material(s) *
-                                </label>
-                                <span className="text-[11px] text-slate-500">
-                                  Add one or more material types
-                                </span>
-                              </div>
-
-                              <div className="space-y-2">
-                                {supplierMaterialsOtherList.map((item, idx) => (
-                                  <div key={idx} className="flex items-center gap-2">
-                                    <input
-                                      type="text"
-                                      value={item}
-                                      onChange={(e) => {
-                                        handleUpdateSupplierMaterialOther(idx, e.target.value);
-                                        if (fieldErrors["supplierDetails.materialsOther"]) clearFieldError("supplierDetails.materialsOther");
-                                      }}
-                                      onKeyDown={(e) => {
-                                        if (e.key === "Enter") {
-                                          e.preventDefault();
-                                          handleAddSupplierMaterialOther();
-                                        }
-                                      }}
-                                      placeholder={
-                                        idx === 0
-                                          ? "If Other, please specify your material type..."
-                                          : `Additional material #${idx + 1}`
-                                      }
-                                      className={`flex-1 p-2 bg-white rounded-lg text-slate-900 text-xs focus:outline-none focus:ring-2 ${
-                                        fieldErrors["supplierDetails.materialsOther"] && idx === 0
-                                          ? "border-2 border-rose-500 focus:ring-rose-200"
-                                          : "border border-slate-300 focus:ring-blue-800"
-                                      }`}
-                                    />
-                                    {supplierMaterialsOtherList.length > 1 && (
-                                      <button
-                                        type="button"
-                                        onClick={() => handleRemoveSupplierMaterialOther(idx)}
-                                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg border border-transparent hover:border-rose-200 transition-colors"
-                                        title="Remove this material"
-                                      >
-                                        <X className="w-4 h-4" />
-                                      </button>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-
-                              {fieldErrors["supplierDetails.materialsOther"] && (
-                                <div id="error-supplierDetails-materialsOther" role="alert" className="flex items-start gap-1.5 mt-1 text-xs font-semibold text-rose-600 animate-fadeIn">
-                                  <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
-                                  <span>{fieldErrors["supplierDetails.materialsOther"]}</span>
-                                </div>
-                              )}
-
-                              <div>
-                                <button
-                                  type="button"
-                                  onClick={handleAddSupplierMaterialOther}
-                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-900 hover:text-blue-700 bg-white hover:bg-blue-50 border border-blue-200 rounded-lg shadow-sm transition-colors"
-                                >
-                                  <Plus className="w-3.5 h-3.5" />
-                                  <span>+ Add another material</span>
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Company Name */}
-                        <div>
-                          <label htmlFor="input-supplierDetails-companyName" className="block font-semibold text-slate-700 mb-1">
-                            Company Name *
-                          </label>
-                          <input
-                            id="input-supplierDetails-companyName"
-                            type="text"
-                            required
-                            value={formData.supplierDetails?.companyName || ""}
-                            onChange={(e) => {
-                              setFormData({
-                                ...formData,
-                                supplierDetails: {
-                                  ...(formData.supplierDetails || createEmptySupplierDetails()),
-                                  companyName: e.target.value,
-                                },
-                              });
-                              if (fieldErrors["supplierDetails.companyName"]) clearFieldError("supplierDetails.companyName");
-                            }}
-                            placeholder="e.g. Lanka Ready-Mix & Asphalt Products (Pvt) Ltd"
-                            aria-invalid={Boolean(fieldErrors["supplierDetails.companyName"])}
-                            aria-describedby={fieldErrors["supplierDetails.companyName"] ? "error-supplierDetails-companyName" : undefined}
-                            className={`w-full p-2.5 rounded-lg text-slate-900 focus:outline-none transition-all ${
-                              fieldErrors["supplierDetails.companyName"]
-                                ? "bg-rose-50/30 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
-                                : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
-                            }`}
-                          />
-                          {fieldErrors["supplierDetails.companyName"] && (
-                            <div id="error-supplierDetails-companyName" role="alert" className="flex items-start gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
-                              <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
-                              <span>{fieldErrors["supplierDetails.companyName"]}</span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Annual Supply Capacity Per Selected Material */}
-                        {(formData.supplierDetails?.materialsSupplied || []).length > 0 && (
-                          <div className="space-y-3 p-4 bg-slate-50 border border-slate-200 rounded-xl">
-                            <div>
-                              <span className="font-bold text-slate-900 uppercase text-[11px] block">
-                                Annual Supply Capacity *
-                              </span>
-                              <span className="text-[11px] text-slate-500">
-                                Specify production or supply capacity and unit for each selected material (e.g., Cement: 50,000 MT per year; Sand: 20,000 cubic meters per year).
-                              </span>
-                            </div>
-
-                            <div className="space-y-2.5">
-                              {(formData.supplierDetails?.materialsSupplied || []).map((mat) => {
-                                const cap = formData.supplierDetails?.supplyCapacities?.[mat] || {
-                                  quantity: "",
-                                  unit: "MT per year",
-                                };
-                                const displayName = mat === "Other" && formData.supplierDetails?.materialsOther ? `Other (${formData.supplierDetails.materialsOther})` : mat;
-
-                                return (
-                                  <div
-                                    key={mat}
-                                    className="p-3 bg-white border border-slate-200 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
-                                  >
-                                    <span className="font-semibold text-blue-950 sm:w-1/3">
-                                      {displayName}
-                                    </span>
-                                    <div className="flex items-center gap-2 sm:w-2/3">
-                                      <input
-                                        type="text"
-                                        value={cap.quantity !== null && cap.quantity !== undefined ? cap.quantity : ""}
-                                        onChange={(e) => handleSupplierCapacityChange(mat, "quantity", e.target.value)}
-                                        placeholder="Quantity (e.g. 50,000)"
-                                        className="w-1/2 p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
-                                      />
-                                      <input
-                                        type="text"
-                                        value={cap.unit || ""}
-                                        onChange={(e) => handleSupplierCapacityChange(mat, "unit", e.target.value)}
-                                        placeholder="Unit (e.g. MT / cu.m / year)"
-                                        className="w-1/2 p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
-                                      />
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Location Address */}
-                        <div>
-                          <label htmlFor="input-supplierDetails-locationAddress" className="block font-semibold text-slate-700 mb-1">
-                            Location Address *
-                          </label>
-                          <textarea
-                            id="input-supplierDetails-locationAddress"
-                            rows={2}
-                            required
-                            value={formData.supplierDetails?.locationAddress || ""}
-                            onChange={(e) => {
-                              setFormData({
-                                ...formData,
-                                supplierDetails: {
-                                  ...(formData.supplierDetails || createEmptySupplierDetails()),
-                                  locationAddress: e.target.value,
-                                },
-                              });
-                              if (fieldErrors["supplierDetails.locationAddress"]) clearFieldError("supplierDetails.locationAddress");
-                            }}
-                            placeholder="Physical address of manufacturing plant, quarry, or central distribution warehouse..."
-                            aria-invalid={Boolean(fieldErrors["supplierDetails.locationAddress"])}
-                            aria-describedby={fieldErrors["supplierDetails.locationAddress"] ? "error-supplierDetails-locationAddress" : undefined}
-                            className={`w-full p-2.5 rounded-lg text-slate-900 focus:outline-none transition-all ${
-                              fieldErrors["supplierDetails.locationAddress"]
-                                ? "bg-rose-50/30 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
-                                : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
-                            }`}
-                          />
-                          {fieldErrors["supplierDetails.locationAddress"] && (
-                            <div id="error-supplierDetails-locationAddress" role="alert" className="flex items-start gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
-                              <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
-                              <span>{fieldErrors["supplierDetails.locationAddress"]}</span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Province & District (Dependent Dropdown) */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div>
-                            <label htmlFor="input-supplierDetails-province" className="block font-semibold text-slate-700 mb-1">
-                              Province *
-                            </label>
-                            <select
-                              id="input-supplierDetails-province"
-                              required
-                              value={formData.supplierDetails?.province || ""}
-                              onChange={(e) => {
-                                const newProv = e.target.value;
-                                setFormData({
-                                  ...formData,
-                                  supplierDetails: {
-                                    ...(formData.supplierDetails || createEmptySupplierDetails()),
-                                    province: newProv,
-                                    district: "", // reset district when province changes
-                                  },
-                                });
-                                if (fieldErrors["supplierDetails.province"]) clearFieldError("supplierDetails.province");
-                              }}
-                              aria-invalid={Boolean(fieldErrors["supplierDetails.province"])}
-                              aria-describedby={fieldErrors["supplierDetails.province"] ? "error-supplierDetails-province" : undefined}
-                              className={`w-full p-2.5 rounded-lg text-slate-900 focus:outline-none font-medium transition-all ${
-                                fieldErrors["supplierDetails.province"]
-                                  ? "bg-rose-50/30 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
-                                  : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
-                              }`}
-                            >
-                              <option value="">— Select Province —</option>
-                              {SRI_LANKA_PROVINCES.map((prov) => (
-                                <option key={prov} value={prov}>
-                                  {prov}
-                                </option>
-                              ))}
-                            </select>
-                            {fieldErrors["supplierDetails.province"] && (
-                              <div id="error-supplierDetails-province" role="alert" className="flex items-start gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
-                                <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
-                                <span>{fieldErrors["supplierDetails.province"]}</span>
-                              </div>
-                            )}
-                          </div>
-
-                          <div>
-                            <label htmlFor="input-supplierDetails-district" className="block font-semibold text-slate-700 mb-1">
-                              District *
-                            </label>
-                            <select
-                              id="input-supplierDetails-district"
-                              required
-                              disabled={!formData.supplierDetails?.province}
-                              value={formData.supplierDetails?.district || ""}
-                              onChange={(e) => {
-                                setFormData({
-                                  ...formData,
-                                  supplierDetails: {
-                                    ...(formData.supplierDetails || createEmptySupplierDetails()),
-                                    district: e.target.value,
-                                  },
-                                });
-                                if (fieldErrors["supplierDetails.district"]) clearFieldError("supplierDetails.district");
-                              }}
-                              aria-invalid={Boolean(fieldErrors["supplierDetails.district"])}
-                              aria-describedby={fieldErrors["supplierDetails.district"] ? "error-supplierDetails-district" : undefined}
-                              className={`w-full p-2.5 rounded-lg text-slate-900 focus:outline-none font-medium disabled:opacity-50 transition-all ${
-                                fieldErrors["supplierDetails.district"]
-                                  ? "bg-rose-50/30 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
-                                  : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
-                              }`}
-                            >
-                              <option value="">— Select District —</option>
-                              {formData.supplierDetails?.province &&
-                                (PROVINCE_DISTRICT_MAP[formData.supplierDetails.province as SriLankaProvince] || []).map(
-                                  (dist) => (
-                                    <option key={dist} value={dist}>
-                                      {dist}
-                                    </option>
-                                  )
-                                )}
-                            </select>
-                            {fieldErrors["supplierDetails.district"] && (
-                              <div id="error-supplierDetails-district" role="alert" className="flex items-start gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
-                                <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
-                                <span>{fieldErrors["supplierDetails.district"]}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {/* ------------------------------------------------------------- */}
-                {/* BRANCH C: CONTRACTOR SPECIFIC FLOW (SECTIONS 3C THROUGH 10)   */}
-                {/* ------------------------------------------------------------- */}
-                {formData.participantCategory === "Contractor" && (
-                  <>
-                    {/* SECTION 3C: PARTICIPANT DETAILS (CONTRACTOR) */}
-                    <div className="space-y-4 pt-4 border-t border-slate-100">
-                      <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-                        <Users className="w-4 h-4 text-blue-900" />
-                        <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
-                          Section 3C: Contractor Representative Details
+                          Section 3A: Government Officer Participant Details
                         </h2>
                       </div>
 
@@ -3085,7 +2647,7 @@ function RegisterForm() {
                             {renderParticipantField(1, "fullName", "Full Name", "e.g. Eng. Sunil Perera", true)}
                             {renderParticipantField(1, "mobileNumber", "Mobile Number", "e.g. 0771234567", true, "tel")}
                             {renderParticipantField(1, "email", "Email Address", "e.g. sunil@example.com", true, "email")}
-                            {renderParticipantField(1, "designation", "Designation", "e.g. Managing Director", true)}
+                            {renderParticipantField(1, "designation", "Designation", "e.g. Executive Engineer", true)}
                           </div>
                         </div>
 
@@ -3098,1891 +2660,2283 @@ function RegisterForm() {
                             {renderParticipantField(2, "fullName", "Full Name", "Second attendee name", false)}
                             {renderParticipantField(2, "mobileNumber", "Mobile Number", "e.g. 0719876543", false, "tel")}
                             {renderParticipantField(2, "email", "Email Address", "e.g. attendee2@example.com", false, "email")}
-                            {renderParticipantField(2, "designation", "Designation", "e.g. Chief Engineer", false)}
+                            {renderParticipantField(2, "designation", "Designation", "e.g. Assistant Director", false)}
                           </div>
                         </div>
                       </div>
                     </div>
+                  )}
 
-                    {/* SECTION 4: CONTRACTOR DETAILS */}
-                    <div className="space-y-4 pt-4 border-t border-slate-100">
-                      <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-                        <Briefcase className="w-4 h-4 text-blue-900" />
-                        <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
-                          Section 4: Contractor Details
-                        </h2>
+                  {/* ------------------------------------------------------------- */}
+                  {/* BRANCH B: SUPPLIER PARTICIPANT & SUPPLIER DETAILS (SECTIONS 3B & 4) */}
+                  {/* ------------------------------------------------------------- */}
+                  {formData.participantCategory === "Supplier" && (
+                    <>
+                      {/* SECTION 3B: PARTICIPANT DETAILS (SUPPLIER - ONLY 1 REP) */}
+                      <div className="space-y-4 pt-4 border-t border-slate-100">
+                        <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                          <Users className="w-4 h-4 text-blue-900" />
+                          <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
+                            Section 3B: Supplier Representative Details
+                          </h2>
+                        </div>
+
+                        <div className="p-4 bg-slate-50/70 border border-slate-200 rounded-xl space-y-3 text-xs">
+                          <span className="text-[11px] font-bold text-blue-900 uppercase">
+                            Representative Details (Required)
+                          </span>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                            {renderParticipantField(1, "fullName", "Full Name", "e.g. K. L. Wickramasinghe", true)}
+                            {renderParticipantField(1, "mobileNumber", "Mobile Number", "e.g. 0779876543", true, "tel")}
+                            {renderParticipantField(1, "email", "Email Address", "e.g. supplier@example.com", true, "email")}
+                            {renderParticipantField(1, "designation", "Designation", "e.g. Sales Director / General Manager", true)}
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="space-y-4 text-xs">
-                        <div>
-                          <div className="flex items-center justify-between mb-1">
-                            <label htmlFor="input-ictadRegistrationNumber" className="block font-semibold text-slate-700">
-                              ICTAD registration number *
-                            </label>
-                            {isCheckingRegNumber && (
-                              <span className="text-[10px] text-blue-700 font-medium flex items-center gap-1">
-                                <RefreshCw className="w-3 h-3 animate-spin text-blue-700" />
-                                Checking uniqueness...
-                              </span>
-                            )}
-                            {!isCheckingRegNumber && regNumberAvailable && formData.ictadRegistrationNumber?.trim() && !regNumberError && (
-                              <span className="text-[10px] text-emerald-700 font-bold flex items-center gap-1">
-                                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                                Registration number is unique
-                              </span>
-                            )}
-                          </div>
-                          <input
-                            id="input-ictadRegistrationNumber"
-                            type="text"
-                            required
-                            value={formData.ictadRegistrationNumber}
-                            onChange={(e) => {
-                              setFormData({ ...formData, ictadRegistrationNumber: e.target.value });
-                              if (regNumberError) setRegNumberError(null);
-                              if (fieldErrors.ictadRegistrationNumber) clearFieldError("ictadRegistrationNumber");
-                              setRegNumberAvailable(false);
-                            }}
-                            onBlur={() => checkRegNumberUniqueness(formData.ictadRegistrationNumber || "")}
-                            placeholder="e.g. CIDA/12450"
-                            aria-invalid={Boolean(regNumberError || fieldErrors.ictadRegistrationNumber)}
-                            aria-describedby={
-                              regNumberError
-                                ? "error-ictad-unique"
-                                : fieldErrors.ictadRegistrationNumber
-                                ? "error-ictadRegistrationNumber"
-                                : undefined
-                            }
-                            className={`w-full p-2.5 rounded-lg font-mono text-slate-900 focus:outline-none transition-all ${
-                              regNumberError || fieldErrors.ictadRegistrationNumber
-                                ? "border-2 border-rose-500 bg-rose-50/50 focus:ring-2 focus:ring-rose-200 text-rose-950 font-bold"
-                                : regNumberAvailable && formData.ictadRegistrationNumber?.trim()
-                                ? "border border-emerald-500 bg-emerald-50/20 focus:ring-emerald-600"
-                                : "border border-slate-300 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-800"
-                            }`}
-                          />
-                          {regNumberError && (
-                            <div id="error-ictad-unique" className="flex items-start gap-1.5 p-2 mt-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-sans">
-                              <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-                              <span className="font-medium">{regNumberError}</span>
-                            </div>
-                          )}
-                          {!regNumberError && fieldErrors.ictadRegistrationNumber && (
-                            <div id="error-ictadRegistrationNumber" role="alert" className="flex items-start gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
-                              <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
-                              <span>{fieldErrors.ictadRegistrationNumber}</span>
-                            </div>
-                          )}
-                          <p className="text-[11px] text-slate-500 mt-1 font-sans">
-                            Each contractor organization must provide a unique CIDA / ICTAD registration number. Duplicate registration numbers are strictly prohibited.
+                      {/* SECTION 4: SUPPLIER DETAILS */}
+                      <div className="space-y-4 pt-4 border-t border-slate-100">
+                        <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                          <Truck className="w-4 h-4 text-blue-900" />
+                          <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
+                            Section 4: Supplier Details
+                          </h2>
+                        </div>
+
+                        <div className="p-3.5 bg-blue-50 border border-blue-200/80 rounded-xl text-xs text-blue-950">
+                          <p className="leading-relaxed">
+                            Please provide details of the materials you supply and your production/supply capacity.
                           </p>
                         </div>
 
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <div>
-                              <label className="block font-semibold text-slate-800 text-xs">
-                                Areas of specialty &amp; CIDA grading * (Select all that apply)
-                              </label>
-                              <p className="text-[11px] text-slate-500">
-                                Select one or more specialty areas and choose the corresponding CIDA grading under each.
-                              </p>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={handleAddSpecialtyOther}
-                              className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-900 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-3 py-1 rounded-lg transition-colors shrink-0"
-                              title="Click to add custom specialty"
+                        <div className="space-y-4 text-xs">
+                          {/* Material Selection */}
+                          <div id="input-supplierDetails-materialsSupplied">
+                            <label className="block font-semibold text-slate-700 mb-2">
+                              Please select the material(s) you supply * (Multiple selection allowed)
+                            </label>
+                            <div
+                              className={`grid grid-cols-2 sm:grid-cols-3 gap-2.5 p-1.5 rounded-xl transition-all ${fieldErrors["supplierDetails.materialsSupplied"] ? "bg-rose-50/40 border-2 border-rose-500" : ""
+                                }`}
                             >
-                              <Plus className="w-3.5 h-3.5" />
-                              <span>+ Add Other Specialty</span>
-                            </button>
-                          </div>
-
-                          <div
-                            id="input-areasOfSpecialty"
-                            className={`p-1.5 rounded-2xl transition-all ${
-                              fieldErrors.areasOfSpecialty ? "bg-rose-50/40 border-2 border-rose-500" : ""
-                            }`}
-                          >
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              {SPECIALTY_OPTIONS.filter((s) => s !== "Other").map((spec) => {
-                                const isChecked = (formData.areasOfSpecialty || []).includes(spec);
-                                const gradeKey = `specialtyGrades.${spec}`;
-                                const hasGradeError = Boolean(fieldErrors[gradeKey]);
+                              {SUPPLIER_MATERIALS.map((mat) => {
+                                const isChecked = (formData.supplierDetails?.materialsSupplied || []).includes(mat);
                                 return (
-                                  <div
-                                    key={spec}
-                                    className={`p-3.5 rounded-xl border transition-all ${
-                                      isChecked
-                                        ? hasGradeError
-                                          ? "bg-rose-50/40 border-2 border-rose-500 shadow-sm"
-                                          : "bg-blue-50/70 border-2 border-blue-800 shadow-sm"
-                                        : "bg-slate-50 border-slate-200 hover:bg-slate-100/70"
-                                    }`}
+                                  <label
+                                    key={mat}
+                                    className={`flex items-center gap-2 p-2.5 border rounded-lg cursor-pointer transition-colors ${isChecked
+                                      ? "bg-blue-50/80 border-blue-800 text-blue-950 font-semibold"
+                                      : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
+                                      }`}
                                   >
-                                    <div className="flex items-center justify-between">
-                                      <label className="flex items-center gap-2.5 cursor-pointer">
-                                        <input
-                                          type="checkbox"
-                                          checked={isChecked}
-                                          onChange={() => {
-                                            handleSpecialtyChange(spec);
-                                            if (fieldErrors.areasOfSpecialty) clearFieldError("areasOfSpecialty");
-                                          }}
-                                          className="w-4 h-4 text-blue-900 rounded focus:ring-blue-800"
-                                        />
-                                        <span className="font-semibold text-slate-900 text-xs">{spec}</span>
-                                      </label>
-                                      {isChecked && (
-                                        <span className="text-[10px] text-blue-800 font-bold bg-blue-100 px-2 py-0.5 rounded-full">
-                                          Selected
-                                        </span>
-                                      )}
-                                    </div>
-
-                                    {/* CIDA grading under this specialty area */}
-                                    {isChecked && (
-                                      <div className="mt-2.5 pt-2.5 border-t border-blue-200/80 space-y-1.5">
-                                        <label htmlFor={getDomIdForField(gradeKey)} className="block text-[11px] font-bold text-slate-700">
-                                          CIDA Grading for {spec} *
-                                        </label>
-                                        <select
-                                          id={getDomIdForField(gradeKey)}
-                                          required
-                                          value={formData.specialtyGrades?.[spec] || ""}
-                                          onChange={(e) => {
-                                            handleSpecialtyGradeChange(spec, e.target.value);
-                                            if (fieldErrors[gradeKey]) clearFieldError(gradeKey);
-                                          }}
-                                          aria-invalid={hasGradeError}
-                                          aria-describedby={hasGradeError ? `error-${getDomIdForField(gradeKey)}` : undefined}
-                                          className={`w-full p-2 rounded-lg text-slate-900 text-xs font-semibold focus:outline-none transition-all ${
-                                            hasGradeError
-                                              ? "bg-rose-50 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
-                                              : "bg-white border border-slate-300 focus:ring-2 focus:ring-blue-800 shadow-sm"
-                                          }`}
-                                        >
-                                          <option value="">— Select CIDA Grading for {spec} —</option>
-                                          {CIDA_GRADES.map((g) => (
-                                            <option key={g} value={g}>
-                                              {g}
-                                            </option>
-                                          ))}
-                                        </select>
-                                        {hasGradeError && (
-                                          <div id={`error-${getDomIdForField(gradeKey)}`} role="alert" className="flex items-start gap-1 mt-1 text-[11px] font-semibold text-rose-600 animate-fadeIn">
-                                            <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
-                                            <span>{fieldErrors[gradeKey]}</span>
-                                          </div>
-                                        )}
-                                        {formData.specialtyGrades?.[spec] === "Other" && (
-                                          <input
-                                            type="text"
-                                            value={formData.specialtyGradesOther?.[spec] || ""}
-                                            onChange={(e) => handleSpecialtyGradeOtherChange(spec, e.target.value)}
-                                            placeholder={`Specify custom CIDA grading for ${spec}...`}
-                                            className="w-full p-1.5 bg-amber-50/60 border border-amber-300 rounded text-slate-900 text-xs focus:ring-1 focus:ring-blue-800 mt-1"
-                                          />
-                                        )}
-                                      </div>
-                                    )}
-                                  </div>
+                                    <input
+                                      type="checkbox"
+                                      checked={isChecked}
+                                      onChange={() => {
+                                        handleSupplierMaterialToggle(mat);
+                                        if (fieldErrors["supplierDetails.materialsSupplied"]) clearFieldError("supplierDetails.materialsSupplied");
+                                      }}
+                                      className="w-4 h-4 text-blue-900 rounded focus:ring-blue-800"
+                                    />
+                                    <span>{mat}</span>
+                                  </label>
                                 );
                               })}
-
-                              {/* Other Specialty Card */}
-                              {(() => {
-                                const isOtherChecked = (formData.areasOfSpecialty || []).includes("Other");
-                                return (
-                                  <div
-                                    id="input-specialtyOther"
-                                    className={`p-3.5 rounded-xl border transition-all sm:col-span-2 ${
-                                      isOtherChecked
-                                        ? fieldErrors.specialtyOther
-                                          ? "bg-rose-50/40 border-2 border-rose-500 shadow-sm"
-                                          : "bg-blue-50/70 border-2 border-blue-800 shadow-sm"
-                                        : "bg-slate-50 border-slate-200 hover:bg-slate-100/70"
-                                    }`}
-                                  >
-                                    <div className="flex items-center justify-between">
-                                      <label className="flex items-center gap-2.5 cursor-pointer">
-                                        <input
-                                          type="checkbox"
-                                          checked={isOtherChecked}
-                                          onChange={() => {
-                                            handleSpecialtyChange("Other");
-                                            if (fieldErrors.areasOfSpecialty) clearFieldError("areasOfSpecialty");
-                                            if (fieldErrors.specialtyOther) clearFieldError("specialtyOther");
-                                          }}
-                                          className="w-4 h-4 text-blue-900 rounded focus:ring-blue-800"
-                                        />
-                                        <span className="font-semibold text-slate-900 text-xs">Other Specialty Area(s)</span>
-                                      </label>
-                                      {isOtherChecked && (
-                                        <span className="text-[10px] text-blue-800 font-bold bg-blue-100 px-2 py-0.5 rounded-full">
-                                          {specialtyOtherList.filter((s) => s.trim()).length} Specified
-                                        </span>
-                                      )}
-                                    </div>
-
-                                    {/* Under Other specialty: show specialty inputs with their CIDA grading selectors */}
-                                    {isOtherChecked && (
-                                      <div className="mt-3 pt-3 border-t border-blue-200/80 space-y-3">
-                                        <span className="text-[11px] font-bold text-slate-700 block">
-                                          Specify Other Specialty &amp; Select CIDA Grading for Each:
-                                        </span>
-
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                          {specialtyOtherList.map((item, idx) => {
-                                            const itemKey = item.trim() || `Other_${idx + 1}`;
-                                            return (
-                                              <div
-                                                key={idx}
-                                                className="p-3 bg-white border border-slate-200 rounded-xl space-y-2.5 shadow-sm"
-                                              >
-                                                <div className="flex items-center justify-between">
-                                                  <span className="text-[11px] font-bold text-blue-900">
-                                                    Other Specialty #{idx + 1}
-                                                  </span>
-                                                  {specialtyOtherList.length > 1 && (
-                                                    <button
-                                                      type="button"
-                                                      onClick={() => handleRemoveSpecialtyOther(idx)}
-                                                      className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors"
-                                                      title="Remove specialty"
-                                                    >
-                                                      <X className="w-3.5 h-3.5" />
-                                                    </button>
-                                                  )}
-                                                </div>
-
-                                                <div>
-                                                  <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
-                                                    Specialty Name *
-                                                  </label>
-                                                  <input
-                                                    type="text"
-                                                    value={item}
-                                                    onChange={(e) => {
-                                                      handleUpdateSpecialtyOther(idx, e.target.value);
-                                                      if (fieldErrors.specialtyOther) clearFieldError("specialtyOther");
-                                                    }}
-                                                    placeholder={
-                                                      idx === 0
-                                                        ? "e.g. Drainage, Piling, Water Supply"
-                                                        : `Specialty #${idx + 1}`
-                                                    }
-                                                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
-                                                  />
-                                                </div>
-
-                                                <div>
-                                                  <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
-                                                    CIDA Grading {item.trim() ? `for ${item.trim()}` : ""} *
-                                                  </label>
-                                                  <select
-                                                    value={formData.specialtyGrades?.[itemKey] || ""}
-                                                    onChange={(e) => handleSpecialtyGradeChange(itemKey, e.target.value)}
-                                                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
-                                                  >
-                                                    <option value="">— Select CIDA Grading —</option>
-                                                    {CIDA_GRADES.map((g) => (
-                                                      <option key={g} value={g}>
-                                                        {g}
-                                                      </option>
-                                                    ))}
-                                                  </select>
-                                                  {formData.specialtyGrades?.[itemKey] === "Other" && (
-                                                    <input
-                                                      type="text"
-                                                      value={formData.specialtyGradesOther?.[itemKey] || ""}
-                                                      onChange={(e) => handleSpecialtyGradeOtherChange(itemKey, e.target.value)}
-                                                      placeholder="Specify custom grading..."
-                                                      className="w-full p-1.5 bg-amber-50/60 border border-amber-300 rounded text-slate-900 text-xs focus:ring-1 focus:ring-blue-800 mt-1"
-                                                    />
-                                                  )}
-                                                </div>
-                                              </div>
-                                            );
-                                          })}
-                                        </div>
-
-                                        {fieldErrors.specialtyOther && (
-                                          <div id="error-specialtyOther" role="alert" className="flex items-start gap-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
-                                            <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
-                                            <span>{fieldErrors.specialtyOther}</span>
-                                          </div>
-                                        )}
-
-                                        <div className="pt-1 flex items-center justify-between">
-                                          <button
-                                            type="button"
-                                            onClick={handleAddSpecialtyOther}
-                                            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-sm transition-all"
-                                          >
-                                            <Plus className="w-3.5 h-3.5" />
-                                            <span>+ Add Another Other Specialty</span>
-                                          </button>
-                                          <span className="text-[11px] text-slate-400 italic">
-                                            Press Enter to add another specialty
-                                          </span>
-                                        </div>
-                                      </div>
-                                    )}
-                                  </div>
-                                );
-                              })()}
                             </div>
-                          </div>
+                            {fieldErrors["supplierDetails.materialsSupplied"] && (
+                              <div id="error-supplierDetails-materialsSupplied" role="alert" className="flex items-start gap-1.5 mt-2 text-xs font-semibold text-rose-600 animate-fadeIn">
+                                <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                                <span>{fieldErrors["supplierDetails.materialsSupplied"]}</span>
+                              </div>
+                            )}
 
-                          {fieldErrors.areasOfSpecialty && (
-                            <div id="error-areasOfSpecialty" role="alert" className="flex items-start gap-1.5 mt-2 text-xs font-semibold text-rose-600 animate-fadeIn">
-                              <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
-                              <span>{fieldErrors.areasOfSpecialty}</span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Dynamic Questions configured for Section 5 (Contractor Details) */}
-                        {getDynamicQuestionsForSection("SEC-05").map(renderDynamicQuestionField)}
-                      </div>
-                    </div>
-
-                    {/* SECTION 5: FINANCIAL CAPABILITY & SECTION 6: LOAN COMMITMENTS */}
-                    <div className="space-y-4 pt-4 border-t border-slate-100">
-                      <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-blue-900" />
-                          <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
-                            Section 5: Financial Capability &amp; Section 6: Loan Commitments
-                          </h2>
-                        </div>
-                      </div>
-
-                      <div className="p-3.5 bg-blue-50 border border-blue-200/80 rounded-xl text-xs text-blue-950">
-                        <p className="leading-relaxed">
-                          <strong>Official Instruction:</strong> All financial amounts must be entered as the <strong>full total amount in Sri Lankan Rupees (LKR)</strong>.
-                          For example, for <strong>1 Lakh (LKR 100,000)</strong> enter <strong>100000</strong> (not 1 or 1 Lakh); for <strong>10 Million</strong> enter <strong>10000000</strong>.
-                          You may enter <strong>0</strong> or leave blank if information is unrecorded. <em>Profit Before Tax may be negative if incurring a loss.</em>
-                        </p>
-                      </div>
-
-                      {/* CONSOLIDATED FINANCIAL TABLE (8 INDICATORS + 1 LOAN COMMITMENTS ROW) */}
-                      <p className="text-[11px] text-slate-400 text-right italic sm:hidden mb-1">
-                        ← Scroll to see all years →
-                      </p>
-                      <div className="border border-slate-200 rounded-xl bg-white shadow-sm">
-                        <div className="overflow-x-auto rounded-xl" style={{ WebkitOverflowScrolling: "touch" }}>
-                          <table className="w-full min-w-[700px] text-xs border-collapse">
-                            <thead>
-                              <tr className="bg-slate-100/90 border-b border-slate-200 text-slate-700">
-                                <th className="py-3 px-3 text-left font-bold w-[230px]">
-                                  Financial Indicator (Total Amount in LKR)
-                                </th>
-                                {FINANCIAL_YEARS.map((year) => (
-                                  <th key={year} className="py-3 px-2 text-center font-bold text-blue-950 w-[110px]">
-                                    {year}
-                                  </th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-200/70">
-                              {[
-                                { key: "totalAssets" as const, label: "Total Assets" },
-                                { key: "totalLiabilities" as const, label: "Total Liabilities" },
-                                {
-                                  key: "totalEquity" as const,
-                                  label: "Total Equity",
-                                  hint: "Auto: Total Assets − Liabilities",
-                                  readOnly: true,
-                                },
-                                { key: "currentAssets" as const, label: "Current Assets" },
-                                { key: "currentLiabilities" as const, label: "Current Liabilities" },
-                                {
-                                  key: "workingCapital" as const,
-                                  label: "Working Capital",
-                                  hint: "Auto: Current Assets − Liabilities",
-                                  readOnly: true,
-                                },
-                                { key: "totalRevenue" as const, label: "Total Revenue" },
-                                {
-                                  key: "profitBeforeTax" as const,
-                                  label: "Profit Before Tax",
-                                  hint: "May be negative",
-                                },
-                              ].map(({ key, label, hint, readOnly }) => (
-                                <tr
-                                  key={key}
-                                  className={
-                                    readOnly
-                                      ? "bg-slate-50/80 hover:bg-slate-100/70 transition-colors"
-                                      : "hover:bg-slate-50/60 transition-colors"
-                                  }
-                                >
-                                  <td className="py-2 px-3 text-slate-800 font-medium">
-                                    <div className="flex items-center gap-1.5 flex-wrap">
-                                      <span className={readOnly ? "font-semibold text-blue-950" : ""}>{label}</span>
-                                      {hint && (
-                                        <span
-                                          className={`text-[10px] px-1.5 py-0.5 rounded font-normal ${
-                                            readOnly
-                                              ? "text-blue-700 bg-blue-50 border border-blue-200/60"
-                                              : "text-amber-700 bg-amber-50 border border-amber-200/60"
-                                          }`}
-                                        >
-                                          {hint}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </td>
-                                  {FINANCIAL_YEARS.map((year) => {
-                                    const yrData =
-                                      (formData.financialStatements && formData.financialStatements[year]) ||
-                                      createEmptyFinancialIndicators();
-                                    const val = yrData[key];
-                                    const isNegative = val !== null && val !== undefined && val < 0;
-
-                                    return (
-                                      <td key={year} className="py-1.5 px-2">
-                                        <input
-                                          type={readOnly ? "text" : "number"}
-                                          readOnly={readOnly}
-                                          tabIndex={readOnly ? -1 : 0}
-                                          value={val !== null && val !== undefined ? val : ""}
-                                          onChange={(e) => !readOnly && handleFinancialChange(year, key, e.target.value)}
-                                          className={`w-full p-2 border rounded font-mono text-xs text-right transition-colors ${
-                                            readOnly
-                                              ? `bg-slate-100/90 border-slate-300 font-semibold cursor-not-allowed select-none ${
-                                                  isNegative ? "text-rose-600 font-bold" : "text-slate-800"
-                                                }`
-                                              : `bg-slate-50 border-slate-300 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 ${
-                                                  isNegative ? "text-rose-600 font-bold" : ""
-                                                }`
-                                          }`}
-                                        />
-                                      </td>
-                                    );
-                                  })}
-                                </tr>
-                              ))}
-
-                              {/* SECTION 6: ROW 9 - TOTAL LOAN REPAYMENTS DUE */}
-                              <tr className="bg-blue-50/40 border-t-2 border-slate-300">
-                                <td className="py-3 px-3 text-slate-900 align-middle">
-                                  <div>
-                                    <span className="font-bold text-blue-950 block">
-                                      Total Loan Repayments Due (01 Dec 2026 – 01 Dec 2028)
-                                    </span>
-                                    <span className="text-[11px] font-normal text-slate-500 block leading-tight mt-0.5">
-                                      Total loan repayments due within the next two years. Enter full total amount in LKR (e.g. for 1 Lakh enter 100000, not 1 Lakh. Enter 0 if none).
-                                    </span>
-                                  </div>
-                                </td>
-                                <td colSpan={5} className="py-2.5 px-3">
-                                  <div className="relative">
-                                    <input
-                                      type="number"
-                                      value={formData.loanCommitments?.twoYearRepaymentsDue2026To2028 ?? ""}
-                                      onChange={(e) => {
-                                        const val = e.target.value.trim();
-                                        const num = val === "" ? null : Number(val);
-                                        setFormData({
-                                          ...formData,
-                                          loanCommitments: {
-                                            twoYearRepaymentsDue2026To2028: val === "" ? null : isNaN(num as number) ? null : num,
-                                          },
-                                        });
-                                      }}
-                                      className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono text-xs"
-                                    />
-                                    {formData.loanCommitments?.twoYearRepaymentsDue2026To2028 !== null &&
-                                      formData.loanCommitments?.twoYearRepaymentsDue2026To2028 !== undefined && (
-                                        <span className="text-[11px] font-mono font-semibold text-blue-900 bg-blue-100/70 px-2 py-0.5 rounded inline-block mt-1">
-                                          = LKR {Number(formData.loanCommitments.twoYearRepaymentsDue2026To2028).toLocaleString()}
-                                        </span>
-                                      )}
-                                  </div>
-                                </td>
-                              </tr>
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* SECTION 7: CURRENT WORK COMMITMENTS */}
-                    <div className="space-y-4 pt-4 border-t border-slate-100">
-                      <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-                        <Layers className="w-4 h-4 text-blue-900" />
-                        <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
-                          Section 7: Current Work Commitments
-                        </h2>
-                      </div>
-
-                      <div className="space-y-4 text-xs">
-                        <div>
-                          <label className="block font-semibold text-slate-700 mb-2">
-                            Does your company currently have ongoing contracts? *
-                          </label>
-                          <div
-                            id="input-hasOngoingContracts"
-                            className={`flex items-center gap-4 sm:gap-6 flex-wrap p-2 rounded-xl transition-all ${
-                              fieldErrors.hasOngoingContracts ? "bg-rose-50/40 border-2 border-rose-500" : ""
-                            }`}
-                          >
-                            <label className="inline-flex items-center gap-2 cursor-pointer py-1.5 pr-2">
-                              <input
-                                type="radio"
-                                name="hasOngoingContracts"
-                                value="Yes"
-                                checked={formData.hasOngoingContracts === "Yes"}
-                                onChange={() => {
-                                  setFormData({ ...formData, hasOngoingContracts: "Yes" });
-                                  if (fieldErrors.hasOngoingContracts) clearFieldError("hasOngoingContracts");
-                                }}
-                                className="w-4 h-4 text-blue-900 focus:ring-blue-800"
-                              />
-                              <span className="font-medium text-slate-800">Yes</span>
-                            </label>
-                            <label className="inline-flex items-center gap-2 cursor-pointer py-1.5 pr-2">
-                              <input
-                                type="radio"
-                                name="hasOngoingContracts"
-                                value="No"
-                                checked={formData.hasOngoingContracts === "No"}
-                                onChange={() => {
-                                  setFormData({ ...formData, hasOngoingContracts: "No" });
-                                  if (fieldErrors.hasOngoingContracts) clearFieldError("hasOngoingContracts");
-                                }}
-                                className="w-4 h-4 text-blue-900 focus:ring-blue-800"
-                              />
-                              <span className="font-medium text-slate-800">No</span>
-                            </label>
-                          </div>
-                          {fieldErrors.hasOngoingContracts && (
-                            <div id="error-hasOngoingContracts" role="alert" className="flex items-start gap-1.5 mt-2 text-xs font-semibold text-rose-600 animate-fadeIn">
-                              <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
-                              <span>{fieldErrors.hasOngoingContracts}</span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* SECTION 8: ONGOING WORKS (Only if hasOngoingContracts === "Yes") */}
-                        {formData.hasOngoingContracts === "Yes" && (
-                          <div className="p-4 bg-slate-50/80 border border-slate-200 rounded-xl space-y-4">
-                            <span className="text-[11px] font-bold text-blue-900 uppercase block">
-                              Section 8: Ongoing Works Details
-                            </span>
-
-                            <div>
-                              <div className="flex items-center justify-between mb-1">
-                                <label htmlFor="input-totalOutstandingValueLkrMillion" className="block font-semibold text-slate-700">
-                                  Total value of outstanding works as at 1 December 2026 (Total Amount in LKR) *
-                                </label>
-                                {ongoingTotalOutstanding > 0 && (
-                                  <span className="text-[10px] text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full font-bold">
-                                    ✓ Auto-calculated from table below
+                            {(formData.supplierDetails?.materialsSupplied || []).includes("Other") && (
+                              <div id="input-supplierDetails-materialsOther" className="mt-3 p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
+                                    Specify Other Supplied Material(s) *
+                                  </label>
+                                  <span className="text-[11px] text-slate-500">
+                                    Add one or more material types
                                   </span>
+                                </div>
+
+                                <div className="space-y-2">
+                                  {supplierMaterialsOtherList.map((item, idx) => (
+                                    <div key={idx} className="flex items-center gap-2">
+                                      <input
+                                        type="text"
+                                        value={item}
+                                        onChange={(e) => {
+                                          handleUpdateSupplierMaterialOther(idx, e.target.value);
+                                          if (fieldErrors["supplierDetails.materialsOther"]) clearFieldError("supplierDetails.materialsOther");
+                                        }}
+                                        onKeyDown={(e) => {
+                                          if (e.key === "Enter") {
+                                            e.preventDefault();
+                                            handleAddSupplierMaterialOther();
+                                          }
+                                        }}
+                                        placeholder={
+                                          idx === 0
+                                            ? "If Other, please specify your material type..."
+                                            : `Additional material #${idx + 1}`
+                                        }
+                                        className={`flex-1 p-2 bg-white rounded-lg text-slate-900 text-xs focus:outline-none focus:ring-2 ${fieldErrors["supplierDetails.materialsOther"] && idx === 0
+                                          ? "border-2 border-rose-500 focus:ring-rose-200"
+                                          : "border border-slate-300 focus:ring-blue-800"
+                                          }`}
+                                      />
+                                      {supplierMaterialsOtherList.length > 1 && (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleRemoveSupplierMaterialOther(idx)}
+                                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg border border-transparent hover:border-rose-200 transition-colors"
+                                          title="Remove this material"
+                                        >
+                                          <X className="w-4 h-4" />
+                                        </button>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+
+                                {fieldErrors["supplierDetails.materialsOther"] && (
+                                  <div id="error-supplierDetails-materialsOther" role="alert" className="flex items-start gap-1.5 mt-1 text-xs font-semibold text-rose-600 animate-fadeIn">
+                                    <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                                    <span>{fieldErrors["supplierDetails.materialsOther"]}</span>
+                                  </div>
                                 )}
+
+                                <div>
+                                  <button
+                                    type="button"
+                                    onClick={handleAddSupplierMaterialOther}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-900 hover:text-blue-700 bg-white hover:bg-blue-50 border border-blue-200 rounded-lg shadow-sm transition-colors"
+                                  >
+                                    <Plus className="w-3.5 h-3.5" />
+                                    <span>+ Add another material</span>
+                                  </button>
+                                </div>
                               </div>
-                              <p className="text-[11px] text-slate-500 mb-2">
-                                Please enter the total value of works that remain to be completed under all your ongoing contracts as at 1 December 2026 in full LKR. (Calculates automatically as you enter amounts in the table below).
-                              </p>
-                              <div className="flex items-center gap-3">
-                                <input
-                                  id="input-totalOutstandingValueLkrMillion"
-                                  type="number"
-                                  required
-                                  value={formData.totalOutstandingValueLkrMillion ?? ""}
-                                  onChange={(e) => {
-                                    const val = e.target.value.trim();
-                                    setFormData({
-                                      ...formData,
-                                      totalOutstandingValueLkrMillion: val === "" ? null : Number(val),
-                                    });
-                                    if (fieldErrors.totalOutstandingValueLkrMillion) clearFieldError("totalOutstandingValueLkrMillion");
-                                  }}
-                                  aria-invalid={Boolean(fieldErrors.totalOutstandingValueLkrMillion)}
-                                  aria-describedby={fieldErrors.totalOutstandingValueLkrMillion ? "error-totalOutstandingValueLkrMillion" : undefined}
-                                  className={`w-full sm:w-72 p-2.5 rounded-lg text-slate-900 focus:outline-none font-mono font-bold transition-all ${
-                                    fieldErrors.totalOutstandingValueLkrMillion
-                                      ? "bg-rose-50/40 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
-                                      : "bg-white border border-slate-300 focus:ring-2 focus:ring-blue-800"
+                            )}
+                          </div>
+
+                          {/* Company Name */}
+                          <div>
+                            <label htmlFor="input-supplierDetails-companyName" className="block font-semibold text-slate-700 mb-1">
+                              Company Name *
+                            </label>
+                            <input
+                              id="input-supplierDetails-companyName"
+                              type="text"
+                              required
+                              value={formData.supplierDetails?.companyName || ""}
+                              onChange={(e) => {
+                                setFormData({
+                                  ...formData,
+                                  supplierDetails: {
+                                    ...(formData.supplierDetails || createEmptySupplierDetails()),
+                                    companyName: e.target.value,
+                                  },
+                                });
+                                if (fieldErrors["supplierDetails.companyName"]) clearFieldError("supplierDetails.companyName");
+                              }}
+                              placeholder="e.g. Lanka Ready-Mix & Asphalt Products (Pvt) Ltd"
+                              aria-invalid={Boolean(fieldErrors["supplierDetails.companyName"])}
+                              aria-describedby={fieldErrors["supplierDetails.companyName"] ? "error-supplierDetails-companyName" : undefined}
+                              className={`w-full p-2.5 rounded-lg text-slate-900 focus:outline-none transition-all ${fieldErrors["supplierDetails.companyName"]
+                                ? "bg-rose-50/30 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
+                                }`}
+                            />
+                            {fieldErrors["supplierDetails.companyName"] && (
+                              <div id="error-supplierDetails-companyName" role="alert" className="flex items-start gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
+                                <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                                <span>{fieldErrors["supplierDetails.companyName"]}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Annual Supply Capacity Per Selected Material */}
+                          {(formData.supplierDetails?.materialsSupplied || []).length > 0 && (
+                            <div className="space-y-3 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                              <div>
+                                <span className="font-bold text-slate-900 uppercase text-[11px] block">
+                                  Annual Supply Capacity *
+                                </span>
+                                <span className="text-[11px] text-slate-500">
+                                  Specify production or supply capacity and unit for each selected material (e.g., Cement: 50,000 MT per year; Sand: 20,000 cubic meters per year).
+                                </span>
+                              </div>
+
+                              <div className="space-y-2.5">
+                                {(formData.supplierDetails?.materialsSupplied || []).map((mat) => {
+                                  const cap = formData.supplierDetails?.supplyCapacities?.[mat] || {
+                                    quantity: "",
+                                    unit: "MT per year",
+                                  };
+                                  const displayName = mat === "Other" && formData.supplierDetails?.materialsOther ? `Other (${formData.supplierDetails.materialsOther})` : mat;
+
+                                  return (
+                                    <div
+                                      key={mat}
+                                      className="p-3 bg-white border border-slate-200 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
+                                    >
+                                      <span className="font-semibold text-blue-950 sm:w-1/3">
+                                        {displayName}
+                                      </span>
+                                      <div className="flex items-center gap-2 sm:w-2/3">
+                                        <input
+                                          type="text"
+                                          value={cap.quantity !== null && cap.quantity !== undefined ? cap.quantity : ""}
+                                          onChange={(e) => handleSupplierCapacityChange(mat, "quantity", e.target.value)}
+                                          placeholder="Quantity (e.g. 50,000)"
+                                          className="w-1/2 p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
+                                        />
+                                        <input
+                                          type="text"
+                                          value={cap.unit || ""}
+                                          onChange={(e) => handleSupplierCapacityChange(mat, "unit", e.target.value)}
+                                          placeholder="Unit (e.g. MT / cu.m / year)"
+                                          className="w-1/2 p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
+                                        />
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Location Address */}
+                          <div>
+                            <label htmlFor="input-supplierDetails-locationAddress" className="block font-semibold text-slate-700 mb-1">
+                              Location Address *
+                            </label>
+                            <textarea
+                              id="input-supplierDetails-locationAddress"
+                              rows={2}
+                              required
+                              value={formData.supplierDetails?.locationAddress || ""}
+                              onChange={(e) => {
+                                setFormData({
+                                  ...formData,
+                                  supplierDetails: {
+                                    ...(formData.supplierDetails || createEmptySupplierDetails()),
+                                    locationAddress: e.target.value,
+                                  },
+                                });
+                                if (fieldErrors["supplierDetails.locationAddress"]) clearFieldError("supplierDetails.locationAddress");
+                              }}
+                              placeholder="Physical address of manufacturing plant, quarry, or central distribution warehouse..."
+                              aria-invalid={Boolean(fieldErrors["supplierDetails.locationAddress"])}
+                              aria-describedby={fieldErrors["supplierDetails.locationAddress"] ? "error-supplierDetails-locationAddress" : undefined}
+                              className={`w-full p-2.5 rounded-lg text-slate-900 focus:outline-none transition-all ${fieldErrors["supplierDetails.locationAddress"]
+                                ? "bg-rose-50/30 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
+                                }`}
+                            />
+                            {fieldErrors["supplierDetails.locationAddress"] && (
+                              <div id="error-supplierDetails-locationAddress" role="alert" className="flex items-start gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
+                                <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                                <span>{fieldErrors["supplierDetails.locationAddress"]}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Province & District (Dependent Dropdown) */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                              <label htmlFor="input-supplierDetails-province" className="block font-semibold text-slate-700 mb-1">
+                                Province *
+                              </label>
+                              <select
+                                id="input-supplierDetails-province"
+                                required
+                                value={formData.supplierDetails?.province || ""}
+                                onChange={(e) => {
+                                  const newProv = e.target.value;
+                                  setFormData({
+                                    ...formData,
+                                    supplierDetails: {
+                                      ...(formData.supplierDetails || createEmptySupplierDetails()),
+                                      province: newProv,
+                                      district: "", // reset district when province changes
+                                    },
+                                  });
+                                  if (fieldErrors["supplierDetails.province"]) clearFieldError("supplierDetails.province");
+                                }}
+                                aria-invalid={Boolean(fieldErrors["supplierDetails.province"])}
+                                aria-describedby={fieldErrors["supplierDetails.province"] ? "error-supplierDetails-province" : undefined}
+                                className={`w-full p-2.5 rounded-lg text-slate-900 focus:outline-none font-medium transition-all ${fieldErrors["supplierDetails.province"]
+                                  ? "bg-rose-50/30 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                  : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
                                   }`}
-                                />
-                                {formData.totalOutstandingValueLkrMillion !== null &&
-                                  formData.totalOutstandingValueLkrMillion !== undefined && (
-                                    <span className="text-xs font-mono font-bold text-blue-900 bg-blue-100/70 px-2.5 py-1.5 rounded-lg border border-blue-200">
-                                      = LKR {Number(formData.totalOutstandingValueLkrMillion).toLocaleString()}
-                                    </span>
-                                  )}
-                              </div>
-                              {fieldErrors.totalOutstandingValueLkrMillion && (
-                                <div id="error-totalOutstandingValueLkrMillion" role="alert" className="flex items-start gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
+                              >
+                                <option value="">— Select Province —</option>
+                                {SRI_LANKA_PROVINCES.map((prov) => (
+                                  <option key={prov} value={prov}>
+                                    {prov}
+                                  </option>
+                                ))}
+                              </select>
+                              {fieldErrors["supplierDetails.province"] && (
+                                <div id="error-supplierDetails-province" role="alert" className="flex items-start gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
                                   <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
-                                  <span>{fieldErrors.totalOutstandingValueLkrMillion}</span>
+                                  <span>{fieldErrors["supplierDetails.province"]}</span>
                                 </div>
                               )}
                             </div>
 
-                            <div className="space-y-3 pt-2">
-                              <div className="flex items-center justify-between">
-                                <span className="font-bold text-slate-800 text-[11px] block uppercase tracking-wide">
-                                  Key Ongoing Contracts (Optional)
-                                </span>
-                                <span className="text-[10px] text-slate-500 font-semibold bg-slate-100 px-2 py-0.5 rounded-full">
-                                  {(formData.ongoingContracts || []).filter((c) => c.contractName).length} of{" "}
-                                  {(formData.ongoingContracts || []).length} Specified
-                                </span>
-                              </div>
-
-                              <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-                                <table className="w-full min-w-[980px] text-left border-collapse text-xs">
-                                  <thead>
-                                    <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-700 font-bold uppercase text-[10px] tracking-wider">
-                                      <th className="p-3 w-12 text-center">No</th>
-                                      <th className="p-3 min-w-[200px]">Name of contract</th>
-                                      <th className="p-3 w-40">Contract No</th>
-                                      <th className="p-3 min-w-[180px]">Employer's Name</th>
-                                      <th className="p-3 w-56">Value of outstanding work(LKR) as at 1st December</th>
-                                      <th className="p-3 w-44">Estimated completion date</th>
-                                      <th className="p-3 w-14 text-center">Action</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody className="divide-y divide-slate-200/80">
-                                    {(formData.ongoingContracts || createEmptyOngoingWorks()).map((contract, idx) => (
-                                      <tr key={idx} className="hover:bg-slate-50/70 transition-colors">
-                                        <td className="p-3 text-center font-bold text-blue-900 bg-slate-50/50 align-top pt-4">
-                                          #{idx + 1}
-                                        </td>
-                                        <td className="p-3 align-top">
-                                          <input
-                                            type="text"
-                                            value={contract.contractName || ""}
-                                            onChange={(e) => handleOngoingContractChange(idx, "contractName", e.target.value)}
-                                            placeholder="Name of contract"
-                                            className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
-                                          />
-                                        </td>
-                                        <td className="p-3 align-top">
-                                          <input
-                                            type="text"
-                                            value={contract.contractNo || ""}
-                                            onChange={(e) => handleOngoingContractChange(idx, "contractNo", e.target.value)}
-                                            placeholder="Contract No"
-                                            className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
-                                          />
-                                        </td>
-                                        <td className="p-3 align-top">
-                                          <input
-                                            type="text"
-                                            value={contract.employerName || ""}
-                                            onChange={(e) => handleOngoingContractChange(idx, "employerName", e.target.value)}
-                                            placeholder="Employer's Name"
-                                            className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
-                                          />
-                                        </td>
-                                        <td className="p-3 align-top space-y-1">
-                                          <input
-                                            type="number"
-                                            value={contract.contractAmount ?? ""}
-                                            onChange={(e) => handleOngoingContractChange(idx, "contractAmount", e.target.value)}
-                                            placeholder="Amount in LKR"
-                                            className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
-                                          />
-                                          {contract.contractAmount !== null && contract.contractAmount !== undefined && contract.contractAmount !== "" && (
-                                            <span className="text-[10px] font-mono text-slate-600 block">
-                                              = LKR {Number(contract.contractAmount).toLocaleString()}
-                                            </span>
-                                          )}
-                                        </td>
-                                        <td className="p-3 align-top">
-                                          <input
-                                            type="date"
-                                            value={contract.completionDate || ""}
-                                            onChange={(e) => handleOngoingContractChange(idx, "completionDate", e.target.value)}
-                                            className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
-                                          />
-                                        </td>
-                                        <td className="p-3 text-center align-top pt-4">
-                                          {(formData.ongoingContracts || []).length > 1 && (
-                                            <button
-                                              type="button"
-                                              onClick={() => handleRemoveOngoingContract(idx)}
-                                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
-                                              title="Remove contract row"
-                                            >
-                                              <Trash2 className="w-4 h-4" />
-                                            </button>
-                                          )}
-                                        </td>
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                  <tfoot>
-                                    <tr className="bg-blue-50/80 border-t-2 border-blue-200 text-xs font-bold">
-                                      <td colSpan={4} className="p-3 text-right text-blue-950 font-bold uppercase tracking-wider">
-                                        <div className="flex items-center justify-end gap-2">
-                                          <span className="text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-mono font-bold">
-                                            AUTO-CALCULATED
-                                          </span>
-                                          <span>Total Value of Outstanding Work:</span>
-                                        </div>
-                                      </td>
-                                      <td className="p-3">
-                                        <div className="p-2 bg-white border-2 border-blue-600 rounded-lg text-blue-950 font-mono font-bold text-sm shadow-sm">
-                                          LKR {ongoingTotalOutstanding.toLocaleString()}
-                                        </div>
-                                      </td>
-                                      <td colSpan={2} className="p-3 text-slate-500 text-[11px] font-normal italic">
-                                        Sum of all ongoing contracts as at 1st Dec
-                                      </td>
-                                    </tr>
-                                  </tfoot>
-                                </table>
-                              </div>
-
-                              <div className="flex items-center justify-between pt-1">
-                                <button
-                                  type="button"
-                                  onClick={handleAddOngoingContract}
-                                  className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-sm transition-all"
-                                >
-                                  <Plus className="w-4 h-4" />
-                                  <span>+ Add Ongoing Contract</span>
-                                </button>
-                                <span className="text-[10px] text-slate-400 italic">
-                                  You can add additional ongoing contracts as needed
-                                </span>
-                              </div>
+                            <div>
+                              <label htmlFor="input-supplierDetails-district" className="block font-semibold text-slate-700 mb-1">
+                                District *
+                              </label>
+                              <select
+                                id="input-supplierDetails-district"
+                                required
+                                disabled={!formData.supplierDetails?.province}
+                                value={formData.supplierDetails?.district || ""}
+                                onChange={(e) => {
+                                  setFormData({
+                                    ...formData,
+                                    supplierDetails: {
+                                      ...(formData.supplierDetails || createEmptySupplierDetails()),
+                                      district: e.target.value,
+                                    },
+                                  });
+                                  if (fieldErrors["supplierDetails.district"]) clearFieldError("supplierDetails.district");
+                                }}
+                                aria-invalid={Boolean(fieldErrors["supplierDetails.district"])}
+                                aria-describedby={fieldErrors["supplierDetails.district"] ? "error-supplierDetails-district" : undefined}
+                                className={`w-full p-2.5 rounded-lg text-slate-900 focus:outline-none font-medium disabled:opacity-50 transition-all ${fieldErrors["supplierDetails.district"]
+                                  ? "bg-rose-50/30 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                  : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
+                                  }`}
+                              >
+                                <option value="">— Select District —</option>
+                                {formData.supplierDetails?.province &&
+                                  (PROVINCE_DISTRICT_MAP[formData.supplierDetails.province as SriLankaProvince] || []).map(
+                                    (dist) => (
+                                      <option key={dist} value={dist}>
+                                        {dist}
+                                      </option>
+                                    )
+                                  )}
+                              </select>
+                              {fieldErrors["supplierDetails.district"] && (
+                                <div id="error-supplierDetails-district" role="alert" className="flex items-start gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
+                                  <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                                  <span>{fieldErrors["supplierDetails.district"]}</span>
+                                </div>
+                              )}
                             </div>
                           </div>
-                        )}
+                        </div>
                       </div>
-                    </div>
+                    </>
+                  )}
 
-                    {/* SECTION 9: GENERAL EXPERIENCE */}
-                    <div className="space-y-4 pt-4 border-t border-slate-100">
-                      <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-                        <Briefcase className="w-4 h-4 text-blue-900" />
-                        <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
-                          Section 9: Experience
-                        </h2>
+                  {/* ------------------------------------------------------------- */}
+                  {/* BRANCH C: CONTRACTOR SPECIFIC FLOW (SECTIONS 3C THROUGH 10)   */}
+                  {/* ------------------------------------------------------------- */}
+                  {formData.participantCategory === "Contractor" && (
+                    <>
+                      {/* SECTION 3C: PARTICIPANT DETAILS (CONTRACTOR) */}
+                      <div className="space-y-4 pt-4 border-t border-slate-100">
+                        <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                          <Users className="w-4 h-4 text-blue-900" />
+                          <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
+                            Section 3C: Contractor Representative Details
+                          </h2>
+                        </div>
+
+                        <div className="space-y-4 text-xs">
+                          {/* Participant 1 (Required) */}
+                          <div className="p-4 bg-slate-50/70 border border-slate-200 rounded-xl space-y-3">
+                            <span className="text-[11px] font-bold text-blue-900 uppercase">
+                              Participant 1 (Required)
+                            </span>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                              {renderParticipantField(1, "fullName", "Full Name", "e.g. Eng. Sunil Perera", true)}
+                              {renderParticipantField(1, "mobileNumber", "Mobile Number", "e.g. 0771234567", true, "tel")}
+                              {renderParticipantField(1, "email", "Email Address", "e.g. sunil@example.com", true, "email")}
+                              {renderParticipantField(1, "designation", "Designation", "e.g. Managing Director", true)}
+                            </div>
+                          </div>
+
+                          {/* Participant 2 (Optional) */}
+                          <div className="p-4 bg-slate-50/70 border border-slate-200 rounded-xl space-y-3">
+                            <span className="text-[11px] font-bold text-slate-600 uppercase">
+                              Participant 2 (Optional)
+                            </span>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                              {renderParticipantField(2, "fullName", "Full Name", "Second attendee name", false)}
+                              {renderParticipantField(2, "mobileNumber", "Mobile Number", "e.g. 0719876543", false, "tel")}
+                              {renderParticipantField(2, "email", "Email Address", "e.g. attendee2@example.com", false, "email")}
+                              {renderParticipantField(2, "designation", "Designation", "e.g. Chief Engineer", false)}
+                            </div>
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="space-y-4 text-xs">
-                        <div>
-                          <label htmlFor="input-generalExperience" className="block font-semibold text-slate-700 mb-1">
-                            How many years of general experience does your company have in the construction industry? *
-                          </label>
-                          <select
-                            id="input-generalExperience"
-                            value={formData.generalExperience || ""}
-                            onChange={(e) => {
-                              setFormData({
-                                ...formData,
-                                generalExperience: e.target.value as GeneralExperienceOption,
-                              });
-                              if (fieldErrors.generalExperience) clearFieldError("generalExperience");
-                            }}
-                            aria-invalid={Boolean(fieldErrors.generalExperience)}
-                            aria-describedby={fieldErrors.generalExperience ? "error-generalExperience" : undefined}
-                            className={`w-full p-2.5 rounded-lg text-slate-900 focus:outline-none font-medium transition-all ${
-                              fieldErrors.generalExperience
-                                ? "bg-rose-50/40 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
-                                : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
-                            }`}
-                          >
-                            <option value="">— Select General Construction Experience —</option>
-                            {GENERAL_EXP_OPTIONS.map((opt) => (
-                              <option key={opt} value={opt}>
-                                {opt}
-                              </option>
-                            ))}
-                          </select>
-                          {fieldErrors.generalExperience && (
-                            <div id="error-generalExperience" role="alert" className="flex items-start gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
-                              <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
-                              <span>{fieldErrors.generalExperience}</span>
+                      {/* SECTION 4: CONTRACTOR DETAILS */}
+                      <div className="space-y-4 pt-4 border-t border-slate-100">
+                        <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                          <Briefcase className="w-4 h-4 text-blue-900" />
+                          <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
+                            Section 4: Contractor Details
+                          </h2>
+                        </div>
+
+                        <div className="space-y-4 text-xs">
+                          <div>
+                            <div className="flex items-center justify-between mb-1">
+                              <label htmlFor="input-ictadRegistrationNumber" className="block font-semibold text-slate-700">
+                                ICTAD registration number *
+                              </label>
+                              {isCheckingRegNumber && (
+                                <span className="text-[10px] text-blue-700 font-medium flex items-center gap-1">
+                                  <RefreshCw className="w-3 h-3 animate-spin text-blue-700" />
+                                  Checking uniqueness...
+                                </span>
+                              )}
+                              {!isCheckingRegNumber && regNumberAvailable && formData.ictadRegistrationNumber?.trim() && !regNumberError && (
+                                <span className="text-[10px] text-emerald-700 font-bold flex items-center gap-1">
+                                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                  Registration number is unique
+                                </span>
+                              )}
+                            </div>
+                            <input
+                              id="input-ictadRegistrationNumber"
+                              type="text"
+                              required
+                              value={formData.ictadRegistrationNumber}
+                              onChange={(e) => {
+                                setFormData({ ...formData, ictadRegistrationNumber: e.target.value });
+                                if (regNumberError) setRegNumberError(null);
+                                if (fieldErrors.ictadRegistrationNumber) clearFieldError("ictadRegistrationNumber");
+                                setRegNumberAvailable(false);
+                              }}
+                              onBlur={() => checkRegNumberUniqueness(formData.ictadRegistrationNumber || "")}
+                              placeholder="e.g. CIDA/12450"
+                              aria-invalid={Boolean(regNumberError || fieldErrors.ictadRegistrationNumber)}
+                              aria-describedby={
+                                regNumberError
+                                  ? "error-ictad-unique"
+                                  : fieldErrors.ictadRegistrationNumber
+                                    ? "error-ictadRegistrationNumber"
+                                    : undefined
+                              }
+                              className={`w-full p-2.5 rounded-lg font-mono text-slate-900 focus:outline-none transition-all ${regNumberError || fieldErrors.ictadRegistrationNumber
+                                ? "border-2 border-rose-500 bg-rose-50/50 focus:ring-2 focus:ring-rose-200 text-rose-950 font-bold"
+                                : regNumberAvailable && formData.ictadRegistrationNumber?.trim()
+                                  ? "border border-emerald-500 bg-emerald-50/20 focus:ring-emerald-600"
+                                  : "border border-slate-300 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-800"
+                                }`}
+                            />
+                            {regNumberError && (
+                              <div id="error-ictad-unique" className="flex items-start gap-1.5 p-2 mt-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-sans">
+                                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                                <span className="font-medium">{regNumberError}</span>
+                              </div>
+                            )}
+                            {!regNumberError && fieldErrors.ictadRegistrationNumber && (
+                              <div id="error-ictadRegistrationNumber" role="alert" className="flex items-start gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
+                                <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                                <span>{fieldErrors.ictadRegistrationNumber}</span>
+                              </div>
+                            )}
+                            <p className="text-[11px] text-slate-500 mt-1 font-sans">
+                              Each contractor organization must provide a unique CIDA / ICTAD registration number. Duplicate registration numbers are strictly prohibited.
+                            </p>
+                          </div>
+
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <div>
+                                <label className="block font-semibold text-slate-800 text-xs">
+                                  Areas of specialty &amp; CIDA grading * (Select all that apply)
+                                </label>
+                                <p className="text-[11px] text-slate-500">
+                                  Select one or more specialty areas and choose the corresponding CIDA grading under each.
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={handleAddSpecialtyOther}
+                                className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-900 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-3 py-1 rounded-lg transition-colors shrink-0"
+                                title="Click to add custom specialty"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                                <span>+ Add Other Specialty</span>
+                              </button>
+                            </div>
+
+                            <div
+                              id="input-areasOfSpecialty"
+                              className={`p-1.5 rounded-2xl transition-all ${fieldErrors.areasOfSpecialty ? "bg-rose-50/40 border-2 border-rose-500" : ""
+                                }`}
+                            >
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {SPECIALTY_OPTIONS.filter((s) => s !== "Other").map((spec) => {
+                                  const isChecked = (formData.areasOfSpecialty || []).includes(spec);
+                                  const gradeKey = `specialtyGrades.${spec}`;
+                                  const hasGradeError = Boolean(fieldErrors[gradeKey]);
+                                  return (
+                                    <div
+                                      key={spec}
+                                      className={`p-3.5 rounded-xl border transition-all ${isChecked
+                                        ? hasGradeError
+                                          ? "bg-rose-50/40 border-2 border-rose-500 shadow-sm"
+                                          : "bg-blue-50/70 border-2 border-blue-800 shadow-sm"
+                                        : "bg-slate-50 border-slate-200 hover:bg-slate-100/70"
+                                        }`}
+                                    >
+                                      <div className="flex items-center justify-between">
+                                        <label className="flex items-center gap-2.5 cursor-pointer">
+                                          <input
+                                            type="checkbox"
+                                            checked={isChecked}
+                                            onChange={() => {
+                                              handleSpecialtyChange(spec);
+                                              if (fieldErrors.areasOfSpecialty) clearFieldError("areasOfSpecialty");
+                                            }}
+                                            className="w-4 h-4 text-blue-900 rounded focus:ring-blue-800"
+                                          />
+                                          <span className="font-semibold text-slate-900 text-xs">{spec}</span>
+                                        </label>
+                                        {isChecked && (
+                                          <span className="text-[10px] text-blue-800 font-bold bg-blue-100 px-2 py-0.5 rounded-full">
+                                            Selected
+                                          </span>
+                                        )}
+                                      </div>
+
+                                      {/* CIDA grading under this specialty area */}
+                                      {isChecked && (
+                                        <div className="mt-2.5 pt-2.5 border-t border-blue-200/80 space-y-1.5">
+                                          <label htmlFor={getDomIdForField(gradeKey)} className="block text-[11px] font-bold text-slate-700">
+                                            CIDA Grading for {spec} *
+                                          </label>
+                                          <select
+                                            id={getDomIdForField(gradeKey)}
+                                            required
+                                            value={formData.specialtyGrades?.[spec] || ""}
+                                            onChange={(e) => {
+                                              handleSpecialtyGradeChange(spec, e.target.value);
+                                              if (fieldErrors[gradeKey]) clearFieldError(gradeKey);
+                                            }}
+                                            aria-invalid={hasGradeError}
+                                            aria-describedby={hasGradeError ? `error-${getDomIdForField(gradeKey)}` : undefined}
+                                            className={`w-full p-2 rounded-lg text-slate-900 text-xs font-semibold focus:outline-none transition-all ${hasGradeError
+                                              ? "bg-rose-50 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                              : "bg-white border border-slate-300 focus:ring-2 focus:ring-blue-800 shadow-sm"
+                                              }`}
+                                          >
+                                            <option value="">— Select CIDA Grading for {spec} —</option>
+                                            {CIDA_GRADES.map((g) => (
+                                              <option key={g} value={g}>
+                                                {g}
+                                              </option>
+                                            ))}
+                                          </select>
+                                          {hasGradeError && (
+                                            <div id={`error-${getDomIdForField(gradeKey)}`} role="alert" className="flex items-start gap-1 mt-1 text-[11px] font-semibold text-rose-600 animate-fadeIn">
+                                              <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                                              <span>{fieldErrors[gradeKey]}</span>
+                                            </div>
+                                          )}
+                                          {formData.specialtyGrades?.[spec] === "Other" && (
+                                            <input
+                                              type="text"
+                                              value={formData.specialtyGradesOther?.[spec] || ""}
+                                              onChange={(e) => handleSpecialtyGradeOtherChange(spec, e.target.value)}
+                                              placeholder={`Specify custom CIDA grading for ${spec}...`}
+                                              className="w-full p-1.5 bg-amber-50/60 border border-amber-300 rounded text-slate-900 text-xs focus:ring-1 focus:ring-blue-800 mt-1"
+                                            />
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+
+                                {/* Other Specialty Card */}
+                                {(() => {
+                                  const isOtherChecked = (formData.areasOfSpecialty || []).includes("Other");
+                                  return (
+                                    <div
+                                      id="input-specialtyOther"
+                                      className={`p-3.5 rounded-xl border transition-all sm:col-span-2 ${isOtherChecked
+                                        ? fieldErrors.specialtyOther
+                                          ? "bg-rose-50/40 border-2 border-rose-500 shadow-sm"
+                                          : "bg-blue-50/70 border-2 border-blue-800 shadow-sm"
+                                        : "bg-slate-50 border-slate-200 hover:bg-slate-100/70"
+                                        }`}
+                                    >
+                                      <div className="flex items-center justify-between">
+                                        <label className="flex items-center gap-2.5 cursor-pointer">
+                                          <input
+                                            type="checkbox"
+                                            checked={isOtherChecked}
+                                            onChange={() => {
+                                              handleSpecialtyChange("Other");
+                                              if (fieldErrors.areasOfSpecialty) clearFieldError("areasOfSpecialty");
+                                              if (fieldErrors.specialtyOther) clearFieldError("specialtyOther");
+                                            }}
+                                            className="w-4 h-4 text-blue-900 rounded focus:ring-blue-800"
+                                          />
+                                          <span className="font-semibold text-slate-900 text-xs">Other Specialty Area(s)</span>
+                                        </label>
+                                        {isOtherChecked && (
+                                          <span className="text-[10px] text-blue-800 font-bold bg-blue-100 px-2 py-0.5 rounded-full">
+                                            {specialtyOtherList.filter((s) => s.trim()).length} Specified
+                                          </span>
+                                        )}
+                                      </div>
+
+                                      {/* Under Other specialty: show specialty inputs with their CIDA grading selectors */}
+                                      {isOtherChecked && (
+                                        <div className="mt-3 pt-3 border-t border-blue-200/80 space-y-3">
+                                          <span className="text-[11px] font-bold text-slate-700 block">
+                                            Specify Other Specialty &amp; Select CIDA Grading for Each:
+                                          </span>
+
+                                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            {specialtyOtherList.map((item, idx) => {
+                                              const itemKey = item.trim() || `Other_${idx + 1}`;
+                                              return (
+                                                <div
+                                                  key={idx}
+                                                  className="p-3 bg-white border border-slate-200 rounded-xl space-y-2.5 shadow-sm"
+                                                >
+                                                  <div className="flex items-center justify-between">
+                                                    <span className="text-[11px] font-bold text-blue-900">
+                                                      Other Specialty #{idx + 1}
+                                                    </span>
+                                                    {specialtyOtherList.length > 1 && (
+                                                      <button
+                                                        type="button"
+                                                        onClick={() => handleRemoveSpecialtyOther(idx)}
+                                                        className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors"
+                                                        title="Remove specialty"
+                                                      >
+                                                        <X className="w-3.5 h-3.5" />
+                                                      </button>
+                                                    )}
+                                                  </div>
+
+                                                  <div>
+                                                    <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
+                                                      Specialty Name *
+                                                    </label>
+                                                    <input
+                                                      type="text"
+                                                      value={item}
+                                                      onChange={(e) => {
+                                                        handleUpdateSpecialtyOther(idx, e.target.value);
+                                                        if (fieldErrors.specialtyOther) clearFieldError("specialtyOther");
+                                                      }}
+                                                      placeholder={
+                                                        idx === 0
+                                                          ? "e.g. Drainage, Piling, Water Supply"
+                                                          : `Specialty #${idx + 1}`
+                                                      }
+                                                      className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
+                                                    />
+                                                  </div>
+
+                                                  <div>
+                                                    <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
+                                                      CIDA Grading {item.trim() ? `for ${item.trim()}` : ""} *
+                                                    </label>
+                                                    <select
+                                                      value={formData.specialtyGrades?.[itemKey] || ""}
+                                                      onChange={(e) => handleSpecialtyGradeChange(itemKey, e.target.value)}
+                                                      className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
+                                                    >
+                                                      <option value="">— Select CIDA Grading —</option>
+                                                      {CIDA_GRADES.map((g) => (
+                                                        <option key={g} value={g}>
+                                                          {g}
+                                                        </option>
+                                                      ))}
+                                                    </select>
+                                                    {formData.specialtyGrades?.[itemKey] === "Other" && (
+                                                      <input
+                                                        type="text"
+                                                        value={formData.specialtyGradesOther?.[itemKey] || ""}
+                                                        onChange={(e) => handleSpecialtyGradeOtherChange(itemKey, e.target.value)}
+                                                        placeholder="Specify custom grading..."
+                                                        className="w-full p-1.5 bg-amber-50/60 border border-amber-300 rounded text-slate-900 text-xs focus:ring-1 focus:ring-blue-800 mt-1"
+                                                      />
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+
+                                          {fieldErrors.specialtyOther && (
+                                            <div id="error-specialtyOther" role="alert" className="flex items-start gap-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
+                                              <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                                              <span>{fieldErrors.specialtyOther}</span>
+                                            </div>
+                                          )}
+
+                                          <div className="pt-1 flex items-center justify-between">
+                                            <button
+                                              type="button"
+                                              onClick={handleAddSpecialtyOther}
+                                              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-sm transition-all"
+                                            >
+                                              <Plus className="w-3.5 h-3.5" />
+                                              <span>+ Add Another Other Specialty</span>
+                                            </button>
+                                            <span className="text-[11px] text-slate-400 italic">
+                                              Press Enter to add another specialty
+                                            </span>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })()}
+                              </div>
+                            </div>
+
+                            {fieldErrors.areasOfSpecialty && (
+                              <div id="error-areasOfSpecialty" role="alert" className="flex items-start gap-1.5 mt-2 text-xs font-semibold text-rose-600 animate-fadeIn">
+                                <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                                <span>{fieldErrors.areasOfSpecialty}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Dynamic Questions configured for Section 5 (Contractor Details) */}
+                          {getDynamicQuestionsForSection("SEC-05").map(renderDynamicQuestionField)}
+                        </div>
+                      </div>
+
+                      {/* SECTION 5: FINANCIAL CAPABILITY & SECTION 6: LOAN COMMITMENTS */}
+                      <div className="space-y-4 pt-4 border-t border-slate-100">
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-blue-900" />
+                            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
+                              Section 5: Financial Capability &amp; Section 6: Loan Commitments
+                            </h2>
+                          </div>
+                        </div>
+
+                        <div className="p-3.5 bg-blue-50 border border-blue-200/80 rounded-xl text-xs text-blue-950">
+                          <p className="leading-relaxed">
+                            <strong>Official Instruction:</strong> All financial amounts must be entered as the <strong>full total amount in Sri Lankan Rupees (LKR)</strong>.
+                            For example, for <strong>1 Lakh (LKR 100,000)</strong> enter <strong>100000</strong> (not 1 or 1 Lakh); for <strong>10 Million</strong> enter <strong>10000000</strong>.
+                            You may enter <strong>0</strong> or leave blank if information is unrecorded. <em>Profit Before Tax may be negative if incurring a loss.</em>
+                          </p>
+                        </div>
+
+                        {/* CONSOLIDATED FINANCIAL TABLE (8 INDICATORS + 1 LOAN COMMITMENTS ROW) */}
+                        <p className="text-[11px] text-slate-400 text-right italic sm:hidden mb-1">
+                          ← Scroll to see all years →
+                        </p>
+                        <div className="border border-slate-200 rounded-xl bg-white shadow-sm">
+                          <div className="overflow-x-auto rounded-xl" style={{ WebkitOverflowScrolling: "touch" }}>
+                            <table className="w-full min-w-[700px] text-xs border-collapse">
+                              <thead>
+                                <tr className="bg-slate-100/90 border-b border-slate-200 text-slate-700">
+                                  <th className="py-3 px-3 text-left font-bold w-[230px]">
+                                    Financial Indicator (Total Amount in LKR)
+                                  </th>
+                                  {FINANCIAL_YEARS.map((year) => (
+                                    <th key={year} className="py-3 px-2 text-center font-bold text-blue-950 w-[110px]">
+                                      {year}
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-200/70">
+                                {[
+                                  { key: "totalAssets" as const, label: "Total Assets" },
+                                  { key: "totalLiabilities" as const, label: "Total Liabilities" },
+                                  {
+                                    key: "totalEquity" as const,
+                                    label: "Total Equity",
+                                    hint: "Auto: Total Assets − Liabilities",
+                                    readOnly: true,
+                                  },
+                                  { key: "currentAssets" as const, label: "Current Assets" },
+                                  { key: "currentLiabilities" as const, label: "Current Liabilities" },
+                                  {
+                                    key: "workingCapital" as const,
+                                    label: "Working Capital",
+                                    hint: "Auto: Current Assets − Liabilities",
+                                    readOnly: true,
+                                  },
+                                  { key: "totalRevenue" as const, label: "Total Revenue" },
+                                  {
+                                    key: "profitBeforeTax" as const,
+                                    label: "Profit Before Tax",
+                                    hint: "May be negative",
+                                  },
+                                ].map(({ key, label, hint, readOnly }) => (
+                                  <tr
+                                    key={key}
+                                    className={
+                                      readOnly
+                                        ? "bg-slate-50/80 hover:bg-slate-100/70 transition-colors"
+                                        : "hover:bg-slate-50/60 transition-colors"
+                                    }
+                                  >
+                                    <td className="py-2 px-3 text-slate-800 font-medium">
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <span className={readOnly ? "font-semibold text-blue-950" : ""}>{label}</span>
+                                        {hint && (
+                                          <span
+                                            className={`text-[10px] px-1.5 py-0.5 rounded font-normal ${readOnly
+                                              ? "text-blue-700 bg-blue-50 border border-blue-200/60"
+                                              : "text-amber-700 bg-amber-50 border border-amber-200/60"
+                                              }`}
+                                          >
+                                            {hint}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </td>
+                                    {FINANCIAL_YEARS.map((year) => {
+                                      const yrData =
+                                        (formData.financialStatements && formData.financialStatements[year]) ||
+                                        createEmptyFinancialIndicators();
+                                      const val = yrData[key];
+                                      const isNegative = val !== null && val !== undefined && val < 0;
+
+                                      return (
+                                        <td key={year} className="py-1.5 px-2">
+                                          <input
+                                            type={readOnly ? "text" : "number"}
+                                            readOnly={readOnly}
+                                            tabIndex={readOnly ? -1 : 0}
+                                            value={val !== null && val !== undefined ? val : ""}
+                                            onChange={(e) => !readOnly && handleFinancialChange(year, key, e.target.value)}
+                                            className={`w-full p-2 border rounded font-mono text-xs text-right transition-colors ${readOnly
+                                              ? `bg-slate-100/90 border-slate-300 font-semibold cursor-not-allowed select-none ${isNegative ? "text-rose-600 font-bold" : "text-slate-800"
+                                              }`
+                                              : `bg-slate-50 border-slate-300 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 ${isNegative ? "text-rose-600 font-bold" : ""
+                                              }`
+                                              }`}
+                                          />
+                                        </td>
+                                      );
+                                    })}
+                                  </tr>
+                                ))}
+
+                                {/* SECTION 6: ROW 9 - TOTAL LOAN REPAYMENTS DUE */}
+                                <tr className="bg-blue-50/40 border-t-2 border-slate-300">
+                                  <td className="py-3 px-3 text-slate-900 align-middle">
+                                    <div>
+                                      <span className="font-bold text-blue-950 block">
+                                        Total Loan Repayments Due (01 Dec 2026 – 01 Dec 2028)
+                                      </span>
+                                      <span className="text-[11px] font-normal text-slate-500 block leading-tight mt-0.5">
+                                        Total loan repayments due within the next two years. Enter full total amount in LKR (e.g. for 1 Lakh enter 100000, not 1 Lakh. Enter 0 if none).
+                                      </span>
+                                    </div>
+                                  </td>
+                                  <td colSpan={5} className="py-2.5 px-3">
+                                    <div className="relative">
+                                      <input
+                                        type="number"
+                                        value={formData.loanCommitments?.twoYearRepaymentsDue2026To2028 ?? ""}
+                                        onChange={(e) => {
+                                          const val = e.target.value.trim();
+                                          const num = val === "" ? null : Number(val);
+                                          setFormData({
+                                            ...formData,
+                                            loanCommitments: {
+                                              twoYearRepaymentsDue2026To2028: val === "" ? null : isNaN(num as number) ? null : num,
+                                            },
+                                          });
+                                        }}
+                                        className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono text-xs"
+                                      />
+                                      {formData.loanCommitments?.twoYearRepaymentsDue2026To2028 !== null &&
+                                        formData.loanCommitments?.twoYearRepaymentsDue2026To2028 !== undefined && (
+                                          <span className="text-[11px] font-mono font-semibold text-blue-900 bg-blue-100/70 px-2 py-0.5 rounded inline-block mt-1">
+                                            = LKR {Number(formData.loanCommitments.twoYearRepaymentsDue2026To2028).toLocaleString()}
+                                          </span>
+                                        )}
+                                    </div>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* SECTION 7: CURRENT WORK COMMITMENTS */}
+                      <div className="space-y-4 pt-4 border-t border-slate-100">
+                        <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                          <Layers className="w-4 h-4 text-blue-900" />
+                          <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
+                            Section 7: Current Work Commitments
+                          </h2>
+                        </div>
+
+                        <div className="space-y-4 text-xs">
+                          <div>
+                            <label className="block font-semibold text-slate-700 mb-2">
+                              Does your company currently have ongoing contracts? *
+                            </label>
+                            <div
+                              id="input-hasOngoingContracts"
+                              className={`flex items-center gap-4 sm:gap-6 flex-wrap p-2 rounded-xl transition-all ${fieldErrors.hasOngoingContracts ? "bg-rose-50/40 border-2 border-rose-500" : ""
+                                }`}
+                            >
+                              <label className="inline-flex items-center gap-2 cursor-pointer py-1.5 pr-2">
+                                <input
+                                  type="radio"
+                                  name="hasOngoingContracts"
+                                  value="Yes"
+                                  checked={formData.hasOngoingContracts === "Yes"}
+                                  onChange={() => {
+                                    setFormData({ ...formData, hasOngoingContracts: "Yes" });
+                                    if (fieldErrors.hasOngoingContracts) clearFieldError("hasOngoingContracts");
+                                  }}
+                                  className="w-4 h-4 text-blue-900 focus:ring-blue-800"
+                                />
+                                <span className="font-medium text-slate-800">Yes</span>
+                              </label>
+                              <label className="inline-flex items-center gap-2 cursor-pointer py-1.5 pr-2">
+                                <input
+                                  type="radio"
+                                  name="hasOngoingContracts"
+                                  value="No"
+                                  checked={formData.hasOngoingContracts === "No"}
+                                  onChange={() => {
+                                    setFormData({ ...formData, hasOngoingContracts: "No" });
+                                    if (fieldErrors.hasOngoingContracts) clearFieldError("hasOngoingContracts");
+                                  }}
+                                  className="w-4 h-4 text-blue-900 focus:ring-blue-800"
+                                />
+                                <span className="font-medium text-slate-800">No</span>
+                              </label>
+                            </div>
+                            {fieldErrors.hasOngoingContracts && (
+                              <div id="error-hasOngoingContracts" role="alert" className="flex items-start gap-1.5 mt-2 text-xs font-semibold text-rose-600 animate-fadeIn">
+                                <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                                <span>{fieldErrors.hasOngoingContracts}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* SECTION 8: ONGOING WORKS (Only if hasOngoingContracts === "Yes") */}
+                          {formData.hasOngoingContracts === "Yes" && (
+                            <div className="p-4 bg-slate-50/80 border border-slate-200 rounded-xl space-y-4">
+                              <span className="text-[11px] font-bold text-blue-900 uppercase block">
+                                Section 8: Ongoing Works Details
+                              </span>
+
+                              <div>
+                                <div className="flex items-center justify-between mb-1">
+                                  <label htmlFor="input-totalOutstandingValueLkrMillion" className="block font-semibold text-slate-700">
+                                    Total value of outstanding works as at 1 December 2026 (Total Amount in LKR) *
+                                  </label>
+                                  {ongoingTotalOutstanding > 0 && (
+                                    <span className="text-[10px] text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full font-bold">
+                                      ✓ Auto-calculated from table below
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-[11px] text-slate-500 mb-2">
+                                  Please enter the total value of works that remain to be completed under all your ongoing contracts as at 1 December 2026 in full LKR. (Calculates automatically as you enter amounts in the table below).
+                                </p>
+                                <div className="flex items-center gap-3">
+                                  <input
+                                    id="input-totalOutstandingValueLkrMillion"
+                                    type="number"
+                                    required
+                                    value={formData.totalOutstandingValueLkrMillion ?? ""}
+                                    onChange={(e) => {
+                                      const val = e.target.value.trim();
+                                      setFormData({
+                                        ...formData,
+                                        totalOutstandingValueLkrMillion: val === "" ? null : Number(val),
+                                      });
+                                      if (fieldErrors.totalOutstandingValueLkrMillion) clearFieldError("totalOutstandingValueLkrMillion");
+                                    }}
+                                    aria-invalid={Boolean(fieldErrors.totalOutstandingValueLkrMillion)}
+                                    aria-describedby={fieldErrors.totalOutstandingValueLkrMillion ? "error-totalOutstandingValueLkrMillion" : undefined}
+                                    className={`w-full sm:w-72 p-2.5 rounded-lg text-slate-900 focus:outline-none font-mono font-bold transition-all ${fieldErrors.totalOutstandingValueLkrMillion
+                                      ? "bg-rose-50/40 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                      : "bg-white border border-slate-300 focus:ring-2 focus:ring-blue-800"
+                                      }`}
+                                  />
+                                  {formData.totalOutstandingValueLkrMillion !== null &&
+                                    formData.totalOutstandingValueLkrMillion !== undefined && (
+                                      <span className="text-xs font-mono font-bold text-blue-900 bg-blue-100/70 px-2.5 py-1.5 rounded-lg border border-blue-200">
+                                        = LKR {Number(formData.totalOutstandingValueLkrMillion).toLocaleString()}
+                                      </span>
+                                    )}
+                                </div>
+                                {fieldErrors.totalOutstandingValueLkrMillion && (
+                                  <div id="error-totalOutstandingValueLkrMillion" role="alert" className="flex items-start gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
+                                    <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                                    <span>{fieldErrors.totalOutstandingValueLkrMillion}</span>
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="space-y-3 pt-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-bold text-slate-800 text-[11px] block uppercase tracking-wide">
+                                    Key Ongoing Contracts (Optional)
+                                  </span>
+                                  <span className="text-[10px] text-slate-500 font-semibold bg-slate-100 px-2 py-0.5 rounded-full">
+                                    {(formData.ongoingContracts || []).filter((c) => c.contractName).length} of{" "}
+                                    {(formData.ongoingContracts || []).length} Specified
+                                  </span>
+                                </div>
+
+                                <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+                                  <table className="w-full min-w-[980px] text-left border-collapse text-xs">
+                                    <thead>
+                                      <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-700 font-bold uppercase text-[10px] tracking-wider">
+                                        <th className="p-3 w-12 text-center">No</th>
+                                        <th className="p-3 min-w-[200px]">Name of contract</th>
+                                        <th className="p-3 w-40">Contract No</th>
+                                        <th className="p-3 min-w-[180px]">Employer's Name</th>
+                                        <th className="p-3 w-56">Value of outstanding work(LKR) as at 1st December</th>
+                                        <th className="p-3 w-44">Estimated completion date</th>
+                                        <th className="p-3 w-14 text-center">Action</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-200/80">
+                                      {(formData.ongoingContracts || createEmptyOngoingWorks()).map((contract, idx) => (
+                                        <tr key={idx} className="hover:bg-slate-50/70 transition-colors">
+                                          <td className="p-3 text-center font-bold text-blue-900 bg-slate-50/50 align-top pt-4">
+                                            #{idx + 1}
+                                          </td>
+                                          <td className="p-3 align-top">
+                                            <input
+                                              type="text"
+                                              value={contract.contractName || ""}
+                                              onChange={(e) => handleOngoingContractChange(idx, "contractName", e.target.value)}
+                                              placeholder="Name of contract"
+                                              className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
+                                            />
+                                          </td>
+                                          <td className="p-3 align-top">
+                                            <input
+                                              type="text"
+                                              value={contract.contractNo || ""}
+                                              onChange={(e) => handleOngoingContractChange(idx, "contractNo", e.target.value)}
+                                              placeholder="Contract No"
+                                              className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
+                                            />
+                                          </td>
+                                          <td className="p-3 align-top">
+                                            <input
+                                              type="text"
+                                              value={contract.employerName || ""}
+                                              onChange={(e) => handleOngoingContractChange(idx, "employerName", e.target.value)}
+                                              placeholder="Employer's Name"
+                                              className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
+                                            />
+                                          </td>
+                                          <td className="p-3 align-top space-y-1">
+                                            <input
+                                              type="number"
+                                              value={contract.contractAmount ?? ""}
+                                              onChange={(e) => handleOngoingContractChange(idx, "contractAmount", e.target.value)}
+                                              placeholder="Amount in LKR"
+                                              className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
+                                            />
+                                            {contract.contractAmount !== null && contract.contractAmount !== undefined && contract.contractAmount !== "" && (
+                                              <span className="text-[10px] font-mono text-slate-600 block">
+                                                = LKR {Number(contract.contractAmount).toLocaleString()}
+                                              </span>
+                                            )}
+                                          </td>
+                                          <td className="p-3 align-top">
+                                            <input
+                                              type="date"
+                                              value={contract.completionDate || ""}
+                                              onChange={(e) => handleOngoingContractChange(idx, "completionDate", e.target.value)}
+                                              className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
+                                            />
+                                          </td>
+                                          <td className="p-3 text-center align-top pt-4">
+                                            {(formData.ongoingContracts || []).length > 1 && (
+                                              <button
+                                                type="button"
+                                                onClick={() => handleRemoveOngoingContract(idx)}
+                                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                                                title="Remove contract row"
+                                              >
+                                                <Trash2 className="w-4 h-4" />
+                                              </button>
+                                            )}
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                    <tfoot>
+                                      <tr className="bg-blue-50/80 border-t-2 border-blue-200 text-xs font-bold">
+                                        <td colSpan={4} className="p-3 text-right text-blue-950 font-bold uppercase tracking-wider">
+                                          <div className="flex items-center justify-end gap-2">
+                                            <span className="text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-mono font-bold">
+                                              AUTO-CALCULATED
+                                            </span>
+                                            <span>Total Value of Outstanding Work:</span>
+                                          </div>
+                                        </td>
+                                        <td className="p-3">
+                                          <div className="p-2 bg-white border-2 border-blue-600 rounded-lg text-blue-950 font-mono font-bold text-sm shadow-sm">
+                                            LKR {ongoingTotalOutstanding.toLocaleString()}
+                                          </div>
+                                        </td>
+                                        <td colSpan={2} className="p-3 text-slate-500 text-[11px] font-normal italic">
+                                          Sum of all ongoing contracts as at 1st Dec
+                                        </td>
+                                      </tr>
+                                    </tfoot>
+                                  </table>
+                                </div>
+
+                                <div className="flex items-center justify-between pt-1">
+                                  <button
+                                    type="button"
+                                    onClick={handleAddOngoingContract}
+                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-sm transition-all"
+                                  >
+                                    <Plus className="w-4 h-4" />
+                                    <span>+ Add Ongoing Contract</span>
+                                  </button>
+                                  <span className="text-[10px] text-slate-400 italic">
+                                    You can add additional ongoing contracts as needed
+                                  </span>
+                                </div>
+                              </div>
                             </div>
                           )}
                         </div>
                       </div>
-                    </div>
 
-                    {/* SECTION 10: SIMILAR WORK EXPERIENCE */}
-                    <div id="section-10-container" className="space-y-4 pt-4 border-t border-slate-100">
-                      <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                        <div className="flex items-center gap-2">
-                          <FileText className="w-4 h-4 text-blue-900" />
+                      {/* SECTION 9: GENERAL EXPERIENCE */}
+                      <div className="space-y-4 pt-4 border-t border-slate-100">
+                        <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                          <Briefcase className="w-4 h-4 text-blue-900" />
                           <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
-                            Section 10: Similar Work Experience
+                            Section 9: Experience
                           </h2>
                         </div>
-                      </div>
 
-                      {fieldErrors["similarWorks.descending"] && (
-                        <div id="error-similarWorks-descending" role="alert" className="p-3 bg-rose-50 border-2 border-rose-500 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-rose-900 font-semibold animate-fadeIn">
-                          <div className="flex items-start gap-2">
-                            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-                            <span>{fieldErrors["similarWorks.descending"]}</span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              handleSortSimilarWorksDescending();
-                              clearFieldError("similarWorks.descending");
-                            }}
-                            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shrink-0 transition-colors shadow-sm"
-                          >
-                            <ArrowUpDown className="w-3.5 h-3.5" />
-                            <span>Sort by Highest Value First</span>
-                          </button>
-                        </div>
-                      )}
-
-                      <div className="p-3.5 bg-amber-50 border border-amber-200/80 rounded-xl text-xs text-amber-900 flex items-start gap-2.5">
-                        <HelpCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                        <div className="leading-relaxed space-y-1">
-                          <p>
-                            <strong>Official Instruction:</strong> Please provide details of the highest-value contracts your organization has completed within the last five years (December 2021 to November 2026) that are similar in nature to the proposed works.
-                          </p>
-                          <p className="font-semibold text-amber-950">
-                            ⚠️ <strong>Required Order: Higher Value to Lower Value (Descending)</strong> — Contract #1 must be your largest contract by amount. Subsequent contracts must be equal or lower in value. If entered out of order, you can use the <strong>"Sort by Highest Value First"</strong> button below.
-                          </p>
-                          <p className="text-[11px] text-amber-800">
-                            For firms without relevant experience, please enter <strong>N/A</strong> in the Contract Name field and leave the other fields blank.
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="space-y-3">
-                        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-                          <table className="w-full min-w-[960px] text-left border-collapse text-xs">
-                            <thead>
-                              <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-700 font-bold uppercase text-[10px] tracking-wider">
-                                <th className="p-3 w-12 text-center">#</th>
-                                <th className="p-3 min-w-[200px]">Contract Name / Project</th>
-                                <th className="p-3 w-48">Contract Type</th>
-                                <th className="p-3 w-48">
-                                  <div className="flex flex-col">
-                                    <span>Amount (LKR) *</span>
-                                    <span className="text-[9px] text-amber-700 font-bold normal-case tracking-normal">
-                                      (Higher to Lower ↓)
-                                    </span>
-                                  </div>
-                                </th>
-                                <th className="p-3 w-52">Duration (Start - Completion)</th>
-                                <th className="p-3 w-48">Completion Status</th>
-                                <th className="p-3 w-14 text-center">Action</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-200/80">
-                              {(formData.similarWorks || createEmptySimilarWorks()).map((contract, idx) => {
-                                const isNA = Boolean(contract.contractName && contract.contractName.trim().toUpperCase() === "N/A");
-                                const currentAmount = Number(contract.contractAmount);
-                                const hasValidAmount = !isNA && !isNaN(currentAmount) && contract.contractAmount !== null && contract.contractAmount !== undefined && contract.contractAmount !== "";
-
-                                const nameErr = fieldErrors[`similarWorks.${idx}.contractName`];
-                                const typeErr = fieldErrors[`similarWorks.${idx}.contractType`];
-                                const amtErr = fieldErrors[`similarWorks.${idx}.contractAmount`];
-                                const startErr = fieldErrors[`similarWorks.${idx}.startDate`];
-                                const endErr = fieldErrors[`similarWorks.${idx}.completionDate`];
-                                const statusErr = fieldErrors[`similarWorks.${idx}.completionStatus`];
-
-                                // Check if current contract amount violates descending order compared to previous contract with amount
-                                let prevAmount: number | null = null;
-                                let prevContractNum: number | null = null;
-                                if (hasValidAmount && idx > 0) {
-                                  const allList = formData.similarWorks || [];
-                                  for (let p = idx - 1; p >= 0; p--) {
-                                    const prevC = allList[p];
-                                    if (prevC && prevC.contractName && prevC.contractName.trim().toUpperCase() !== "N/A" && prevC.contractAmount !== null && prevC.contractAmount !== undefined && prevC.contractAmount !== "") {
-                                      const pVal = Number(prevC.contractAmount);
-                                      if (!isNaN(pVal)) {
-                                        prevAmount = pVal;
-                                        prevContractNum = p + 1;
-                                        break;
-                                      }
-                                    }
-                                  }
-                                }
-                                const isOrderViolation = prevAmount !== null && currentAmount > prevAmount;
-
-                                return (
-                                  <tr
-                                    key={idx}
-                                    className={`hover:bg-slate-50/70 transition-colors ${
-                                      isNA ? "bg-slate-50/40 opacity-70" : isOrderViolation || amtErr || nameErr ? "bg-rose-50/30" : ""
-                                    }`}
-                                  >
-                                    <td className="p-3 text-center font-bold text-blue-900 bg-slate-50/50 align-top pt-4">
-                                      #{idx + 1}
-                                    </td>
-                                    <td className="p-3 align-top space-y-1">
-                                      <input
-                                        id={`input-similarWorks-${idx}-contractName`}
-                                        type="text"
-                                        value={contract.contractName || ""}
-                                        onChange={(e) => {
-                                          handleContractChange(idx, "contractName", e.target.value);
-                                          if (nameErr) clearFieldError(`similarWorks.${idx}.contractName`);
-                                        }}
-                                        placeholder={idx === 0 ? "Project Title or enter N/A *" : "Project Title"}
-                                        aria-invalid={Boolean(nameErr)}
-                                        className={`w-full p-2 rounded text-slate-900 focus:outline-none transition-all ${
-                                          nameErr
-                                            ? "bg-rose-50 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
-                                            : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
-                                        }`}
-                                      />
-                                      {nameErr && (
-                                        <div role="alert" className="flex items-start gap-1 text-[11px] font-semibold text-rose-600 animate-fadeIn">
-                                          <AlertCircle className="w-3 h-3 shrink-0 mt-0.5 text-rose-500" />
-                                          <span>{nameErr}</span>
-                                        </div>
-                                      )}
-                                      {isNA && (
-                                        <span className="text-[10px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded font-mono font-bold inline-block">
-                                          Marked N/A
-                                        </span>
-                                      )}
-                                    </td>
-                                    <td className="p-3 align-top space-y-1">
-                                      <select
-                                        id={`input-similarWorks-${idx}-contractType`}
-                                        disabled={isNA}
-                                        value={contract.contractType || ""}
-                                        onChange={(e) => {
-                                          handleContractChange(idx, "contractType", e.target.value);
-                                          if (typeErr) clearFieldError(`similarWorks.${idx}.contractType`);
-                                        }}
-                                        aria-invalid={Boolean(typeErr)}
-                                        className={`w-full p-2 rounded text-slate-900 focus:outline-none font-medium disabled:opacity-50 transition-all ${
-                                          typeErr
-                                            ? "bg-rose-50 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
-                                            : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
-                                        }`}
-                                      >
-                                        <option value="">— Select Type —</option>
-                                        {CONTRACT_TYPE_OPTIONS.map((t) => (
-                                          <option key={t} value={t}>
-                                            {t}
-                                          </option>
-                                        ))}
-                                      </select>
-                                      {typeErr && (
-                                        <div role="alert" className="flex items-start gap-1 text-[11px] font-semibold text-rose-600 animate-fadeIn">
-                                          <AlertCircle className="w-3 h-3 shrink-0 mt-0.5 text-rose-500" />
-                                          <span>{typeErr}</span>
-                                        </div>
-                                      )}
-                                      {contract.contractType === "Other" && (
-                                        <input
-                                          type="text"
-                                          disabled={isNA}
-                                          value={(contract as any).contractTypeOther || ""}
-                                          onChange={(e) => handleContractChange(idx, "contractTypeOther", e.target.value)}
-                                          placeholder="Specify contract type..."
-                                          className="w-full p-1.5 bg-amber-50/60 border border-amber-300 rounded text-slate-900 text-xs focus:ring-1 focus:ring-blue-800 disabled:opacity-50"
-                                        />
-                                      )}
-                                    </td>
-                                    <td className="p-3 align-top space-y-1">
-                                      <input
-                                        id={`input-similarWorks-${idx}-contractAmount`}
-                                        type="number"
-                                        disabled={isNA}
-                                        value={contract.contractAmount ?? ""}
-                                        onChange={(e) => {
-                                          handleContractChange(idx, "contractAmount", e.target.value);
-                                          if (amtErr) clearFieldError(`similarWorks.${idx}.contractAmount`);
-                                        }}
-                                        placeholder="Amount in LKR"
-                                        aria-invalid={Boolean(amtErr || isOrderViolation)}
-                                        className={`w-full p-2 border rounded text-slate-900 focus:outline-none focus:ring-2 font-mono disabled:opacity-50 transition-all ${
-                                          amtErr || isOrderViolation
-                                            ? "border-2 border-rose-500 bg-rose-50/60 focus:ring-rose-200 text-rose-900 font-bold"
-                                            : "border-slate-300 bg-slate-50 focus:bg-white focus:ring-blue-800"
-                                        }`}
-                                      />
-                                      {amtErr && (
-                                        <div role="alert" className="flex items-start gap-1 text-[11px] font-semibold text-rose-600 animate-fadeIn">
-                                          <AlertCircle className="w-3 h-3 shrink-0 mt-0.5 text-rose-500" />
-                                          <span>{amtErr}</span>
-                                        </div>
-                                      )}
-                                      {!isNA && contract.contractAmount !== null && contract.contractAmount !== undefined && contract.contractAmount !== "" && (
-                                        <span className="text-[10px] font-mono text-slate-600 block">
-                                          = LKR {Number(contract.contractAmount).toLocaleString()}
-                                        </span>
-                                      )}
-                                      {isOrderViolation && !amtErr && (
-                                        <div className="flex items-start gap-1 p-1.5 mt-1 rounded bg-rose-50 border border-rose-200 text-rose-700 text-[10px] leading-tight font-sans">
-                                          <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-rose-600 mt-0.5" />
-                                          <span>
-                                            Must be &le; Contract #{prevContractNum} (LKR {prevAmount!.toLocaleString()}). Please enter higher value to lower value.
-                                          </span>
-                                        </div>
-                                      )}
-                                    </td>
-                                    <td className="p-3 align-top">
-                                      <div className="space-y-1">
-                                        <div className="flex items-center gap-1">
-                                          <span className="text-[10px] text-slate-400 w-9 shrink-0 font-medium">Start:</span>
-                                          <input
-                                            id={`input-similarWorks-${idx}-startDate`}
-                                            type="date"
-                                            disabled={isNA}
-                                            value={contract.startDate || ""}
-                                            onChange={(e) => {
-                                              handleContractChange(idx, "startDate", e.target.value);
-                                              if (startErr) clearFieldError(`similarWorks.${idx}.startDate`);
-                                            }}
-                                            aria-invalid={Boolean(startErr)}
-                                            className={`flex-1 p-1.5 rounded text-slate-900 text-[11px] focus:outline-none transition-all disabled:opacity-50 ${
-                                              startErr
-                                                ? "bg-rose-50 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
-                                                : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
-                                            }`}
-                                          />
-                                        </div>
-                                        {startErr && (
-                                          <div role="alert" className="flex items-start gap-1 text-[10px] font-semibold text-rose-600 animate-fadeIn">
-                                            <AlertCircle className="w-3 h-3 shrink-0 mt-0.5 text-rose-500" />
-                                            <span>{startErr}</span>
-                                          </div>
-                                        )}
-                                        <div className="flex items-center gap-1">
-                                          <span className="text-[10px] text-slate-400 w-9 shrink-0 font-medium">End:</span>
-                                          <input
-                                            id={`input-similarWorks-${idx}-completionDate`}
-                                            type="date"
-                                            disabled={isNA}
-                                            value={contract.completionDate || ""}
-                                            onChange={(e) => {
-                                              handleContractChange(idx, "completionDate", e.target.value);
-                                              if (endErr) clearFieldError(`similarWorks.${idx}.completionDate`);
-                                            }}
-                                            aria-invalid={Boolean(endErr)}
-                                            className={`flex-1 p-1.5 rounded text-slate-900 text-[11px] focus:outline-none transition-all disabled:opacity-50 ${
-                                              endErr
-                                                ? "bg-rose-50 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
-                                                : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
-                                            }`}
-                                          />
-                                        </div>
-                                        {endErr && (
-                                          <div role="alert" className="flex items-start gap-1 text-[10px] font-semibold text-rose-600 animate-fadeIn">
-                                            <AlertCircle className="w-3 h-3 shrink-0 mt-0.5 text-rose-500" />
-                                            <span>{endErr}</span>
-                                          </div>
-                                        )}
-                                      </div>
-                                    </td>
-                                    <td className="p-3 align-top">
-                                      <select
-                                        id={`input-similarWorks-${idx}-completionStatus`}
-                                        disabled={isNA}
-                                        value={contract.completionStatus || ""}
-                                        onChange={(e) => {
-                                          handleContractChange(idx, "completionStatus", e.target.value);
-                                          if (statusErr) clearFieldError(`similarWorks.${idx}.completionStatus`);
-                                        }}
-                                        aria-invalid={Boolean(statusErr)}
-                                        className={`w-full p-2 rounded text-slate-900 focus:outline-none font-medium disabled:opacity-50 transition-all ${
-                                          statusErr
-                                            ? "bg-rose-50 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
-                                            : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
-                                        }`}
-                                      >
-                                        <option value="">— Select Status —</option>
-                                        {COMPLETION_STATUS_OPTIONS.map((s) => (
-                                          <option key={s} value={s}>
-                                            {s}
-                                          </option>
-                                        ))}
-                                      </select>
-                                      {statusErr && (
-                                        <div role="alert" className="flex items-start gap-1 text-[11px] font-semibold text-rose-600 animate-fadeIn">
-                                          <AlertCircle className="w-3 h-3 shrink-0 mt-0.5 text-rose-500" />
-                                          <span>{statusErr}</span>
-                                        </div>
-                                      )}
-                                    </td>
-                                    <td className="p-3 text-center align-top pt-4">
-                                      {(formData.similarWorks || []).length > 1 && (
-                                        <button
-                                          type="button"
-                                          onClick={() => handleRemoveSimilarWork(idx)}
-                                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
-                                          title="Remove contract row"
-                                        >
-                                          <Trash2 className="w-4 h-4" />
-                                        </button>
-                                      )}
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                        </div>
-
-                        <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={handleAddSimilarWork}
-                              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-sm transition-all"
-                            >
-                              <Plus className="w-4 h-4" />
-                              <span>+ Add Similar Work Contract</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={handleSortSimilarWorksDescending}
-                              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 hover:text-blue-900 rounded-lg shadow-sm transition-all"
-                              title="Automatically reorder contracts from highest value to lowest value"
-                            >
-                              <ArrowUpDown className="w-4 h-4 text-blue-900" />
-                              <span>Sort by Highest Value First</span>
-                            </button>
-                          </div>
-                          <span className="text-[10px] text-slate-500 font-medium">
-                            Enter contracts in descending order (highest value first)
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {/* ------------------------------------------------------------- */}
-                {/* SECTION 11: MATTERS FOR DISCUSSION (ALL PARTICIPATING ATTENDEES) */}
-                {/* ------------------------------------------------------------- */}
-                <div className="space-y-4 pt-4 border-t border-slate-100">
-                  <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-                    <FileText className="w-4 h-4 text-blue-900" />
-                    <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
-                      Section 11: Matters for Discussion
-                    </h2>
-                  </div>
-
-                  <div className="space-y-3 text-xs">
-                    <div>
-                      <label className="block font-semibold text-slate-700">
-                        Do you have any specific matters, concerns or suggestions that you would like to be discussed during the Early Market Engagement Workshop? (Optional)
-                      </label>
-                      <p className="text-slate-500 text-[11px] leading-relaxed mt-0.5">
-                        Please add each matter, concern, or suggestion separately below. Participants are encouraged to share topics relating to market conditions, technical requirements, procurement arrangements, implementation challenges, or other issues relevant to ICDP activities.
-                      </p>
-                    </div>
-
-                    <div className="space-y-3">
-                      {(formData.mattersForDiscussionList && formData.mattersForDiscussionList.length > 0
-                        ? formData.mattersForDiscussionList
-                        : [""]
-                      ).map((matter, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-start gap-2.5 p-3 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-slate-50 transition-colors focus-within:bg-white focus-within:border-blue-700 focus-within:ring-2 focus-within:ring-blue-800/10 shadow-sm"
-                        >
-                          <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-blue-900 text-white font-bold text-xs shrink-0 shadow-sm mt-0.5">
-                            #{idx + 1}
-                          </div>
-
-                          <div className="flex-1 space-y-1">
-                            <label className="text-[11px] font-bold text-slate-700 block">
-                              Matter / Suggestion #{idx + 1}
+                        <div className="space-y-4 text-xs">
+                          <div>
+                            <label htmlFor="input-generalExperience" className="block font-semibold text-slate-700 mb-1">
+                              How many years of general experience does your company have in the construction industry? *
                             </label>
-                            <textarea
-                              rows={2}
-                              value={matter}
-                              onChange={(e) => handleMatterChange(idx, e.target.value)}
-                              placeholder={`Enter specific matter, concern, or suggestion #${idx + 1}...`}
-                              className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:outline-none focus:ring-1 focus:ring-blue-800 placeholder:text-slate-400"
-                            />
-                          </div>
-
-                          <div className="pt-6 shrink-0">
-                            {(formData.mattersForDiscussionList || [""]).length > 1 && (
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveMatter(idx)}
-                                className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                                title="Remove this matter"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+                            <select
+                              id="input-generalExperience"
+                              value={formData.generalExperience || ""}
+                              onChange={(e) => {
+                                setFormData({
+                                  ...formData,
+                                  generalExperience: e.target.value as GeneralExperienceOption,
+                                });
+                                if (fieldErrors.generalExperience) clearFieldError("generalExperience");
+                              }}
+                              aria-invalid={Boolean(fieldErrors.generalExperience)}
+                              aria-describedby={fieldErrors.generalExperience ? "error-generalExperience" : undefined}
+                              className={`w-full p-2.5 rounded-lg text-slate-900 focus:outline-none font-medium transition-all ${fieldErrors.generalExperience
+                                ? "bg-rose-50/40 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
+                                }`}
+                            >
+                              <option value="">— Select General Construction Experience —</option>
+                              {GENERAL_EXP_OPTIONS.map((opt) => (
+                                <option key={opt} value={opt}>
+                                  {opt}
+                                </option>
+                              ))}
+                            </select>
+                            {fieldErrors.generalExperience && (
+                              <div id="error-generalExperience" role="alert" className="flex items-start gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
+                                <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                                <span>{fieldErrors.generalExperience}</span>
+                              </div>
                             )}
                           </div>
                         </div>
-                      ))}
-                    </div>
-
-                    <div className="pt-1 flex flex-wrap items-center justify-between gap-2">
-                      <button
-                        type="button"
-                        onClick={handleAddMatter}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-sm transition-all"
-                      >
-                        <Plus className="w-4 h-4" />
-                        <span>+ Add Another Matter / Suggestion</span>
-                      </button>
-                      <span className="text-[10px] text-slate-400 italic">
-                        You can add multiple separate discussion matters as needed
-                      </span>
-                    </div>
-
-                    {getDynamicQuestionsForSection("SEC-11")
-                      .concat(getDynamicQuestionsForSection("sec-matters-discussion"))
-                      .map(renderDynamicQuestionField)}
-                  </div>
-                </div>
-
-                {/* Additional Dynamic Sections added via Form Builder */}
-                {getAdditionalDynamicSections().map((sec: any) => (
-                  <div key={sec.id} className="space-y-4 pt-4 border-t border-slate-100">
-                    <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-                      <Building2 className="w-4 h-4 text-blue-900" />
-                      <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
-                        {sec.title}
-                      </h2>
-                    </div>
-                    {sec.description && <p className="text-xs text-slate-500">{sec.description}</p>}
-                    <div className="space-y-4 text-xs">
-                      {sec.questions.map(renderDynamicQuestionField)}
-                    </div>
-                  </div>
-                ))}
-
-                {/* Alert Banner (Bottom of Form) */}
-                {formAlert && (
-                  <div
-                    className={`p-4 rounded-xl border text-xs flex items-start gap-2.5 ${
-                      formAlert.type === "success"
-                        ? "bg-emerald-50 border-emerald-200 text-emerald-900"
-                        : "bg-rose-50 border-rose-200 text-rose-900"
-                    }`}
-                  >
-                    {formAlert.type === "success" ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    ) : (
-                      <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-                    )}
-                    <span className="leading-relaxed font-semibold">{formAlert.message}</span>
-                  </div>
-                )}
-
-                {/* Validation Summary Bar (Bottom of Form) */}
-                {Object.keys(fieldErrors).length > 0 && (
-                  <div
-                    id="validation-summary-bottom"
-                    role="alert"
-                    className="p-4 bg-rose-50 border-2 border-rose-500 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-rose-900 shadow-md animate-fadeIn"
-                  >
-                    <div className="flex items-start gap-2.5">
-                      <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="font-extrabold text-sm text-rose-950">
-                          {Object.keys(fieldErrors).length === 1
-                            ? "1 required field requires your attention"
-                            : `${Object.keys(fieldErrors).length} required fields require your attention`}
-                        </p>
-                        <p className="text-[11px] text-rose-700 mt-0.5">
-                          Please correct the highlighted fields before submitting your official response.
-                        </p>
                       </div>
-                    </div>
-                    {getNextErrorFieldKey() && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const nextKey = getNextErrorFieldKey();
-                          if (nextKey) scrollToAndFocusField(nextKey);
-                        }}
-                        className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow transition-colors shrink-0"
-                      >
-                        <ArrowDown className="w-3.5 h-3.5" />
-                        <span>Navigate to First Error</span>
-                      </button>
-                    )}
-                  </div>
-                )}
 
-                {/* ACTION BAR */}
-                <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
-                  <button
-                    type="button"
-                    onClick={() => performDraftSave(false)}
-                    disabled={loading}
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-5 py-3 sm:py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-sm transition-all min-h-[44px]"
-                  >
-                    {loading ? (
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-900" />
-                    ) : (
-                      <Save className="w-3.5 h-3.5 text-blue-900" />
-                    )}
-                    <span>
-                      {currentReference ? `Save Draft (${currentReference})` : "Save as Draft"}
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleInitiateReview}
-                    disabled={loading}
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 sm:py-2.5 rounded-xl bg-gradient-to-r from-blue-900 to-blue-800 hover:from-blue-800 hover:to-blue-700 text-white font-extrabold text-xs shadow-md shadow-blue-900/20 transition-all min-h-[44px]"
-                  >
-                    {loading ? (
-                      <>
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                        <span>Validating Form...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Eye className="w-4 h-4 text-amber-400" />
-                        <span>Review &amp; Submit Questionnaire Response</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      </>
-    )}
-
-    {/* ========================================================================= */}
-    {/* OFFICIAL REGISTRATION REVIEW & CONFIRMATION MODAL                         */}
-    {/* ========================================================================= */}
-    {showReviewModal && (
-      <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 md:p-6 overflow-hidden animate-fadeIn">
-        <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-4xl w-full max-h-[92vh] flex flex-col overflow-hidden">
-          {/* Modal Header */}
-          <div className="bg-[#0b1f3a] text-white px-5 py-4 sm:px-6 sm:py-5 flex items-center justify-between shrink-0 border-b border-white/10">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] tracking-wider font-bold text-amber-400 uppercase">
-                  RDA Sri Lanka &bull; Verification Area
-                </span>
-                <span className="px-2 py-0.5 rounded text-[8px] bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-400/30">
-                  PRE-SUBMISSION REVIEW
-                </span>
-              </div>
-              <h2 className="text-base sm:text-lg font-bold tracking-tight text-white mt-0.5 truncate">
-                Review All Registration Details
-              </h2>
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowReviewModal(false)}
-              className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
-              title="Close and Return to Form"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-
-          {/* Modal Body - Scrollable */}
-          <div className="overflow-y-auto p-4 sm:p-6 space-y-5 flex-1 bg-slate-50/60 text-xs text-slate-800">
-            {/* Review Guidance Alert */}
-            <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-3">
-              <Info className="w-4 h-4 text-blue-900 shrink-0 mt-0.5" />
-              <div className="text-blue-950 space-y-0.5 leading-relaxed">
-                <span className="font-bold block text-xs sm:text-sm">Please verify your details below</span>
-                <p className="text-[11px] text-blue-900/90">
-                  Carefully review all information entered across every section. If any details are incorrect, click <strong>&quot;Modify / Edit Details&quot;</strong> to return to the form and edit. Once verified, click <strong>&quot;Confirm &amp; Submit Directly&quot;</strong> to complete your official filing to the Road Development Authority.
-                </p>
-              </div>
-            </div>
-
-            {/* Section 1: Basic Information & Attendance */}
-            <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3">
-              <div className="flex items-center gap-2 pb-2 border-b border-slate-100 font-bold text-blue-950 uppercase tracking-wide text-[11px]">
-                <Building2 className="w-3.5 h-3.5 text-blue-900" />
-                <span>Section 1: Basic Information &amp; Workshop Attendance</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div>
-                  <span className="text-slate-500 font-medium text-[11px] block">Organization / Company Name:</span>
-                  <span className="font-bold text-slate-900 text-sm">{formData.organizationName || formData.supplierDetails?.companyName || "N/A"}</span>
-                </div>
-                <div>
-                  <span className="text-slate-500 font-medium text-[11px] block">Workshop Attendance:</span>
-                  <span className={`inline-block mt-0.5 px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                    formData.willParticipate === "Yes" ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"
-                  }`}>
-                    {formData.willParticipate === "Yes" ? "Yes — Will Attend (07 Dec 2026)" : "No — Unable to Attend"}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-slate-500 font-medium text-[11px] block">Official Contact Number:</span>
-                  <span className="font-semibold text-slate-800 font-mono">{formData.contactNumber || "N/A"}</span>
-                </div>
-                <div>
-                  <span className="text-slate-500 font-medium text-[11px] block">Official Email Address:</span>
-                  <span className="font-semibold text-slate-800 font-mono">{formData.email || "N/A"}</span>
-                </div>
-                {formData.willParticipate === "Yes" && (
-                  <div className="sm:col-span-2 pt-1 border-t border-slate-100">
-                    <span className="text-slate-500 font-medium text-[11px] block">Participant Category:</span>
-                    <span className="font-bold text-blue-950 text-xs">
-                      {formData.participantCategory || "N/A"}
-                    </span>
-                  </div>
-                )}
-                {formData.willParticipate === "No" && (
-                  <div className="sm:col-span-2 pt-1 border-t border-slate-100">
-                    <span className="text-slate-500 font-medium text-[11px] block">Status:</span>
-                    <span className="text-slate-600 text-xs italic">Declination of attendance recorded.</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Section 3: Official Representatives */}
-            {formData.willParticipate === "Yes" && (
-              <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3">
-                <div className="flex items-center gap-2 pb-2 border-b border-slate-100 font-bold text-blue-950 uppercase tracking-wide text-[11px]">
-                  <Users className="w-3.5 h-3.5 text-blue-900" />
-                  <span>Designated Workshop Representatives</span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  {/* Participant 1 */}
-                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
-                    <span className="text-[10px] font-bold text-blue-900 uppercase">Primary Representative (Participant 1)</span>
-                    <p className="font-bold text-slate-900 text-sm">{formData.participant1?.fullName || "N/A"}</p>
-                    <p className="text-slate-600 font-medium">{formData.participant1?.designation || "N/A"}</p>
-                    <div className="pt-1 text-[11px] text-slate-500 font-mono space-y-0.5">
-                      <div>Phone: {formData.participant1?.mobileNumber || "N/A"}</div>
-                      <div>Email: {formData.participant1?.email || "N/A"}</div>
-                    </div>
-                  </div>
-                  {/* Participant 2 */}
-                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
-                    <span className="text-[10px] font-bold text-slate-600 uppercase">Second Representative (Participant 2)</span>
-                    {formData.participant2?.fullName?.trim() ? (
-                      <>
-                        <p className="font-bold text-slate-900 text-sm">{formData.participant2.fullName}</p>
-                        <p className="text-slate-600 font-medium">{formData.participant2.designation || "N/A"}</p>
-                        <div className="pt-1 text-[11px] text-slate-500 font-mono space-y-0.5">
-                          <div>Phone: {formData.participant2.mobileNumber || "N/A"}</div>
-                          {formData.participant2.email && <div>Email: {formData.participant2.email}</div>}
+                      {/* SECTION 10: SIMILAR WORK EXPERIENCE */}
+                      <div id="section-10-container" className="space-y-4 pt-4 border-t border-slate-100">
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                          <div className="flex items-center gap-2">
+                            <FileText className="w-4 h-4 text-blue-900" />
+                            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
+                              Section 10: Similar Work Experience
+                            </h2>
+                          </div>
                         </div>
-                      </>
-                    ) : (
-                      <p className="text-slate-400 italic text-xs pt-1">No second representative designated.</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
 
-            {/* CONTRACTOR SPECIFIC SECTIONS */}
-            {formData.willParticipate === "Yes" && formData.participantCategory === "Contractor" && (
-              <>
-                {/* Section 4: Contractor Specialties & CIDA Grades */}
-                <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3">
-                  <div className="flex items-center gap-2 pb-2 border-b border-slate-100 font-bold text-blue-950 uppercase tracking-wide text-[11px]">
-                    <ShieldCheck className="w-3.5 h-3.5 text-blue-900" />
-                    <span>Section 4: Contractor Details &amp; CIDA Grading</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 font-medium text-[11px] block">ICTAD / CIDA Registration Number:</span>
-                    <span className="font-mono font-bold text-slate-900 text-sm">{formData.ictadRegistrationNumber || "N/A"}</span>
-                  </div>
+                        {fieldErrors["similarWorks.descending"] && (
+                          <div id="error-similarWorks-descending" role="alert" className="p-3 bg-rose-50 border-2 border-rose-500 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-rose-900 font-semibold animate-fadeIn">
+                            <div className="flex items-start gap-2">
+                              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                              <span>{fieldErrors["similarWorks.descending"]}</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleSortSimilarWorksDescending();
+                                clearFieldError("similarWorks.descending");
+                              }}
+                              className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shrink-0 transition-colors shadow-sm"
+                            >
+                              <ArrowUpDown className="w-3.5 h-3.5" />
+                              <span>Sort by Highest Value First</span>
+                            </button>
+                          </div>
+                        )}
 
-                  <div className="pt-2 border-t border-slate-100 space-y-2">
-                    <span className="text-slate-500 font-medium text-[11px] block">Selected Technical Specialties &amp; Assigned CIDA Grades:</span>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {(formData.areasOfSpecialty || []).filter((s) => s !== "Other").map((spec) => {
-                        const grade = formData.specialtyGrades?.[spec];
-                        const gradeLabel = grade === "Other" && formData.specialtyGradesOther?.[spec]
-                          ? `Other (${formData.specialtyGradesOther[spec]})`
-                          : grade || "Not selected";
-                        return (
-                          <div key={spec} className="p-2.5 rounded-lg bg-blue-50/70 border border-blue-200 flex items-center justify-between">
-                            <span className="font-bold text-slate-900 text-xs">{spec}</span>
-                            <span className="text-xs font-black text-blue-900 bg-white px-2 py-0.5 rounded shadow-xs border border-blue-100">
-                              Grade: {gradeLabel}
+                        <div className="p-3.5 bg-amber-50 border border-amber-200/80 rounded-xl text-xs text-amber-900 flex items-start gap-2.5">
+                          <HelpCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                          <div className="leading-relaxed space-y-1">
+                            <p>
+                              <strong>Official Instruction:</strong> Please provide details of the highest-value contracts your organization has completed within the last five years (December 2021 to November 2026) that are similar in nature to the proposed works.
+                            </p>
+                            <p className="font-semibold text-amber-950">
+                              ⚠️ <strong>Required Order: Higher Value to Lower Value (Descending)</strong> — Contract #1 must be your largest contract by amount. Subsequent contracts must be equal or lower in value. If entered out of order, you can use the <strong>"Sort by Highest Value First"</strong> button below.
+                            </p>
+                            <p className="text-[11px] text-amber-800">
+                              For firms without relevant experience, please enter <strong>N/A</strong> in the Contract Name field and leave the other fields blank.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+                            <table className="w-full min-w-[960px] text-left border-collapse text-xs">
+                              <thead>
+                                <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-700 font-bold uppercase text-[10px] tracking-wider">
+                                  <th className="p-3 w-12 text-center">#</th>
+                                  <th className="p-3 min-w-[200px]">Contract Name / Project</th>
+                                  <th className="p-3 w-48">Contract Type</th>
+                                  <th className="p-3 w-48">
+                                    <div className="flex flex-col">
+                                      <span>Amount (LKR) *</span>
+                                      <span className="text-[9px] text-amber-700 font-bold normal-case tracking-normal">
+                                        (Higher to Lower ↓)
+                                      </span>
+                                    </div>
+                                  </th>
+                                  <th className="p-3 w-52">Duration (Start - Completion)</th>
+                                  <th className="p-3 w-48">Completion Status</th>
+                                  <th className="p-3 w-14 text-center">Action</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-200/80">
+                                {(formData.similarWorks || createEmptySimilarWorks()).map((contract, idx) => {
+                                  const isNA = Boolean(contract.contractName && contract.contractName.trim().toUpperCase() === "N/A");
+                                  const currentAmount = Number(contract.contractAmount);
+                                  const hasValidAmount = !isNA && !isNaN(currentAmount) && contract.contractAmount !== null && contract.contractAmount !== undefined && contract.contractAmount !== "";
+
+                                  const nameErr = fieldErrors[`similarWorks.${idx}.contractName`];
+                                  const typeErr = fieldErrors[`similarWorks.${idx}.contractType`];
+                                  const amtErr = fieldErrors[`similarWorks.${idx}.contractAmount`];
+                                  const startErr = fieldErrors[`similarWorks.${idx}.startDate`];
+                                  const endErr = fieldErrors[`similarWorks.${idx}.completionDate`];
+                                  const statusErr = fieldErrors[`similarWorks.${idx}.completionStatus`];
+
+                                  // Check if current contract amount violates descending order compared to previous contract with amount
+                                  let prevAmount: number | null = null;
+                                  let prevContractNum: number | null = null;
+                                  if (hasValidAmount && idx > 0) {
+                                    const allList = formData.similarWorks || [];
+                                    for (let p = idx - 1; p >= 0; p--) {
+                                      const prevC = allList[p];
+                                      if (prevC && prevC.contractName && prevC.contractName.trim().toUpperCase() !== "N/A" && prevC.contractAmount !== null && prevC.contractAmount !== undefined && prevC.contractAmount !== "") {
+                                        const pVal = Number(prevC.contractAmount);
+                                        if (!isNaN(pVal)) {
+                                          prevAmount = pVal;
+                                          prevContractNum = p + 1;
+                                          break;
+                                        }
+                                      }
+                                    }
+                                  }
+                                  const isOrderViolation = prevAmount !== null && currentAmount > prevAmount;
+
+                                  return (
+                                    <tr
+                                      key={idx}
+                                      className={`hover:bg-slate-50/70 transition-colors ${isNA ? "bg-slate-50/40 opacity-70" : isOrderViolation || amtErr || nameErr ? "bg-rose-50/30" : ""
+                                        }`}
+                                    >
+                                      <td className="p-3 text-center font-bold text-blue-900 bg-slate-50/50 align-top pt-4">
+                                        #{idx + 1}
+                                      </td>
+                                      <td className="p-3 align-top space-y-1">
+                                        <input
+                                          id={`input-similarWorks-${idx}-contractName`}
+                                          type="text"
+                                          value={contract.contractName || ""}
+                                          onChange={(e) => {
+                                            handleContractChange(idx, "contractName", e.target.value);
+                                            if (nameErr) clearFieldError(`similarWorks.${idx}.contractName`);
+                                          }}
+                                          placeholder={idx === 0 ? "Project Title or enter N/A *" : "Project Title"}
+                                          aria-invalid={Boolean(nameErr)}
+                                          className={`w-full p-2 rounded text-slate-900 focus:outline-none transition-all ${nameErr
+                                            ? "bg-rose-50 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                            : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
+                                            }`}
+                                        />
+                                        {nameErr && (
+                                          <div role="alert" className="flex items-start gap-1 text-[11px] font-semibold text-rose-600 animate-fadeIn">
+                                            <AlertCircle className="w-3 h-3 shrink-0 mt-0.5 text-rose-500" />
+                                            <span>{nameErr}</span>
+                                          </div>
+                                        )}
+                                        {isNA && (
+                                          <span className="text-[10px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded font-mono font-bold inline-block">
+                                            Marked N/A
+                                          </span>
+                                        )}
+                                      </td>
+                                      <td className="p-3 align-top space-y-1">
+                                        <select
+                                          id={`input-similarWorks-${idx}-contractType`}
+                                          disabled={isNA}
+                                          value={contract.contractType || ""}
+                                          onChange={(e) => {
+                                            handleContractChange(idx, "contractType", e.target.value);
+                                            if (typeErr) clearFieldError(`similarWorks.${idx}.contractType`);
+                                          }}
+                                          aria-invalid={Boolean(typeErr)}
+                                          className={`w-full p-2 rounded text-slate-900 focus:outline-none font-medium disabled:opacity-50 transition-all ${typeErr
+                                            ? "bg-rose-50 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                            : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
+                                            }`}
+                                        >
+                                          <option value="">— Select Type —</option>
+                                          {CONTRACT_TYPE_OPTIONS.map((t) => (
+                                            <option key={t} value={t}>
+                                              {t}
+                                            </option>
+                                          ))}
+                                        </select>
+                                        {typeErr && (
+                                          <div role="alert" className="flex items-start gap-1 text-[11px] font-semibold text-rose-600 animate-fadeIn">
+                                            <AlertCircle className="w-3 h-3 shrink-0 mt-0.5 text-rose-500" />
+                                            <span>{typeErr}</span>
+                                          </div>
+                                        )}
+                                        {contract.contractType === "Other" && (
+                                          <input
+                                            type="text"
+                                            disabled={isNA}
+                                            value={(contract as any).contractTypeOther || ""}
+                                            onChange={(e) => handleContractChange(idx, "contractTypeOther", e.target.value)}
+                                            placeholder="Specify contract type..."
+                                            className="w-full p-1.5 bg-amber-50/60 border border-amber-300 rounded text-slate-900 text-xs focus:ring-1 focus:ring-blue-800 disabled:opacity-50"
+                                          />
+                                        )}
+                                      </td>
+                                      <td className="p-3 align-top space-y-1">
+                                        <input
+                                          id={`input-similarWorks-${idx}-contractAmount`}
+                                          type="number"
+                                          disabled={isNA}
+                                          value={contract.contractAmount ?? ""}
+                                          onChange={(e) => {
+                                            handleContractChange(idx, "contractAmount", e.target.value);
+                                            if (amtErr) clearFieldError(`similarWorks.${idx}.contractAmount`);
+                                          }}
+                                          placeholder="Amount in LKR"
+                                          aria-invalid={Boolean(amtErr || isOrderViolation)}
+                                          className={`w-full p-2 border rounded text-slate-900 focus:outline-none focus:ring-2 font-mono disabled:opacity-50 transition-all ${amtErr || isOrderViolation
+                                            ? "border-2 border-rose-500 bg-rose-50/60 focus:ring-rose-200 text-rose-900 font-bold"
+                                            : "border-slate-300 bg-slate-50 focus:bg-white focus:ring-blue-800"
+                                            }`}
+                                        />
+                                        {amtErr && (
+                                          <div role="alert" className="flex items-start gap-1 text-[11px] font-semibold text-rose-600 animate-fadeIn">
+                                            <AlertCircle className="w-3 h-3 shrink-0 mt-0.5 text-rose-500" />
+                                            <span>{amtErr}</span>
+                                          </div>
+                                        )}
+                                        {!isNA && contract.contractAmount !== null && contract.contractAmount !== undefined && contract.contractAmount !== "" && (
+                                          <span className="text-[10px] font-mono text-slate-600 block">
+                                            = LKR {Number(contract.contractAmount).toLocaleString()}
+                                          </span>
+                                        )}
+                                        {isOrderViolation && !amtErr && (
+                                          <div className="flex items-start gap-1 p-1.5 mt-1 rounded bg-rose-50 border border-rose-200 text-rose-700 text-[10px] leading-tight font-sans">
+                                            <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-rose-600 mt-0.5" />
+                                            <span>
+                                              Must be &le; Contract #{prevContractNum} (LKR {prevAmount!.toLocaleString()}). Please enter higher value to lower value.
+                                            </span>
+                                          </div>
+                                        )}
+                                      </td>
+                                      <td className="p-3 align-top">
+                                        <div className="space-y-1">
+                                          <div className="flex items-center gap-1">
+                                            <span className="text-[10px] text-slate-400 w-9 shrink-0 font-medium">Start:</span>
+                                            <input
+                                              id={`input-similarWorks-${idx}-startDate`}
+                                              type="date"
+                                              disabled={isNA}
+                                              value={contract.startDate || ""}
+                                              onChange={(e) => {
+                                                handleContractChange(idx, "startDate", e.target.value);
+                                                if (startErr) clearFieldError(`similarWorks.${idx}.startDate`);
+                                              }}
+                                              aria-invalid={Boolean(startErr)}
+                                              className={`flex-1 p-1.5 rounded text-slate-900 text-[11px] focus:outline-none transition-all disabled:opacity-50 ${startErr
+                                                ? "bg-rose-50 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                                : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
+                                                }`}
+                                            />
+                                          </div>
+                                          {startErr && (
+                                            <div role="alert" className="flex items-start gap-1 text-[10px] font-semibold text-rose-600 animate-fadeIn">
+                                              <AlertCircle className="w-3 h-3 shrink-0 mt-0.5 text-rose-500" />
+                                              <span>{startErr}</span>
+                                            </div>
+                                          )}
+                                          <div className="flex items-center gap-1">
+                                            <span className="text-[10px] text-slate-400 w-9 shrink-0 font-medium">End:</span>
+                                            <input
+                                              id={`input-similarWorks-${idx}-completionDate`}
+                                              type="date"
+                                              disabled={isNA}
+                                              value={contract.completionDate || ""}
+                                              onChange={(e) => {
+                                                handleContractChange(idx, "completionDate", e.target.value);
+                                                if (endErr) clearFieldError(`similarWorks.${idx}.completionDate`);
+                                              }}
+                                              aria-invalid={Boolean(endErr)}
+                                              className={`flex-1 p-1.5 rounded text-slate-900 text-[11px] focus:outline-none transition-all disabled:opacity-50 ${endErr
+                                                ? "bg-rose-50 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                                : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
+                                                }`}
+                                            />
+                                          </div>
+                                          {endErr && (
+                                            <div role="alert" className="flex items-start gap-1 text-[10px] font-semibold text-rose-600 animate-fadeIn">
+                                              <AlertCircle className="w-3 h-3 shrink-0 mt-0.5 text-rose-500" />
+                                              <span>{endErr}</span>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </td>
+                                      <td className="p-3 align-top">
+                                        <select
+                                          id={`input-similarWorks-${idx}-completionStatus`}
+                                          disabled={isNA}
+                                          value={contract.completionStatus || ""}
+                                          onChange={(e) => {
+                                            handleContractChange(idx, "completionStatus", e.target.value);
+                                            if (statusErr) clearFieldError(`similarWorks.${idx}.completionStatus`);
+                                          }}
+                                          aria-invalid={Boolean(statusErr)}
+                                          className={`w-full p-2 rounded text-slate-900 focus:outline-none font-medium disabled:opacity-50 transition-all ${statusErr
+                                            ? "bg-rose-50 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                            : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
+                                            }`}
+                                        >
+                                          <option value="">— Select Status —</option>
+                                          {COMPLETION_STATUS_OPTIONS.map((s) => (
+                                            <option key={s} value={s}>
+                                              {s}
+                                            </option>
+                                          ))}
+                                        </select>
+                                        {statusErr && (
+                                          <div role="alert" className="flex items-start gap-1 text-[11px] font-semibold text-rose-600 animate-fadeIn">
+                                            <AlertCircle className="w-3 h-3 shrink-0 mt-0.5 text-rose-500" />
+                                            <span>{statusErr}</span>
+                                          </div>
+                                        )}
+                                      </td>
+                                      <td className="p-3 text-center align-top pt-4">
+                                        {(formData.similarWorks || []).length > 1 && (
+                                          <button
+                                            type="button"
+                                            onClick={() => handleRemoveSimilarWork(idx)}
+                                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                                            title="Remove contract row"
+                                          >
+                                            <Trash2 className="w-4 h-4" />
+                                          </button>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+
+                          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={handleAddSimilarWork}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-sm transition-all"
+                              >
+                                <Plus className="w-4 h-4" />
+                                <span>+ Add Similar Work Contract</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleSortSimilarWorksDescending}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 hover:text-blue-900 rounded-lg shadow-sm transition-all"
+                                title="Automatically reorder contracts from highest value to lowest value"
+                              >
+                                <ArrowUpDown className="w-4 h-4 text-blue-900" />
+                                <span>Sort by Highest Value First</span>
+                              </button>
+                            </div>
+                            <span className="text-[10px] text-slate-500 font-medium">
+                              Enter contracts in descending order (highest value first)
                             </span>
                           </div>
-                        );
-                      })}
+                        </div>
+                      </div>
+                    </>
+                  )}
 
-                      {(formData.areasOfSpecialty || []).includes("Other") && (
-                        specialtyOtherList.filter((s) => s.trim()).map((oth, oIdx) => {
-                          const itemKey = oth.trim() || `Other_${oIdx + 1}`;
-                          const grade = formData.specialtyGrades?.[itemKey] || formData.specialtyGrades?.[oth];
-                          const gradeLabel = grade === "Other" && (formData.specialtyGradesOther?.[itemKey] || formData.specialtyGradesOther?.[oth])
-                            ? `Other (${formData.specialtyGradesOther?.[itemKey] || formData.specialtyGradesOther?.[oth]})`
+                  {/* ------------------------------------------------------------- */}
+                  {/* SECTION 11: MATTERS FOR DISCUSSION (ALL PARTICIPATING ATTENDEES) */}
+                  {/* ------------------------------------------------------------- */}
+                  <div className="space-y-4 pt-4 border-t border-slate-100">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                      <FileText className="w-4 h-4 text-blue-900" />
+                      <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
+                        Section 11: Matters for Discussion
+                      </h2>
+                    </div>
+
+                    <div className="space-y-3 text-xs">
+                      <div>
+                        <label className="block font-semibold text-slate-700">
+                          Do you have any specific matters, concerns or suggestions that you would like to be discussed during the Early Market Engagement Workshop? (Optional)
+                        </label>
+                        <p className="text-slate-500 text-[11px] leading-relaxed mt-0.5">
+                          Please add each matter, concern, or suggestion separately below. Participants are encouraged to share topics relating to market conditions, technical requirements, procurement arrangements, implementation challenges, or other issues relevant to ICDP activities.
+                        </p>
+                      </div>
+
+                      <div className="space-y-3">
+                        {(formData.mattersForDiscussionList && formData.mattersForDiscussionList.length > 0
+                          ? formData.mattersForDiscussionList
+                          : [""]
+                        ).map((matter, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-start gap-2.5 p-3 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-slate-50 transition-colors focus-within:bg-white focus-within:border-blue-700 focus-within:ring-2 focus-within:ring-blue-800/10 shadow-sm"
+                          >
+                            <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-blue-900 text-white font-bold text-xs shrink-0 shadow-sm mt-0.5">
+                              #{idx + 1}
+                            </div>
+
+                            <div className="flex-1 space-y-1">
+                              <label className="text-[11px] font-bold text-slate-700 block">
+                                Matter / Suggestion #{idx + 1}
+                              </label>
+                              <textarea
+                                rows={2}
+                                value={matter}
+                                onChange={(e) => handleMatterChange(idx, e.target.value)}
+                                placeholder={`Enter specific matter, concern, or suggestion #${idx + 1}...`}
+                                className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:outline-none focus:ring-1 focus:ring-blue-800 placeholder:text-slate-400"
+                              />
+                            </div>
+
+                            <div className="pt-6 shrink-0">
+                              {(formData.mattersForDiscussionList || [""]).length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveMatter(idx)}
+                                  className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                  title="Remove this matter"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="pt-1 flex flex-wrap items-center justify-between gap-2">
+                        <button
+                          type="button"
+                          onClick={handleAddMatter}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-sm transition-all"
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span>+ Add Another Matter / Suggestion</span>
+                        </button>
+                        <span className="text-[10px] text-slate-400 italic">
+                          You can add multiple separate discussion matters as needed
+                        </span>
+                      </div>
+
+                      {getDynamicQuestionsForSection("SEC-11")
+                        .concat(getDynamicQuestionsForSection("sec-matters-discussion"))
+                        .map(renderDynamicQuestionField)}
+                    </div>
+                  </div>
+
+                  {/* Additional Dynamic Sections added via Form Builder */}
+                  {getAdditionalDynamicSections().map((sec: any) => (
+                    <div key={sec.id} className="space-y-4 pt-4 border-t border-slate-100">
+                      <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                        <Building2 className="w-4 h-4 text-blue-900" />
+                        <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
+                          {sec.title}
+                        </h2>
+                      </div>
+                      {sec.description && <p className="text-xs text-slate-500">{sec.description}</p>}
+                      <div className="space-y-4 text-xs">
+                        {sec.questions.map(renderDynamicQuestionField)}
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Alert Banner (Bottom of Form) */}
+                  {formAlert && (
+                    <div
+                      className={`p-4 rounded-xl border text-xs flex items-start gap-2.5 ${formAlert.type === "success"
+                        ? "bg-emerald-50 border-emerald-200 text-emerald-900"
+                        : "bg-rose-50 border-rose-200 text-rose-900"
+                        }`}
+                    >
+                      {formAlert.type === "success" ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      ) : (
+                        <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                      )}
+                      <span className="leading-relaxed font-semibold">{formAlert.message}</span>
+                    </div>
+                  )}
+
+                  {/* Validation Summary Bar (Bottom of Form) */}
+                  {Object.keys(fieldErrors).length > 0 && (
+                    <div
+                      id="validation-summary-bottom"
+                      role="alert"
+                      className="p-4 bg-rose-50 border-2 border-rose-500 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-rose-900 shadow-md animate-fadeIn"
+                    >
+                      <div className="flex items-start gap-2.5">
+                        <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-extrabold text-sm text-rose-950">
+                            {Object.keys(fieldErrors).length === 1
+                              ? "1 required field requires your attention"
+                              : `${Object.keys(fieldErrors).length} required fields require your attention`}
+                          </p>
+                          <p className="text-[11px] text-rose-700 mt-0.5">
+                            Please correct the highlighted fields before submitting your official response.
+                          </p>
+                        </div>
+                      </div>
+                      {getNextErrorFieldKey() && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const nextKey = getNextErrorFieldKey();
+                            if (nextKey) scrollToAndFocusField(nextKey);
+                          }}
+                          className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow transition-colors shrink-0"
+                        >
+                          <ArrowDown className="w-3.5 h-3.5" />
+                          <span>Navigate to First Error</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ACTION BAR */}
+                  <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
+                    <button
+                      type="button"
+                      onClick={() => performDraftSave(false)}
+                      disabled={loading}
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-5 py-3 sm:py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-sm transition-all min-h-[44px]"
+                    >
+                      {loading ? (
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-900" />
+                      ) : (
+                        <Save className="w-3.5 h-3.5 text-blue-900" />
+                      )}
+                      <span>
+                        {currentReference ? `Save Draft (${currentReference})` : "Save as Draft"}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleInitiateReview}
+                      disabled={loading}
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 sm:py-2.5 rounded-xl bg-gradient-to-r from-blue-900 to-blue-800 hover:from-blue-800 hover:to-blue-700 text-white font-extrabold text-xs shadow-md shadow-blue-900/20 transition-all min-h-[44px]"
+                    >
+                      {loading ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          <span>Validating Form...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Eye className="w-4 h-4 text-amber-400" />
+                          <span>Review &amp; Submit Questionnaire Response</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ========================================================================= */}
+      {/* OFFICIAL REGISTRATION REVIEW & CONFIRMATION MODAL                         */}
+      {/* ========================================================================= */}
+      {showReviewModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 md:p-6 overflow-hidden animate-fadeIn">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-4xl w-full max-h-[92vh] flex flex-col overflow-hidden">
+            {/* Modal Header */}
+            <div className="bg-[#0b1f3a] text-white px-5 py-4 sm:px-6 sm:py-5 flex items-center justify-between shrink-0 border-b border-white/10">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] tracking-wider font-bold text-amber-400 uppercase">
+                    RDA Sri Lanka &bull; Verification Area
+                  </span>
+                  <span className="px-2 py-0.5 rounded text-[8px] bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-400/30">
+                    PRE-SUBMISSION REVIEW
+                  </span>
+                </div>
+                <h2 className="text-base sm:text-lg font-bold tracking-tight text-white mt-0.5 truncate">
+                  Review All Registration Details
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowReviewModal(false)}
+                className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+                title="Close and Return to Form"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body - Scrollable */}
+            <div className="overflow-y-auto p-4 sm:p-6 space-y-5 flex-1 bg-slate-50/60 text-xs text-slate-800">
+              {/* Review Guidance Alert */}
+              <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-3">
+                <Info className="w-4 h-4 text-blue-900 shrink-0 mt-0.5" />
+                <div className="text-blue-950 space-y-0.5 leading-relaxed">
+                  <span className="font-bold block text-xs sm:text-sm">Please verify your details below</span>
+                  <p className="text-[11px] text-blue-900/90">
+                    Carefully review all information entered across every section. If any details are incorrect, click <strong>&quot;Modify / Edit Details&quot;</strong> to return to the form and edit. Once verified, click <strong>&quot;Confirm &amp; Submit Directly&quot;</strong> to complete your official filing to the Road Development Authority.
+                  </p>
+                </div>
+              </div>
+
+              {/* Section 1: Basic Information & Attendance */}
+              <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3">
+                <div className="flex items-center gap-2 pb-2 border-b border-slate-100 font-bold text-blue-950 uppercase tracking-wide text-[11px]">
+                  <Building2 className="w-3.5 h-3.5 text-blue-900" />
+                  <span>Section 1: Basic Information &amp; Workshop Attendance</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div>
+                    <span className="text-slate-500 font-medium text-[11px] block">Organization / Company Name:</span>
+                    <span className="font-bold text-slate-900 text-sm">{formData.organizationName || formData.supplierDetails?.companyName || "N/A"}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 font-medium text-[11px] block">Workshop Attendance:</span>
+                    <span className={`inline-block mt-0.5 px-2.5 py-0.5 rounded-full text-xs font-bold ${formData.willParticipate === "Yes" ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"
+                      }`}>
+                      {formData.willParticipate === "Yes" ? "Yes — Will Attend (07 Dec 2026)" : "No — Unable to Attend"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 font-medium text-[11px] block">Official Contact Number:</span>
+                    <span className="font-semibold text-slate-800 font-mono">{formData.contactNumber || "N/A"}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 font-medium text-[11px] block">Official Email Address:</span>
+                    <span className="font-semibold text-slate-800 font-mono">{formData.email || "N/A"}</span>
+                  </div>
+                  {formData.willParticipate === "Yes" && (
+                    <div className="sm:col-span-2 pt-1 border-t border-slate-100">
+                      <span className="text-slate-500 font-medium text-[11px] block">Participant Category:</span>
+                      <span className="font-bold text-blue-950 text-xs">
+                        {formData.participantCategory || "N/A"}
+                      </span>
+                    </div>
+                  )}
+                  {formData.willParticipate === "No" && (
+                    <div className="sm:col-span-2 pt-1 border-t border-slate-100">
+                      <span className="text-slate-500 font-medium text-[11px] block">Status:</span>
+                      <span className="text-slate-600 text-xs italic">Declination of attendance recorded.</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Section 3: Official Representatives */}
+              {formData.willParticipate === "Yes" && (
+                <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3">
+                  <div className="flex items-center gap-2 pb-2 border-b border-slate-100 font-bold text-blue-950 uppercase tracking-wide text-[11px]">
+                    <Users className="w-3.5 h-3.5 text-blue-900" />
+                    <span>Designated Workshop Representatives</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    {/* Participant 1 */}
+                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
+                      <span className="text-[10px] font-bold text-blue-900 uppercase">Primary Representative (Participant 1)</span>
+                      <p className="font-bold text-slate-900 text-sm">{formData.participant1?.fullName || "N/A"}</p>
+                      <p className="text-slate-600 font-medium">{formData.participant1?.designation || "N/A"}</p>
+                      <div className="pt-1 text-[11px] text-slate-500 font-mono space-y-0.5">
+                        <div>Phone: {formData.participant1?.mobileNumber || "N/A"}</div>
+                        <div>Email: {formData.participant1?.email || "N/A"}</div>
+                      </div>
+                    </div>
+                    {/* Participant 2 */}
+                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
+                      <span className="text-[10px] font-bold text-slate-600 uppercase">Second Representative (Participant 2)</span>
+                      {formData.participant2?.fullName?.trim() ? (
+                        <>
+                          <p className="font-bold text-slate-900 text-sm">{formData.participant2.fullName}</p>
+                          <p className="text-slate-600 font-medium">{formData.participant2.designation || "N/A"}</p>
+                          <div className="pt-1 text-[11px] text-slate-500 font-mono space-y-0.5">
+                            <div>Phone: {formData.participant2.mobileNumber || "N/A"}</div>
+                            {formData.participant2.email && <div>Email: {formData.participant2.email}</div>}
+                          </div>
+                        </>
+                      ) : (
+                        <p className="text-slate-400 italic text-xs pt-1">No second representative designated.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* CONTRACTOR SPECIFIC SECTIONS */}
+              {formData.willParticipate === "Yes" && formData.participantCategory === "Contractor" && (
+                <>
+                  {/* Section 4: Contractor Specialties & CIDA Grades */}
+                  <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-100 font-bold text-blue-950 uppercase tracking-wide text-[11px]">
+                      <ShieldCheck className="w-3.5 h-3.5 text-blue-900" />
+                      <span>Section 4: Contractor Details &amp; CIDA Grading</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 font-medium text-[11px] block">ICTAD / CIDA Registration Number:</span>
+                      <span className="font-mono font-bold text-slate-900 text-sm">{formData.ictadRegistrationNumber || "N/A"}</span>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-100 space-y-2">
+                      <span className="text-slate-500 font-medium text-[11px] block">Selected Technical Specialties &amp; Assigned CIDA Grades:</span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {(formData.areasOfSpecialty || []).filter((s) => s !== "Other").map((spec) => {
+                          const grade = formData.specialtyGrades?.[spec];
+                          const gradeLabel = grade === "Other" && formData.specialtyGradesOther?.[spec]
+                            ? `Other (${formData.specialtyGradesOther[spec]})`
                             : grade || "Not selected";
                           return (
-                            <div key={`oth-rev-${oIdx}`} className="p-2.5 rounded-lg bg-amber-50/70 border border-amber-200 flex items-center justify-between">
-                              <span className="font-bold text-slate-900 text-xs">Other: {oth}</span>
-                              <span className="text-xs font-black text-amber-900 bg-white px-2 py-0.5 rounded shadow-xs border border-amber-100">
+                            <div key={spec} className="p-2.5 rounded-lg bg-blue-50/70 border border-blue-200 flex items-center justify-between">
+                              <span className="font-bold text-slate-900 text-xs">{spec}</span>
+                              <span className="text-xs font-black text-blue-900 bg-white px-2 py-0.5 rounded shadow-xs border border-blue-100">
                                 Grade: {gradeLabel}
                               </span>
                             </div>
                           );
-                        })
-                      )}
-                    </div>
-                  </div>
-                </div>
+                        })}
 
-                {/* Section 5 & 6: Financial Statements & Loan Commitments */}
-                <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3">
-                  <div className="flex items-center gap-2 pb-2 border-b border-slate-100 font-bold text-blue-950 uppercase tracking-wide text-[11px]">
-                    <Briefcase className="w-3.5 h-3.5 text-blue-900" />
-                    <span>Section 5: Financial Capability (5-Year Consolidated Statements)</span>
-                  </div>
-
-                  <div className="overflow-x-auto rounded-lg border border-slate-200">
-                    <table className="w-full text-left border-collapse text-[11px]">
-                      <thead>
-                        <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
-                          <th className="p-2 min-w-[140px]">Financial Indicator (LKR)</th>
-                          {FINANCIAL_YEARS.map((y) => (
-                            <th key={y} className="p-2 text-right">{y}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {[
-                          { key: "totalAssets" as const, label: "Total Assets" },
-                          { key: "totalLiabilities" as const, label: "Total Liabilities" },
-                          { key: "totalEquity" as const, label: "Total Equity / Net Worth", isReadOnly: true },
-                          { key: "currentAssets" as const, label: "Current Assets" },
-                          { key: "currentLiabilities" as const, label: "Current Liabilities" },
-                          { key: "workingCapital" as const, label: "Working Capital", isReadOnly: true },
-                          { key: "totalRevenue" as const, label: "Total Revenue / Turnover" },
-                          { key: "profitBeforeTax" as const, label: "Profit Before Tax" },
-                        ].map((row) => (
-                          <tr key={row.key} className={row.isReadOnly ? "bg-slate-50/80 font-bold" : ""}>
-                            <td className="p-2 text-slate-700">{row.label}</td>
-                            {FINANCIAL_YEARS.map((y) => {
-                              const val = formData.financialStatements?.[y]?.[row.key];
-                              return (
-                                <td key={y} className="p-2 text-right font-mono text-slate-800">
-                                  {val !== null && val !== undefined ? Number(val).toLocaleString("en-US") : "—"}
-                                </td>
-                              );
-                            })}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Loan Repayments */}
-                  <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[11px]">
-                    <span className="font-semibold text-slate-700">Total Loan Repayments Due (01 Dec 2026 – 01 Dec 2028):</span>
-                    <span className="font-bold text-blue-900 font-mono text-xs">
-                      {formData.loanCommitments?.twoYearRepaymentsDue2026To2028 !== null && formData.loanCommitments?.twoYearRepaymentsDue2026To2028 !== undefined
-                        ? `${Number(formData.loanCommitments.twoYearRepaymentsDue2026To2028).toLocaleString("en-US")} LKR`
-                        : "0 LKR"}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Section 7: Current Work Commitments */}
-                <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3">
-                  <div className="flex items-center gap-2 pb-2 border-b border-slate-100 font-bold text-blue-950 uppercase tracking-wide text-[11px]">
-                    <Layers className="w-3.5 h-3.5 text-blue-900" />
-                    <span>Section 7: Current Work Commitments</span>
-                  </div>
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div>
-                      <span className="text-slate-500 font-medium text-[11px] block">Currently Has Ongoing Contracts:</span>
-                      <span className={`inline-block mt-0.5 px-2 py-0.5 rounded text-xs font-bold ${
-                        formData.hasOngoingContracts === "Yes" ? "bg-amber-100 text-amber-900" : "bg-slate-100 text-slate-700"
-                      }`}>
-                        {formData.hasOngoingContracts || "No"}
-                      </span>
-                    </div>
-                    {formData.hasOngoingContracts === "Yes" && (
-                      <div className="text-left sm:text-right">
-                        <span className="text-slate-500 font-medium text-[11px] block">Total Outstanding Value:</span>
-                        <span className="font-black text-blue-900 font-mono text-sm">
-                          {formData.totalOutstandingValueLkrMillion !== null && formData.totalOutstandingValueLkrMillion !== undefined
-                            ? `${Number(formData.totalOutstandingValueLkrMillion).toLocaleString("en-US")} LKR`
-                            : "0 LKR"}
-                        </span>
+                        {(formData.areasOfSpecialty || []).includes("Other") && (
+                          specialtyOtherList.filter((s) => s.trim()).map((oth, oIdx) => {
+                            const itemKey = oth.trim() || `Other_${oIdx + 1}`;
+                            const grade = formData.specialtyGrades?.[itemKey] || formData.specialtyGrades?.[oth];
+                            const gradeLabel = grade === "Other" && (formData.specialtyGradesOther?.[itemKey] || formData.specialtyGradesOther?.[oth])
+                              ? `Other (${formData.specialtyGradesOther?.[itemKey] || formData.specialtyGradesOther?.[oth]})`
+                              : grade || "Not selected";
+                            return (
+                              <div key={`oth-rev-${oIdx}`} className="p-2.5 rounded-lg bg-amber-50/70 border border-amber-200 flex items-center justify-between">
+                                <span className="font-bold text-slate-900 text-xs">Other: {oth}</span>
+                                <span className="text-xs font-black text-amber-900 bg-white px-2 py-0.5 rounded shadow-xs border border-amber-100">
+                                  Grade: {gradeLabel}
+                                </span>
+                              </div>
+                            );
+                          })
+                        )}
                       </div>
-                    )}
+                    </div>
                   </div>
 
-                  {formData.hasOngoingContracts === "Yes" && (formData.ongoingContracts || []).some((c) => c && c.contractName) && (
-                    <div className="overflow-x-auto rounded-lg border border-slate-200 mt-2">
+                  {/* Section 5 & 6: Financial Statements & Loan Commitments */}
+                  <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-100 font-bold text-blue-950 uppercase tracking-wide text-[11px]">
+                      <Briefcase className="w-3.5 h-3.5 text-blue-900" />
+                      <span>Section 5: Financial Capability (5-Year Consolidated Statements)</span>
+                    </div>
+
+                    <div className="overflow-x-auto rounded-lg border border-slate-200">
                       <table className="w-full text-left border-collapse text-[11px]">
                         <thead>
                           <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
-                            <th className="p-2 w-10">#</th>
-                            <th className="p-2">Name of Contract</th>
-                            <th className="p-2">Contract No</th>
-                            <th className="p-2">Employer&apos;s Name</th>
-                            <th className="p-2 text-right">Value (LKR)</th>
-                            <th className="p-2">Est. Completion</th>
+                            <th className="p-2 min-w-[140px]">Financial Indicator (LKR)</th>
+                            {FINANCIAL_YEARS.map((y) => (
+                              <th key={y} className="p-2 text-right">{y}</th>
+                            ))}
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100 font-medium">
-                          {(formData.ongoingContracts || []).filter((c) => c && (c.contractName || c.contractNo)).map((c, i) => (
-                            <tr key={i}>
-                              <td className="p-2 font-bold text-slate-500">{i + 1}</td>
-                              <td className="p-2 font-bold text-slate-900">{c.contractName || "—"}</td>
-                              <td className="p-2 font-mono">{c.contractNo || "—"}</td>
-                              <td className="p-2">{c.employerName || "—"}</td>
-                              <td className="p-2 text-right font-mono font-bold text-blue-900">
-                                {c.contractAmount !== null && c.contractAmount !== undefined ? Number(c.contractAmount).toLocaleString("en-US") : "—"}
-                              </td>
-                              <td className="p-2">{c.completionDate || "—"}</td>
+                        <tbody className="divide-y divide-slate-100">
+                          {[
+                            { key: "totalAssets" as const, label: "Total Assets" },
+                            { key: "totalLiabilities" as const, label: "Total Liabilities" },
+                            { key: "totalEquity" as const, label: "Total Equity / Net Worth", isReadOnly: true },
+                            { key: "currentAssets" as const, label: "Current Assets" },
+                            { key: "currentLiabilities" as const, label: "Current Liabilities" },
+                            { key: "workingCapital" as const, label: "Working Capital", isReadOnly: true },
+                            { key: "totalRevenue" as const, label: "Total Revenue / Turnover" },
+                            { key: "profitBeforeTax" as const, label: "Profit Before Tax" },
+                          ].map((row) => (
+                            <tr key={row.key} className={row.isReadOnly ? "bg-slate-50/80 font-bold" : ""}>
+                              <td className="p-2 text-slate-700">{row.label}</td>
+                              {FINANCIAL_YEARS.map((y) => {
+                                const val = formData.financialStatements?.[y]?.[row.key];
+                                return (
+                                  <td key={y} className="p-2 text-right font-mono text-slate-800">
+                                    {val !== null && val !== undefined ? Number(val).toLocaleString("en-US") : "—"}
+                                  </td>
+                                );
+                              })}
                             </tr>
                           ))}
                         </tbody>
                       </table>
                     </div>
-                  )}
-                </div>
 
-                {/* Section 9: Experience */}
-                <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-2">
-                  <div className="flex items-center gap-2 pb-2 border-b border-slate-100 font-bold text-blue-950 uppercase tracking-wide text-[11px]">
-                    <Briefcase className="w-3.5 h-3.5 text-blue-900" />
-                    <span>Section 9: Experience</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 font-medium text-[11px] block">General Construction Experience:</span>
-                    <span className="font-bold text-slate-900 text-xs">{formData.generalExperience || "N/A"}</span>
-                  </div>
-                </div>
-
-                {/* Section 10: Similar Work Experience */}
-                <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3">
-                  <div className="flex items-center gap-2 pb-2 border-b border-slate-100 font-bold text-blue-950 uppercase tracking-wide text-[11px]">
-                    <FileText className="w-3.5 h-3.5 text-blue-900" />
-                    <span>Section 10: Similar Work Experience (Highest Value Contracts)</span>
-                  </div>
-
-                  <div className="overflow-x-auto rounded-lg border border-slate-200">
-                    <table className="w-full text-left border-collapse text-[11px]">
-                      <thead>
-                        <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
-                          <th className="p-2 w-10">#</th>
-                          <th className="p-2">Contract Name</th>
-                          <th className="p-2">Type</th>
-                          <th className="p-2 text-right">Amount (LKR) (Highest to Lowest)</th>
-                          <th className="p-2">Start Date</th>
-                          <th className="p-2">Completion Date</th>
-                          <th className="p-2">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 font-medium">
-                        {(formData.similarWorks || []).map((w, i) => (
-                          <tr key={i}>
-                            <td className="p-2 font-bold text-slate-500">{i + 1}</td>
-                            <td className="p-2 font-bold text-slate-900">{w.contractName || "—"}</td>
-                            <td className="p-2">{w.contractType || "—"}</td>
-                            <td className="p-2 text-right font-mono font-bold text-blue-900">
-                              {w.contractAmount !== null && w.contractAmount !== undefined ? Number(w.contractAmount).toLocaleString("en-US") : "—"}
-                            </td>
-                            <td className="p-2">{w.startDate || "—"}</td>
-                            <td className="p-2">{w.completionDate || "—"}</td>
-                            <td className="p-2">
-                              <span className="px-1.5 py-0.5 rounded text-[10px] bg-slate-100 text-slate-700 font-semibold">
-                                {w.completionStatus || "—"}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* SUPPLIER SPECIFIC SECTION */}
-            {formData.willParticipate === "Yes" && formData.participantCategory === "Supplier" && formData.supplierDetails && (
-              <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3">
-                <div className="flex items-center gap-2 pb-2 border-b border-slate-100 font-bold text-purple-950 uppercase tracking-wide text-[11px]">
-                  <Truck className="w-3.5 h-3.5 text-purple-900" />
-                  <span>Material Supplier Capacity &amp; Details</span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <span className="text-slate-500 font-medium text-[11px] block">Company Name:</span>
-                    <span className="font-bold text-slate-900 text-xs">{formData.supplierDetails.companyName || "N/A"}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 font-medium text-[11px] block">Province &amp; District:</span>
-                    <span className="font-bold text-slate-900 text-xs">
-                      {[formData.supplierDetails.province, formData.supplierDetails.district].filter(Boolean).join(" • ") || "N/A"}
-                    </span>
-                  </div>
-                  <div className="sm:col-span-2">
-                    <span className="text-slate-500 font-medium text-[11px] block">Plant / Production Facility Location:</span>
-                    <span className="text-slate-800 text-xs">{formData.supplierDetails.locationAddress || "N/A"}</span>
-                  </div>
-                </div>
-
-                {formData.supplierDetails.materialsSupplied && formData.supplierDetails.materialsSupplied.length > 0 && (
-                  <div className="pt-2 border-t border-slate-100 space-y-2">
-                    <span className="text-slate-500 font-medium text-[11px] block">Supplied Materials &amp; Annual Capacity:</span>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {formData.supplierDetails.materialsSupplied.map((mat) => {
-                        const cap = formData.supplierDetails?.supplyCapacities?.[mat];
-                        return (
-                          <div key={mat} className="p-2.5 rounded-lg bg-purple-50/70 border border-purple-200 flex items-center justify-between">
-                            <span className="font-bold text-slate-900 text-xs">{mat}</span>
-                            <span className="font-bold text-purple-950 font-mono text-xs">
-                              {cap?.quantity ? `${cap.quantity} ${cap.unit}` : "Capacity not specified"}
-                            </span>
-                          </div>
-                        );
-                      })}
+                    {/* Loan Repayments */}
+                    <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[11px]">
+                      <span className="font-semibold text-slate-700">Total Loan Repayments Due (01 Dec 2026 – 01 Dec 2028):</span>
+                      <span className="font-bold text-blue-900 font-mono text-xs">
+                        {formData.loanCommitments?.twoYearRepaymentsDue2026To2028 !== null && formData.loanCommitments?.twoYearRepaymentsDue2026To2028 !== undefined
+                          ? `${Number(formData.loanCommitments.twoYearRepaymentsDue2026To2028).toLocaleString("en-US")} LKR`
+                          : "0 LKR"}
+                      </span>
                     </div>
                   </div>
-                )}
-              </div>
-            )}
 
-            {/* Section 11: Matters for Discussion */}
-            {formData.willParticipate === "Yes" && (
-              <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3">
-                <div className="flex items-center gap-2 pb-2 border-b border-slate-100 font-bold text-blue-950 uppercase tracking-wide text-[11px]">
-                  <HelpCircle className="w-3.5 h-3.5 text-blue-900" />
-                  <span>Section 11: Matters for Discussion at the Workshop</span>
-                </div>
-                {(() => {
-                  const matters = (formData.mattersForDiscussionList || [])
-                    .map((m) => m.trim())
-                    .filter(Boolean);
-                  if (matters.length === 0 && !formData.mattersForDiscussion?.trim()) {
-                    return (
-                      <p className="text-slate-500 italic font-medium leading-relaxed text-xs">
-                        No specific matters or concerns submitted.
-                      </p>
-                    );
-                  }
-                  return (
-                    <div className="space-y-2 pt-0.5">
-                      {matters.length > 0 ? (
-                        matters.map((m, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-start gap-2.5 p-2 rounded-lg bg-slate-50 border border-slate-100 text-xs"
-                          >
-                            <span className="font-bold text-blue-900 bg-blue-100/70 px-2 py-0.5 rounded text-[10px] shrink-0">
-                              #{idx + 1}
-                            </span>
-                            <span className="text-slate-800 leading-relaxed font-medium">
-                              {m}
-                            </span>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-slate-800 font-medium leading-relaxed whitespace-pre-line text-xs">
-                          {formData.mattersForDiscussion}
-                        </p>
+                  {/* Section 7: Current Work Commitments */}
+                  <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-100 font-bold text-blue-950 uppercase tracking-wide text-[11px]">
+                      <Layers className="w-3.5 h-3.5 text-blue-900" />
+                      <span>Section 7: Current Work Commitments</span>
+                    </div>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <span className="text-slate-500 font-medium text-[11px] block">Currently Has Ongoing Contracts:</span>
+                        <span className={`inline-block mt-0.5 px-2 py-0.5 rounded text-xs font-bold ${formData.hasOngoingContracts === "Yes" ? "bg-amber-100 text-amber-900" : "bg-slate-100 text-slate-700"
+                          }`}>
+                          {formData.hasOngoingContracts || "No"}
+                        </span>
+                      </div>
+                      {formData.hasOngoingContracts === "Yes" && (
+                        <div className="text-left sm:text-right">
+                          <span className="text-slate-500 font-medium text-[11px] block">Total Outstanding Value:</span>
+                          <span className="font-black text-blue-900 font-mono text-sm">
+                            {formData.totalOutstandingValueLkrMillion !== null && formData.totalOutstandingValueLkrMillion !== undefined
+                              ? `${Number(formData.totalOutstandingValueLkrMillion).toLocaleString("en-US")} LKR`
+                              : "0 LKR"}
+                          </span>
+                        </div>
                       )}
                     </div>
-                  );
-                })()}
-              </div>
-            )}
 
-            {/* Attestation & Declaration */}
-            <div
-              id="declaration-container"
-              className={`p-4 rounded-xl space-y-2.5 transition-all ${
-                modalDeclarationError
-                  ? "bg-rose-50 border-2 border-rose-500 shadow-sm"
-                  : "bg-emerald-50/70 border border-emerald-300"
-              }`}
-            >
-              <label className="flex items-start gap-3 cursor-pointer">
-                <input
-                  id="input-declaration-consent"
-                  type="checkbox"
-                  checked={declarationAccepted}
-                  onChange={(e) => {
-                    setDeclarationAccepted(e.target.checked);
-                    if (modalDeclarationError) setModalDeclarationError(null);
-                  }}
-                  className="w-4 h-4 mt-0.5 text-blue-900 rounded focus:ring-blue-800"
-                />
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 font-bold text-slate-900 uppercase text-[11px]">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
-                    <span>Authorized Representative Declaration *</span>
+                    {formData.hasOngoingContracts === "Yes" && (formData.ongoingContracts || []).some((c) => c && c.contractName) && (
+                      <div className="overflow-x-auto rounded-lg border border-slate-200 mt-2">
+                        <table className="w-full text-left border-collapse text-[11px]">
+                          <thead>
+                            <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                              <th className="p-2 w-10">#</th>
+                              <th className="p-2">Name of Contract</th>
+                              <th className="p-2">Contract No</th>
+                              <th className="p-2">Employer&apos;s Name</th>
+                              <th className="p-2 text-right">Value (LKR)</th>
+                              <th className="p-2">Est. Completion</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 font-medium">
+                            {(formData.ongoingContracts || []).filter((c) => c && (c.contractName || c.contractNo)).map((c, i) => (
+                              <tr key={i}>
+                                <td className="p-2 font-bold text-slate-500">{i + 1}</td>
+                                <td className="p-2 font-bold text-slate-900">{c.contractName || "—"}</td>
+                                <td className="p-2 font-mono">{c.contractNo || "—"}</td>
+                                <td className="p-2">{c.employerName || "—"}</td>
+                                <td className="p-2 text-right font-mono font-bold text-blue-900">
+                                  {c.contractAmount !== null && c.contractAmount !== undefined ? Number(c.contractAmount).toLocaleString("en-US") : "—"}
+                                </td>
+                                <td className="p-2">{c.completionDate || "—"}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </div>
-                  <p className="text-[11px] text-slate-700 leading-relaxed">
-                    I hereby confirm that all information provided in this questionnaire filing is true, accurate, and complete to the best of my knowledge, and submitted on behalf of the registered organization for the Road Development Authority Inclusive Connectivity and Development Project (ICDP).
-                  </p>
-                </div>
-              </label>
 
-              {modalDeclarationError && (
-                <div role="alert" className="flex items-center gap-1.5 pt-1 text-xs font-semibold text-rose-600 animate-fadeIn">
-                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-                  <span>{modalDeclarationError}</span>
+                  {/* Section 9: Experience */}
+                  <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-2">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-100 font-bold text-blue-950 uppercase tracking-wide text-[11px]">
+                      <Briefcase className="w-3.5 h-3.5 text-blue-900" />
+                      <span>Section 9: Experience</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 font-medium text-[11px] block">General Construction Experience:</span>
+                      <span className="font-bold text-slate-900 text-xs">{formData.generalExperience || "N/A"}</span>
+                    </div>
+                  </div>
+
+                  {/* Section 10: Similar Work Experience */}
+                  <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-100 font-bold text-blue-950 uppercase tracking-wide text-[11px]">
+                      <FileText className="w-3.5 h-3.5 text-blue-900" />
+                      <span>Section 10: Similar Work Experience (Highest Value Contracts)</span>
+                    </div>
+
+                    <div className="overflow-x-auto rounded-lg border border-slate-200">
+                      <table className="w-full text-left border-collapse text-[11px]">
+                        <thead>
+                          <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                            <th className="p-2 w-10">#</th>
+                            <th className="p-2">Contract Name</th>
+                            <th className="p-2">Type</th>
+                            <th className="p-2 text-right">Amount (LKR) (Highest to Lowest)</th>
+                            <th className="p-2">Start Date</th>
+                            <th className="p-2">Completion Date</th>
+                            <th className="p-2">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 font-medium">
+                          {(formData.similarWorks || []).map((w, i) => (
+                            <tr key={i}>
+                              <td className="p-2 font-bold text-slate-500">{i + 1}</td>
+                              <td className="p-2 font-bold text-slate-900">{w.contractName || "—"}</td>
+                              <td className="p-2">{w.contractType || "—"}</td>
+                              <td className="p-2 text-right font-mono font-bold text-blue-900">
+                                {w.contractAmount !== null && w.contractAmount !== undefined ? Number(w.contractAmount).toLocaleString("en-US") : "—"}
+                              </td>
+                              <td className="p-2">{w.startDate || "—"}</td>
+                              <td className="p-2">{w.completionDate || "—"}</td>
+                              <td className="p-2">
+                                <span className="px-1.5 py-0.5 rounded text-[10px] bg-slate-100 text-slate-700 font-semibold">
+                                  {w.completionStatus || "—"}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* SUPPLIER SPECIFIC SECTION */}
+              {formData.willParticipate === "Yes" && formData.participantCategory === "Supplier" && formData.supplierDetails && (
+                <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3">
+                  <div className="flex items-center gap-2 pb-2 border-b border-slate-100 font-bold text-purple-950 uppercase tracking-wide text-[11px]">
+                    <Truck className="w-3.5 h-3.5 text-purple-900" />
+                    <span>Material Supplier Capacity &amp; Details</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <span className="text-slate-500 font-medium text-[11px] block">Company Name:</span>
+                      <span className="font-bold text-slate-900 text-xs">{formData.supplierDetails.companyName || "N/A"}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 font-medium text-[11px] block">Province &amp; District:</span>
+                      <span className="font-bold text-slate-900 text-xs">
+                        {[formData.supplierDetails.province, formData.supplierDetails.district].filter(Boolean).join(" • ") || "N/A"}
+                      </span>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <span className="text-slate-500 font-medium text-[11px] block">Plant / Production Facility Location:</span>
+                      <span className="text-slate-800 text-xs">{formData.supplierDetails.locationAddress || "N/A"}</span>
+                    </div>
+                  </div>
+
+                  {formData.supplierDetails.materialsSupplied && formData.supplierDetails.materialsSupplied.length > 0 && (
+                    <div className="pt-2 border-t border-slate-100 space-y-2">
+                      <span className="text-slate-500 font-medium text-[11px] block">Supplied Materials &amp; Annual Capacity:</span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {formData.supplierDetails.materialsSupplied.map((mat) => {
+                          const cap = formData.supplierDetails?.supplyCapacities?.[mat];
+                          return (
+                            <div key={mat} className="p-2.5 rounded-lg bg-purple-50/70 border border-purple-200 flex items-center justify-between">
+                              <span className="font-bold text-slate-900 text-xs">{mat}</span>
+                              <span className="font-bold text-purple-950 font-mono text-xs">
+                                {cap?.quantity ? `${cap.quantity} ${cap.unit}` : "Capacity not specified"}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
-            </div>
-          </div>
 
-          {/* Modal Footer */}
-          <div className="p-4 sm:px-6 bg-white border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
-            <button
-              type="button"
-              onClick={() => setShowReviewModal(false)}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-sm transition-colors min-h-[42px]"
-            >
-              <ArrowLeft className="w-3.5 h-3.5 text-slate-500" />
-              <span>Modify / Edit Details</span>
-            </button>
+              {/* Section 11: Matters for Discussion */}
+              {formData.willParticipate === "Yes" && (
+                <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3">
+                  <div className="flex items-center gap-2 pb-2 border-b border-slate-100 font-bold text-blue-950 uppercase tracking-wide text-[11px]">
+                    <HelpCircle className="w-3.5 h-3.5 text-blue-900" />
+                    <span>Section 11: Matters for Discussion at the Workshop</span>
+                  </div>
+                  {(() => {
+                    const matters = (formData.mattersForDiscussionList || [])
+                      .map((m) => m.trim())
+                      .filter(Boolean);
+                    if (matters.length === 0 && !formData.mattersForDiscussion?.trim()) {
+                      return (
+                        <p className="text-slate-500 italic font-medium leading-relaxed text-xs">
+                          No specific matters or concerns submitted.
+                        </p>
+                      );
+                    }
+                    return (
+                      <div className="space-y-2 pt-0.5">
+                        {matters.length > 0 ? (
+                          matters.map((m, idx) => (
+                            <div
+                              key={idx}
+                              className="flex items-start gap-2.5 p-2 rounded-lg bg-slate-50 border border-slate-100 text-xs"
+                            >
+                              <span className="font-bold text-blue-900 bg-blue-100/70 px-2 py-0.5 rounded text-[10px] shrink-0">
+                                #{idx + 1}
+                              </span>
+                              <span className="text-slate-800 leading-relaxed font-medium">
+                                {m}
+                              </span>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-slate-800 font-medium leading-relaxed whitespace-pre-line text-xs">
+                            {formData.mattersForDiscussion}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
 
-            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-sm transition-colors min-h-[42px]"
-                title="Print Review Sheet"
+              {/* Attestation & Declaration */}
+              <div
+                id="declaration-container"
+                className={`p-4 rounded-xl space-y-2.5 transition-all ${modalDeclarationError
+                  ? "bg-rose-50 border-2 border-rose-500 shadow-sm"
+                  : "bg-emerald-50/70 border border-emerald-300"
+                  }`}
               >
-                <Printer className="w-3.5 h-3.5 text-slate-600" />
-                <span>Print Review</span>
-              </button>
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    id="input-declaration-consent"
+                    type="checkbox"
+                    checked={declarationAccepted}
+                    onChange={(e) => {
+                      setDeclarationAccepted(e.target.checked);
+                      if (modalDeclarationError) setModalDeclarationError(null);
+                    }}
+                    className="w-4 h-4 mt-0.5 text-blue-900 rounded focus:ring-blue-800"
+                  />
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 font-bold text-slate-900 uppercase text-[11px]">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
+                      <span>Authorized Representative Declaration *</span>
+                    </div>
+                    <p className="text-[11px] text-slate-700 leading-relaxed">
+                      I hereby confirm that all information provided in this questionnaire filing is true, accurate, and complete to the best of my knowledge, and submitted on behalf of the registered organization for the Road Development Authority Inclusive Connectivity and Development Project (ICDP).
+                    </p>
+                  </div>
+                </label>
 
-              <button
-                type="button"
-                onClick={handleSubmitFinal}
-                disabled={loading}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-900 to-blue-800 hover:from-blue-800 hover:to-blue-700 text-white font-extrabold text-xs shadow-lg shadow-blue-900/20 transition-all disabled:opacity-60 min-h-[42px]"
-              >
-                {loading ? (
-                  <>
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    <span>Submitting Registration...</span>
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="w-4 h-4 text-amber-400" />
-                    <span>Confirm &amp; Submit Directly</span>
-                  </>
+                {modalDeclarationError && (
+                  <div role="alert" className="flex items-center gap-1.5 pt-1 text-xs font-semibold text-rose-600 animate-fadeIn">
+                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                    <span>{modalDeclarationError}</span>
+                  </div>
                 )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 sm:px-6 bg-white border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowReviewModal(false)}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-sm transition-colors min-h-[42px]"
+              >
+                <ArrowLeft className="w-3.5 h-3.5 text-slate-500" />
+                <span>Modify / Edit Details</span>
               </button>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-sm transition-colors min-h-[42px]"
+                  title="Print Review Sheet"
+                >
+                  <Printer className="w-3.5 h-3.5 text-slate-600" />
+                  <span>Print Review</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSubmitFinal}
+                  disabled={loading}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-900 to-blue-800 hover:from-blue-800 hover:to-blue-700 text-white font-extrabold text-xs shadow-lg shadow-blue-900/20 transition-all disabled:opacity-60 min-h-[42px]"
+                >
+                  {loading ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Submitting Registration...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4 text-amber-400" />
+                      <span>Confirm &amp; Submit Directly</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    )}
-  </div>
-);
+      )}
+    </div>
+  );
 }
 
 export default function RegisterPage() {
