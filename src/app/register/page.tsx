@@ -219,38 +219,117 @@ function RegisterForm() {
   // Questionnaire Form State
   const [formData, setFormData] = useState<OfficialQuestionnaireData>(createInitialFormData);
   const [specialtyOtherList, setSpecialtyOtherList] = useState<string[]>([""]);
+  const [supplierMaterialsOtherList, setSupplierMaterialsOtherList] = useState<string[]>([""]);
 
-  // Multi-specialty helper: parse comma-separated string into list of items
+  // Multi-item helper: parse comma-separated string into list of items
   const parseOtherSpecialties = (str?: string): string[] => {
     if (!str || !str.trim()) return [""];
     const items = str.split(",").map((s) => s.trim()).filter(Boolean);
     return items.length > 0 ? items : [""];
   };
 
+  // Sync contractor specialty other list when formData.specialtyOther changes from outside
+  useEffect(() => {
+    if (formData.specialtyOther && formData.specialtyOther.trim()) {
+      const parsed = parseOtherSpecialties(formData.specialtyOther);
+      const currentCombined = specialtyOtherList.map((s) => s.trim()).filter(Boolean).join(", ");
+      const newCombined = parsed.join(", ");
+      if (currentCombined !== newCombined) {
+        setSpecialtyOtherList(parsed);
+      }
+    }
+  }, [formData.specialtyOther]);
+
+  // Sync supplier materials other list when formData.supplierDetails?.materialsOther changes
+  useEffect(() => {
+    if (formData.supplierDetails?.materialsOther && formData.supplierDetails.materialsOther.trim()) {
+      const parsed = parseOtherSpecialties(formData.supplierDetails.materialsOther);
+      const currentCombined = supplierMaterialsOtherList.map((s) => s.trim()).filter(Boolean).join(", ");
+      const newCombined = parsed.join(", ");
+      if (currentCombined !== newCombined) {
+        setSupplierMaterialsOtherList(parsed);
+      }
+    }
+  }, [formData.supplierDetails?.materialsOther]);
+
   const handleUpdateSpecialtyOther = (index: number, value: string) => {
-    const updated = [...specialtyOtherList];
-    updated[index] = value;
-    setSpecialtyOtherList(updated);
-    const combined = updated
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .join(", ");
-    setFormData((prev) => ({ ...prev, specialtyOther: combined }));
+    setSpecialtyOtherList((prev) => {
+      const updated = [...prev];
+      updated[index] = value;
+      const combined = updated
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .join(", ");
+      setFormData((f) => ({ ...f, specialtyOther: combined }));
+      return updated;
+    });
   };
 
   const handleAddSpecialtyOther = () => {
+    const currentSpecs = formData.areasOfSpecialty || [];
+    const hasOther = currentSpecs.includes("Other");
+
     setSpecialtyOtherList((prev) => [...prev, ""]);
+
+    if (!hasOther) {
+      setFormData((f) => ({
+        ...f,
+        areasOfSpecialty: [...(f.areasOfSpecialty || []), "Other"],
+      }));
+    }
   };
 
   const handleRemoveSpecialtyOther = (index: number) => {
-    const updated = specialtyOtherList.filter((_, i) => i !== index);
-    const finalList = updated.length > 0 ? updated : [""];
-    setSpecialtyOtherList(finalList);
-    const combined = finalList
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .join(", ");
-    setFormData((prev) => ({ ...prev, specialtyOther: combined }));
+    setSpecialtyOtherList((prev) => {
+      const updated = prev.filter((_, i) => i !== index);
+      const finalList = updated.length > 0 ? updated : [""];
+      const combined = finalList
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .join(", ");
+      setFormData((f) => ({ ...f, specialtyOther: combined }));
+      return finalList;
+    });
+  };
+
+  const handleUpdateSupplierMaterialOther = (index: number, value: string) => {
+    setSupplierMaterialsOtherList((prev) => {
+      const updated = [...prev];
+      updated[index] = value;
+      const combined = updated.map((s) => s.trim()).filter(Boolean).join(", ");
+      setFormData((f) => ({
+        ...f,
+        supplierDetails: {
+          ...(f.supplierDetails || createEmptySupplierDetails()),
+          materialsOther: combined,
+        },
+      }));
+      return updated;
+    });
+  };
+
+  const handleAddSupplierMaterialOther = () => {
+    const currentMats = formData.supplierDetails?.materialsSupplied || [];
+    if (!currentMats.includes("Other")) {
+      handleSupplierMaterialToggle("Other");
+    }
+    setSupplierMaterialsOtherList((prev) => [...prev, ""]);
+  };
+
+  const handleRemoveSupplierMaterialOther = (index: number) => {
+    setSupplierMaterialsOtherList((prev) => {
+      const updated = prev.filter((_, i) => i !== index);
+      const finalList = updated.length > 0 ? updated : [""];
+      const combined = finalList.map((s) => s.trim()).filter(Boolean).join(", ");
+      setFormData((f) => ({
+        ...f,
+        supplierDetails: {
+          ...(f.supplierDetails || createEmptySupplierDetails()),
+          materialsOther: combined,
+        },
+      }));
+      return finalList;
+    });
   };
 
   // UI States
@@ -1902,22 +1981,60 @@ function RegisterForm() {
                             })}
                           </div>
                           {(formData.supplierDetails?.materialsSupplied || []).includes("Other") && (
-                            <div className="mt-2.5">
-                              <input
-                                type="text"
-                                value={formData.supplierDetails?.materialsOther || ""}
-                                onChange={(e) =>
-                                  setFormData({
-                                    ...formData,
-                                    supplierDetails: {
-                                      ...(formData.supplierDetails || createEmptySupplierDetails()),
-                                      materialsOther: e.target.value,
-                                    },
-                                  })
-                                }
-                                placeholder="If Other, please specify your material type..."
-                                className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
-                              />
+                            <div className="mt-3 p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                              <div className="flex items-center justify-between">
+                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
+                                  Specify Other Supplied Material(s)
+                                </label>
+                                <span className="text-[11px] text-slate-500">
+                                  Add one or more material types
+                                </span>
+                              </div>
+
+                              <div className="space-y-2">
+                                {supplierMaterialsOtherList.map((item, idx) => (
+                                  <div key={idx} className="flex items-center gap-2">
+                                    <input
+                                      type="text"
+                                      value={item}
+                                      onChange={(e) => handleUpdateSupplierMaterialOther(idx, e.target.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                          e.preventDefault();
+                                          handleAddSupplierMaterialOther();
+                                        }
+                                      }}
+                                      placeholder={
+                                        idx === 0
+                                          ? "If Other, please specify your material type..."
+                                          : `Additional material #${idx + 1}`
+                                      }
+                                      className="flex-1 p-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-800"
+                                    />
+                                    {supplierMaterialsOtherList.length > 1 && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRemoveSupplierMaterialOther(idx)}
+                                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg border border-transparent hover:border-rose-200 transition-colors"
+                                        title="Remove this material"
+                                      >
+                                        <X className="w-4 h-4" />
+                                      </button>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+
+                              <div>
+                                <button
+                                  type="button"
+                                  onClick={handleAddSupplierMaterialOther}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-900 hover:text-blue-700 bg-white hover:bg-blue-50 border border-blue-200 rounded-lg shadow-sm transition-colors"
+                                >
+                                  <Plus className="w-3.5 h-3.5" />
+                                  <span>+ Add another material</span>
+                                </button>
+                              </div>
                             </div>
                           )}
                         </div>
@@ -2259,55 +2376,87 @@ function RegisterForm() {
                         </div>
 
                         <div>
-                          <label className="block font-semibold text-slate-700 mb-2">
-                            Areas of specialty * (Select all that apply)
-                          </label>
+                          <div className="flex items-center justify-between mb-2">
+                            <label className="block font-semibold text-slate-700">
+                              Areas of specialty * (Select all that apply)
+                            </label>
+                            <button
+                              type="button"
+                              onClick={handleAddSpecialtyOther}
+                              className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-900 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-3 py-1 rounded-lg transition-colors"
+                              title="Click to add an Other technical specialty"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              <span>+ Add Other Specialty</span>
+                            </button>
+                          </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                            {SPECIALTY_OPTIONS.map((spec) => (
-                              <label
-                                key={spec}
-                                className="flex items-center gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-100"
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={(formData.areasOfSpecialty || []).includes(spec)}
-                                  onChange={() => handleSpecialtyChange(spec)}
-                                  className="w-4 h-4 text-blue-900 rounded focus:ring-blue-800"
-                                />
-                                <span className="font-medium text-slate-800">{spec}</span>
-                              </label>
-                            ))}
+                            {SPECIALTY_OPTIONS.map((spec) => {
+                              const isChecked = (formData.areasOfSpecialty || []).includes(spec);
+                              return (
+                                <label
+                                  key={spec}
+                                  className={`flex items-center gap-2 p-2.5 border rounded-lg cursor-pointer transition-all ${
+                                    isChecked
+                                      ? "bg-blue-50/80 border-blue-800 text-blue-950 font-semibold"
+                                      : "bg-slate-50 border-slate-200 text-slate-800 hover:bg-slate-100"
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={() => handleSpecialtyChange(spec)}
+                                    className="w-4 h-4 text-blue-900 rounded focus:ring-blue-800"
+                                  />
+                                  <span className="font-medium text-slate-800">{spec}</span>
+                                </label>
+                              );
+                            })}
                           </div>
                           {(formData.areasOfSpecialty || []).includes("Other") && (
-                            <div className="mt-3 p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
-                              <div className="flex items-center justify-between">
-                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
-                                  Specify Other Area(s) of Specialty
-                                </label>
-                                <span className="text-[11px] text-slate-500">
-                                  Add one or more technical specialties
+                            <div className="mt-3 p-4 bg-slate-50 border-2 border-dashed border-blue-200 rounded-xl space-y-3">
+                              <div className="flex items-center justify-between pb-1 border-b border-slate-200/80">
+                                <div>
+                                  <label className="block text-xs font-bold text-blue-950 uppercase tracking-wide">
+                                    Other Technical Specialty Area(s)
+                                  </label>
+                                  <span className="text-[11px] text-slate-500">
+                                    Specify each custom specialty below. You can add as many as needed.
+                                  </span>
+                                </div>
+                                <span className="text-[10px] bg-blue-100 text-blue-900 font-bold px-2 py-0.5 rounded-full">
+                                  {specialtyOtherList.filter((s) => s.trim()).length} Specified
                                 </span>
                               </div>
 
-                              <div className="space-y-2">
+                              <div className="space-y-2.5">
                                 {specialtyOtherList.map((item, idx) => (
                                   <div key={idx} className="flex items-center gap-2">
+                                    <span className="text-xs font-bold text-slate-400 w-5 text-right shrink-0">
+                                      #{idx + 1}
+                                    </span>
                                     <input
                                       type="text"
                                       value={item}
                                       onChange={(e) => handleUpdateSpecialtyOther(idx, e.target.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                          e.preventDefault();
+                                          handleAddSpecialtyOther();
+                                        }
+                                      }}
                                       placeholder={
                                         idx === 0
-                                          ? "If Other, please specify your area of specialty"
-                                          : `Additional area of specialty #${idx + 1}`
+                                          ? "If Other, please specify your area of specialty (e.g. Drainage, Piling)"
+                                          : `Specify additional area of specialty #${idx + 1}`
                                       }
-                                      className="flex-1 p-2 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800"
+                                      className="flex-1 p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-800 shadow-sm"
                                     />
                                     {specialtyOtherList.length > 1 && (
                                       <button
                                         type="button"
                                         onClick={() => handleRemoveSpecialtyOther(idx)}
-                                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg border border-transparent hover:border-rose-200 transition-colors"
+                                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg border border-transparent hover:border-rose-200 transition-colors shrink-0"
                                         title="Remove this specialty"
                                       >
                                         <X className="w-4 h-4" />
@@ -2317,15 +2466,18 @@ function RegisterForm() {
                                 ))}
                               </div>
 
-                              <div>
+                              <div className="pt-1 flex flex-wrap items-center justify-between gap-2">
                                 <button
                                   type="button"
                                   onClick={handleAddSpecialtyOther}
-                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-900 hover:text-blue-700 bg-white hover:bg-blue-50 border border-blue-200 rounded-lg shadow-sm transition-colors"
+                                  className="inline-flex items-center gap-2 px-4 py-2 text-xs font-extrabold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-md transition-all active:scale-[0.98]"
                                 >
-                                  <Plus className="w-3.5 h-3.5" />
-                                  <span>+ Add another specialty</span>
+                                  <Plus className="w-4 h-4" />
+                                  <span>+ Add Another Other Specialty</span>
                                 </button>
+                                <span className="text-[11px] text-slate-500 italic">
+                                  Press Enter to add the next specialty
+                                </span>
                               </div>
                             </div>
                           )}
