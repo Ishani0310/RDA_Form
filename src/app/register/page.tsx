@@ -1695,17 +1695,33 @@ function RegisterForm() {
 
         <div className="relative z-10">
           {/* Mobile Layout (< sm / < 640px) */}
-          <div className="sm:hidden space-y-3.5">
-            {/* Top Row: RDA Authority Tag & Ministry/RDA Official Logos */}
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <span className="text-[11px] tracking-widest font-bold text-amber-400 uppercase block">
-                  Road Development Authority &bull; Sri Lanka
-                </span>
+          <div className="sm:hidden space-y-2.5">
+            {/* 1. Top: Single line Road Development Authority • Sri Lanka */}
+            <div className="w-full">
+              <span className="text-[10.5px] min-[380px]:text-[11.5px] tracking-wider font-bold text-amber-400 uppercase block whitespace-nowrap">
+                Road Development Authority &bull; Sri Lanka
+              </span>
+            </div>
+
+            {/* 2. Heading 1: Early Market Engagement Workshop */}
+            <h1 className="text-xl font-black tracking-tight text-white leading-snug">
+              Early Market Engagement Workshop
+            </h1>
+
+            {/* 3. Subtitle: Organized by Inclusive Connectivity and Development Project (ICDP) */}
+            <p className="text-xs text-slate-300 font-medium leading-relaxed">
+              Organized by Inclusive Connectivity and Development Project (ICDP)
+            </p>
+
+            {/* 4. Bottom Row: 07 December 2026 and logo */}
+            <div className="pt-2.5 border-t border-white/10 flex items-center justify-between gap-2.5">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/15 text-xs font-semibold text-amber-300 shadow-sm shrink-0">
+                <Calendar className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>07 December 2026</span>
               </div>
 
-              {/* Ministry & RDA Official Logos on mobile top-right */}
-              <div className="bg-white rounded-xl px-2.5 py-1.5 shadow-md border border-white/40 shrink-0 flex flex-col items-center gap-1.5 max-w-[155px]">
+              {/* Ministry & RDA Official Logos on mobile bottom-right */}
+              <div className="bg-white rounded-xl px-2.5 py-1.5 shadow-md border border-white/40 shrink-0 flex flex-col items-center gap-1 max-w-[145px]">
                 <img
                   src="/ministry-logo.png"
                   alt="Ministry of Transport, Highways and Urban Development"
@@ -1717,22 +1733,6 @@ function RegisterForm() {
                   alt="Road Development Authority Sri Lanka"
                   className="h-5.5 w-auto object-contain"
                 />
-              </div>
-            </div>
-
-            {/* Title & Workshop Details on mobile */}
-            <div className="pt-2.5 border-t border-white/10 space-y-1.5">
-              <h1 className="text-xl font-black tracking-tight text-white leading-snug">
-                Early Market Engagement Workshop
-              </h1>
-              <p className="text-xs text-slate-300 font-medium leading-relaxed">
-                Organized by Inclusive Connectivity and Development Project (ICDP)
-              </p>
-              <div className="pt-1.5">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-white/10 backdrop-blur-sm border border-white/15 text-[11px] font-semibold text-amber-300 shadow-sm">
-                  <Calendar className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                  <span>07 December 2026</span>
-                </div>
               </div>
             </div>
           </div>
