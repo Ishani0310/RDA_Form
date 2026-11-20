@@ -1695,7 +1695,7 @@ function RegisterForm() {
 
         <div className="relative z-10">
           {/* Mobile Layout (< sm / < 640px) */}
-          <div className="sm:hidden space-y-2.5">
+          <div className="sm:hidden space-y-2">
             {/* 1. Top: Single line Road Development Authority • Sri Lanka */}
             <div className="w-full">
               <span className="text-[10px] min-[360px]:text-[11px] min-[400px]:text-[11.5px] tracking-wider font-bold text-amber-400 uppercase block whitespace-nowrap">
@@ -1715,9 +1715,9 @@ function RegisterForm() {
               Organized by Inclusive Connectivity and Development Project (ICDP)
             </p>
 
-            {/* 4. Bottom Row: 07 December 2026 and logo */}
-            <div className="pt-2.5 border-t border-white/10 flex items-center justify-between gap-2.5">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/15 text-xs font-semibold text-amber-300 shadow-sm shrink-0">
+            {/* 4. Bottom Row: 07 December 2026 and logo (closer to the subtitle) */}
+            <div className="pt-0.5 flex items-start justify-between gap-2.5">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 backdrop-blur-sm border border-white/15 text-[11px] min-[360px]:text-xs font-semibold text-amber-300 shadow-sm shrink-0 mt-0.5">
                 <Calendar className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                 <span>07 December 2026</span>
               </div>
