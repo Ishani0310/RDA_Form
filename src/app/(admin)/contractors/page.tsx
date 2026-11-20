@@ -541,10 +541,13 @@ export default function ContractorsPage() {
             ${ongoingContractsList.map((oc: any, idx: number) => `
             <tr>
               <td>${idx + 1}</td>
-              <td style="font-weight: 600;">${escapeHtml(oc.contractName || oc.projectName)}</td>
-              <td>${oc.contractValueLkrMillion ? `LKR ${escapeHtml(oc.contractValueLkrMillion)}M` : "—"}</td>
-              <td>${escapeHtml(oc.clientEmployer || "—")}</td>
-              <td>${escapeHtml(oc.expectedCompletionDate || "—")}</td>
+              <td style="font-weight: 600;">
+                ${escapeHtml(oc.contractName || oc.projectName)}
+                ${oc.contractNo ? `<br/><small style="color: #64748b;">Contract No: ${escapeHtml(oc.contractNo)}</small>` : ""}
+              </td>
+              <td>${oc.contractAmount ? `LKR ${Number(oc.contractAmount).toLocaleString()}` : (oc.contractValueLkrMillion ? `LKR ${escapeHtml(oc.contractValueLkrMillion)}M` : "—")}</td>
+              <td>${escapeHtml(oc.employerName || oc.clientEmployer || "—")}</td>
+              <td>${escapeHtml(oc.completionDate || oc.expectedCompletionDate || "—")}</td>
             </tr>
             `).join("")}
           </tbody>
@@ -1416,16 +1419,23 @@ export default function ContractorsPage() {
                       {ongoingContractsList.map((oc: any, idx: number) => (
                         <div key={idx} className="p-2.5 bg-white rounded-lg border border-slate-200 text-xs space-y-1">
                           <div className="flex justify-between items-center">
-                            <span className="font-bold text-slate-900">Project {idx + 1}: {oc.contractName || oc.projectName}</span>
-                            {oc.contractValueLkrMillion && (
+                            <div>
+                              <span className="font-bold text-slate-900">Project {idx + 1}: {oc.contractName || oc.projectName}</span>
+                              {oc.contractNo && (
+                                <span className="ml-2 text-[10px] bg-slate-100 text-slate-700 font-mono px-1.5 py-0.5 rounded">
+                                  No: {oc.contractNo}
+                                </span>
+                              )}
+                            </div>
+                            {(oc.contractAmount || oc.contractValueLkrMillion) && (
                               <span className="font-mono font-bold text-slate-800">
-                                LKR {oc.contractValueLkrMillion}M
+                                {oc.contractAmount ? `LKR ${Number(oc.contractAmount).toLocaleString()}` : `LKR ${oc.contractValueLkrMillion}M`}
                               </span>
                             )}
                           </div>
                           <div className="text-[11px] text-slate-500 flex flex-wrap gap-3">
-                            {oc.clientEmployer && <span>Client: {oc.clientEmployer}</span>}
-                            {oc.expectedCompletionDate && <span>Completion: {oc.expectedCompletionDate}</span>}
+                            {(oc.employerName || oc.clientEmployer) && <span>Employer: {oc.employerName || oc.clientEmployer}</span>}
+                            {(oc.completionDate || oc.expectedCompletionDate) && <span>Completion: {oc.completionDate || oc.expectedCompletionDate}</span>}
                           </div>
                         </div>
                       ))}

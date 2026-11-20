@@ -342,6 +342,8 @@ export function normalizeQuestionnaireData(
     return {
       contractIndex: idx,
       contractName: item.contractName ? String(item.contractName).trim() : "",
+      contractNo: item.contractNo ? String(item.contractNo).trim() : "",
+      employerName: item.employerName ? String(item.employerName).trim() : "",
       contractAmount: parseNumOrNull(item.contractAmount),
       currency: String(item.currency || "LKR").trim().toUpperCase(),
       currencyOther: item.currencyOther || undefined,

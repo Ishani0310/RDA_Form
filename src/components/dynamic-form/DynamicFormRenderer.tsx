@@ -1098,6 +1098,8 @@ function renderOngoingWorksContracts(
     list.push({
       contractIndex: list.length + 1,
       contractName: "",
+      contractNo: "",
+      employerName: "",
       contractAmount: null,
       currency: "LKR",
       completionDate: null,
@@ -1112,6 +1114,8 @@ function renderOngoingWorksContracts(
         {
           contractIndex: 1,
           contractName: "",
+          contractNo: "",
+          employerName: "",
           contractAmount: null,
           currency: "LKR",
           completionDate: null,
@@ -1129,13 +1133,15 @@ function renderOngoingWorksContracts(
   return (
     <div className="space-y-3">
       <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-        <table className="w-full min-w-[720px] text-left border-collapse text-xs">
+        <table className="w-full min-w-[980px] text-left border-collapse text-xs">
           <thead>
             <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-700 font-bold uppercase text-[10px] tracking-wider">
-              <th className="p-3 w-12 text-center">#</th>
-              <th className="p-3">Contract Name / Project Title</th>
-              <th className="p-3 w-64">Contract Amount &amp; Currency</th>
-              <th className="p-3 w-48">Anticipated Completion</th>
+              <th className="p-3 w-12 text-center">No</th>
+              <th className="p-3 min-w-[200px]">Name of contract</th>
+              <th className="p-3 w-40">Contract No</th>
+              <th className="p-3 min-w-[180px]">Employer's Name</th>
+              <th className="p-3 w-56">Value of outstanding work(LKR) as at 1st December</th>
+              <th className="p-3 w-44">Estimated completion date</th>
               <th className="p-3 w-14 text-center">Action</th>
             </tr>
           </thead>
@@ -1148,56 +1154,51 @@ function renderOngoingWorksContracts(
                 <td className="p-3 align-top">
                   <input
                     type="text"
-                    placeholder="Project Title"
+                    placeholder="Name of contract"
                     value={c.contractName || ""}
                     onChange={(e) => handleContractChange(idx, "contractName", e.target.value)}
                     disabled={disabled}
                     className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
                   />
                 </td>
+                <td className="p-3 align-top">
+                  <input
+                    type="text"
+                    placeholder="Contract No"
+                    value={c.contractNo || ""}
+                    onChange={(e) => handleContractChange(idx, "contractNo", e.target.value)}
+                    disabled={disabled}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
+                  />
+                </td>
+                <td className="p-3 align-top">
+                  <input
+                    type="text"
+                    placeholder="Employer's Name"
+                    value={c.employerName || ""}
+                    onChange={(e) => handleContractChange(idx, "employerName", e.target.value)}
+                    disabled={disabled}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
+                  />
+                </td>
                 <td className="p-3 align-top space-y-1">
-                  <div className="flex gap-1.5">
-                    <input
-                      type="number"
-                      placeholder="Amount"
-                      value={c.contractAmount ?? ""}
-                      onChange={(e) =>
-                        handleContractChange(
-                          idx,
-                          "contractAmount",
-                          e.target.value === "" ? null : Number(e.target.value)
-                        )
-                      }
-                      disabled={disabled}
-                      className="flex-1 p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
-                    />
-                    <select
-                      value={c.currency || "LKR"}
-                      onChange={(e) => handleContractChange(idx, "currency", e.target.value)}
-                      disabled={disabled}
-                      className="w-24 p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none font-bold"
-                    >
-                      {CURRENCY_OPTIONS.map((cur) => (
-                        <option key={cur} value={cur}>
-                          {cur}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  {c.currency === "Other" && (
-                    <input
-                      type="text"
-                      placeholder="Specify currency..."
-                      value={c.currencyOther || ""}
-                      onChange={(e) => handleContractChange(idx, "currencyOther", e.target.value)}
-                      disabled={disabled}
-                      className="w-full p-1.5 bg-amber-50/60 border border-amber-300 rounded text-slate-900 text-xs focus:ring-1 focus:ring-blue-800"
-                    />
-                  )}
+                  <input
+                    type="number"
+                    placeholder="Amount in LKR"
+                    value={c.contractAmount ?? ""}
+                    onChange={(e) =>
+                      handleContractChange(
+                        idx,
+                        "contractAmount",
+                        e.target.value === "" ? null : Number(e.target.value)
+                      )
+                    }
+                    disabled={disabled}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
+                  />
                   {c.contractAmount !== null && c.contractAmount !== undefined && c.contractAmount !== "" && (
                     <span className="text-[10px] font-mono text-slate-600 block">
-                      = {c.currency === "Other" ? (c.currencyOther || "Other") : (c.currency || "LKR")}{" "}
-                      {Number(c.contractAmount).toLocaleString()}
+                      = LKR {Number(c.contractAmount).toLocaleString()}
                     </span>
                   )}
                 </td>

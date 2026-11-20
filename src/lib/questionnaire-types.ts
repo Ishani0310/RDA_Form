@@ -113,12 +113,14 @@ export type GeneralExperienceOption =
 export type OngoingContractsChoice = "Yes" | "No";
 
 export interface OngoingWorkContract {
-  contractIndex: number; // 1, 2, 3
-  contractName: string;
-  contractAmount: number | string | null;
+  contractIndex: number; // 1, 2, 3...
+  contractName: string; // Name of contract
+  contractNo?: string; // Contract No
+  employerName?: string; // Employer's Name
+  contractAmount: number | string | null; // Value of outstanding work (LKR) as at 1st December
   currency: string; // e.g. "LKR", "USD", etc.
   currencyOther?: string;
-  completionDate: string | null;
+  completionDate: string | null; // Estimated completion date
 }
 
 export type SimilarWorkContractType =
@@ -285,6 +287,8 @@ export function createEmptyOngoingWorks(): OngoingWorkContract[] {
     {
       contractIndex: 1,
       contractName: "",
+      contractNo: "",
+      employerName: "",
       contractAmount: null,
       currency: "LKR",
       completionDate: null,
@@ -292,6 +296,8 @@ export function createEmptyOngoingWorks(): OngoingWorkContract[] {
     {
       contractIndex: 2,
       contractName: "",
+      contractNo: "",
+      employerName: "",
       contractAmount: null,
       currency: "LKR",
       completionDate: null,
@@ -299,6 +305,8 @@ export function createEmptyOngoingWorks(): OngoingWorkContract[] {
     {
       contractIndex: 3,
       contractName: "",
+      contractNo: "",
+      employerName: "",
       contractAmount: null,
       currency: "LKR",
       completionDate: null,

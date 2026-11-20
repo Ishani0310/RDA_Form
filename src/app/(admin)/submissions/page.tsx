@@ -190,7 +190,11 @@ function generateSubmissionHtml(sub: FormattedSubmission): string {
         ongoingWorksRows += `
           <tr>
             <td style="font-weight: bold;">Contract ${idx + 1}</td>
-            <td>${escapeHtml(oc.contractName)}</td>
+            <td>
+              <strong>${escapeHtml(oc.contractName)}</strong>
+              ${oc.contractNo ? `<br/><small style="color: #64748b;">Contract No: ${escapeHtml(oc.contractNo)}</small>` : ""}
+              ${oc.employerName ? `<br/><small style="color: #64748b;">Employer: ${escapeHtml(oc.employerName)}</small>` : ""}
+            </td>
             <td>${escapeHtml(oc.currency || "LKR")} ${oc.contractAmount ? Number(oc.contractAmount).toLocaleString() : "—"}</td>
             <td>${escapeHtml(oc.completionDate || "N/A")}</td>
           </tr>
@@ -1779,12 +1783,20 @@ function SubmissionsContent() {
                             {selectedSub.questionnaireData.ongoingContracts.map((oc: any, idx: number) => {
                               if (!oc || !oc.contractName) return null;
                               return (
-                                <div key={idx} className="p-2 bg-white rounded border border-slate-200 flex justify-between items-center text-xs">
+                                <div key={idx} className="p-2.5 bg-white rounded-lg border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
                                   <div>
                                     <span className="font-bold text-slate-900">Contract {idx + 1}: </span>
-                                    <span>{oc.contractName}</span>
+                                    <span className="font-semibold text-slate-800">{oc.contractName}</span>
+                                    {oc.contractNo && (
+                                      <span className="ml-2 text-[10px] bg-slate-100 text-slate-700 font-mono px-1.5 py-0.5 rounded">
+                                        No: {oc.contractNo}
+                                      </span>
+                                    )}
+                                    {oc.employerName && (
+                                      <p className="text-[11px] text-slate-500 mt-0.5">Employer: {oc.employerName}</p>
+                                    )}
                                   </div>
-                                  <div className="text-right">
+                                  <div className="text-right shrink-0">
                                     <span className="font-mono font-bold text-slate-800">
                                       {oc.currency || "LKR"} {oc.contractAmount !== null ? Number(oc.contractAmount).toLocaleString() : "—"}
                                     </span>

@@ -1158,6 +1158,8 @@ function RegisterForm() {
     list.push({
       contractIndex: list.length + 1,
       contractName: "",
+      contractNo: "",
+      employerName: "",
       contractAmount: null,
       currency: "LKR",
       completionDate: null,
@@ -1169,6 +1171,8 @@ function RegisterForm() {
     const current = formData.ongoingContracts || createEmptyOngoingWorks();
     if (current.length <= 1) {
       handleOngoingContractChange(0, "contractName", "");
+      handleOngoingContractChange(0, "contractNo", "");
+      handleOngoingContractChange(0, "employerName", "");
       handleOngoingContractChange(0, "contractAmount", null);
       handleOngoingContractChange(0, "currency", "LKR");
       handleOngoingContractChange(0, "completionDate", null);
@@ -2947,13 +2951,15 @@ function RegisterForm() {
                               </div>
 
                               <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-                                <table className="w-full min-w-[720px] text-left border-collapse text-xs">
+                                <table className="w-full min-w-[980px] text-left border-collapse text-xs">
                                   <thead>
                                     <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-700 font-bold uppercase text-[10px] tracking-wider">
-                                      <th className="p-3 w-12 text-center">#</th>
-                                      <th className="p-3">Contract Name / Project Title</th>
-                                      <th className="p-3 w-64">Contract Amount &amp; Currency</th>
-                                      <th className="p-3 w-48">Anticipated Completion</th>
+                                      <th className="p-3 w-12 text-center">No</th>
+                                      <th className="p-3 min-w-[200px]">Name of contract</th>
+                                      <th className="p-3 w-40">Contract No</th>
+                                      <th className="p-3 min-w-[180px]">Employer's Name</th>
+                                      <th className="p-3 w-56">Value of outstanding work(LKR) as at 1st December</th>
+                                      <th className="p-3 w-44">Estimated completion date</th>
                                       <th className="p-3 w-14 text-center">Action</th>
                                     </tr>
                                   </thead>
@@ -2968,44 +2974,39 @@ function RegisterForm() {
                                             type="text"
                                             value={contract.contractName || ""}
                                             onChange={(e) => handleOngoingContractChange(idx, "contractName", e.target.value)}
-                                            placeholder="Project Title"
+                                            placeholder="Name of contract"
+                                            className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
+                                          />
+                                        </td>
+                                        <td className="p-3 align-top">
+                                          <input
+                                            type="text"
+                                            value={contract.contractNo || ""}
+                                            onChange={(e) => handleOngoingContractChange(idx, "contractNo", e.target.value)}
+                                            placeholder="Contract No"
+                                            className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
+                                          />
+                                        </td>
+                                        <td className="p-3 align-top">
+                                          <input
+                                            type="text"
+                                            value={contract.employerName || ""}
+                                            onChange={(e) => handleOngoingContractChange(idx, "employerName", e.target.value)}
+                                            placeholder="Employer's Name"
                                             className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
                                           />
                                         </td>
                                         <td className="p-3 align-top space-y-1">
-                                          <div className="flex gap-1.5">
-                                            <input
-                                              type="number"
-                                              value={contract.contractAmount ?? ""}
-                                              onChange={(e) => handleOngoingContractChange(idx, "contractAmount", e.target.value)}
-                                              placeholder="Amount"
-                                              className="flex-1 p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
-                                            />
-                                            <select
-                                              value={contract.currency || "LKR"}
-                                              onChange={(e) => handleOngoingContractChange(idx, "currency", e.target.value)}
-                                              className="w-24 p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none font-bold"
-                                            >
-                                              {CURRENCY_OPTIONS.map((cur) => (
-                                                <option key={cur} value={cur}>
-                                                  {cur}
-                                                </option>
-                                              ))}
-                                            </select>
-                                          </div>
-                                          {contract.currency === "Other" && (
-                                            <input
-                                              type="text"
-                                              value={(contract as any).currencyOther || ""}
-                                              onChange={(e) => handleOngoingContractChange(idx, "currencyOther", e.target.value)}
-                                              placeholder="Specify currency..."
-                                              className="w-full p-1.5 bg-amber-50/60 border border-amber-300 rounded text-slate-900 text-xs focus:ring-1 focus:ring-blue-800"
-                                            />
-                                          )}
+                                          <input
+                                            type="number"
+                                            value={contract.contractAmount ?? ""}
+                                            onChange={(e) => handleOngoingContractChange(idx, "contractAmount", e.target.value)}
+                                            placeholder="Amount in LKR"
+                                            className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
+                                          />
                                           {contract.contractAmount !== null && contract.contractAmount !== undefined && contract.contractAmount !== "" && (
                                             <span className="text-[10px] font-mono text-slate-600 block">
-                                              = {contract.currency === "Other" ? ((contract as any).currencyOther || "Other") : (contract.currency || "LKR")}{" "}
-                                              {Number(contract.contractAmount).toLocaleString()}
+                                              = LKR {Number(contract.contractAmount).toLocaleString()}
                                             </span>
                                           )}
                                         </td>
