@@ -1071,7 +1071,7 @@ function renderSupplierMaterialsList(
 }
 
 /**
- * Built-in Ongoing Works Repeating Contracts Renderer (Up to 3 Contracts)
+ * Built-in Ongoing Works Repeating Contracts Table Renderer (With Dynamic Add/Remove)
  */
 function renderOngoingWorksContracts(
   value: any,
@@ -1092,97 +1092,163 @@ function renderOngoingWorksContracts(
     onChange(list);
   };
 
+  const handleAddContract = () => {
+    if (disabled) return;
+    const list = [...contracts];
+    list.push({
+      contractIndex: list.length + 1,
+      contractName: "",
+      contractAmount: null,
+      currency: "LKR",
+      completionDate: null,
+    });
+    onChange(list);
+  };
+
+  const handleRemoveContract = (idx: number) => {
+    if (disabled) return;
+    if (contracts.length <= 1) {
+      onChange([
+        {
+          contractIndex: 1,
+          contractName: "",
+          contractAmount: null,
+          currency: "LKR",
+          completionDate: null,
+        },
+      ]);
+      return;
+    }
+    const list = contracts.filter((_, i) => i !== idx).map((c, i) => ({
+      ...c,
+      contractIndex: i + 1,
+    }));
+    onChange(list);
+  };
+
   return (
     <div className="space-y-3">
-      {[0, 1, 2].map((idx) => {
-        const c = contracts[idx] || {};
-        return (
-          <div
-            key={idx}
-            className="p-3.5 bg-white border border-slate-200 rounded-lg space-y-2.5 text-xs"
-          >
-            <div className="flex items-center justify-between">
-              <span className="font-semibold text-blue-900 text-[11px]">
-                Ongoing Contract {idx + 1}
-              </span>
-              <span className="text-[10px] text-slate-400 font-semibold">Optional</span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label className="block font-medium text-slate-700 mb-1">Contract Name</label>
-                <input
-                  type="text"
-                  placeholder="Project Title"
-                  value={c.contractName || ""}
-                  onChange={(e) => handleContractChange(idx, "contractName", e.target.value)}
-                  disabled={disabled}
-                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
-                />
-              </div>
-
-              <div>
-                <label className="block font-medium text-slate-700 mb-1">Contract Amount &amp; Currency</label>
-                <div className="flex gap-1.5">
+      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+        <table className="w-full min-w-[720px] text-left border-collapse text-xs">
+          <thead>
+            <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-700 font-bold uppercase text-[10px] tracking-wider">
+              <th className="p-3 w-12 text-center">#</th>
+              <th className="p-3">Contract Name / Project Title</th>
+              <th className="p-3 w-64">Contract Amount &amp; Currency</th>
+              <th className="p-3 w-48">Anticipated Completion</th>
+              <th className="p-3 w-14 text-center">Action</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-200/80">
+            {contracts.map((c, idx) => (
+              <tr key={idx} className="hover:bg-slate-50/70 transition-colors">
+                <td className="p-3 text-center font-bold text-blue-900 bg-slate-50/50 align-top pt-4">
+                  #{idx + 1}
+                </td>
+                <td className="p-3 align-top">
                   <input
-                    type="number"
-                    placeholder="Amount in LKR"
-                    value={c.contractAmount ?? ""}
-                    onChange={(e) => handleContractChange(idx, "contractAmount", e.target.value === "" ? null : Number(e.target.value))}
+                    type="text"
+                    placeholder="Project Title"
+                    value={c.contractName || ""}
+                    onChange={(e) => handleContractChange(idx, "contractName", e.target.value)}
                     disabled={disabled}
-                    className="w-2/3 p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
                   />
-                  <select
-                    value={c.currency || "LKR"}
-                    onChange={(e) => handleContractChange(idx, "currency", e.target.value)}
-                    disabled={disabled}
-                    className="w-1/3 p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none font-bold"
-                  >
-                    {CURRENCY_OPTIONS.map((cur) => (
-                      <option key={cur} value={cur}>
-                        {cur}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                {c.currency === "Other" && (
-                  <div className="mt-1.5">
+                </td>
+                <td className="p-3 align-top space-y-1">
+                  <div className="flex gap-1.5">
+                    <input
+                      type="number"
+                      placeholder="Amount"
+                      value={c.contractAmount ?? ""}
+                      onChange={(e) =>
+                        handleContractChange(
+                          idx,
+                          "contractAmount",
+                          e.target.value === "" ? null : Number(e.target.value)
+                        )
+                      }
+                      disabled={disabled}
+                      className="flex-1 p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
+                    />
+                    <select
+                      value={c.currency || "LKR"}
+                      onChange={(e) => handleContractChange(idx, "currency", e.target.value)}
+                      disabled={disabled}
+                      className="w-24 p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none font-bold"
+                    >
+                      {CURRENCY_OPTIONS.map((cur) => (
+                        <option key={cur} value={cur}>
+                          {cur}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {c.currency === "Other" && (
                     <input
                       type="text"
-                      placeholder="Specify currency (e.g. AUD, CAD)..."
+                      placeholder="Specify currency..."
                       value={c.currencyOther || ""}
                       onChange={(e) => handleContractChange(idx, "currencyOther", e.target.value)}
                       disabled={disabled}
                       className="w-full p-1.5 bg-amber-50/60 border border-amber-300 rounded text-slate-900 text-xs focus:ring-1 focus:ring-blue-800"
                     />
-                  </div>
-                )}
-                {c.contractAmount !== null && c.contractAmount !== undefined && c.contractAmount !== "" && (
-                  <span className="text-[10px] font-mono text-slate-600 block mt-1">
-                    = {c.currency === "Other" ? (c.currencyOther || "Other") : (c.currency || "LKR")} {Number(c.contractAmount).toLocaleString()}
-                  </span>
-                )}
-              </div>
+                  )}
+                  {c.contractAmount !== null && c.contractAmount !== undefined && c.contractAmount !== "" && (
+                    <span className="text-[10px] font-mono text-slate-600 block">
+                      = {c.currency === "Other" ? (c.currencyOther || "Other") : (c.currency || "LKR")}{" "}
+                      {Number(c.contractAmount).toLocaleString()}
+                    </span>
+                  )}
+                </td>
+                <td className="p-3 align-top">
+                  <input
+                    type="date"
+                    value={c.completionDate || ""}
+                    onChange={(e) => handleContractChange(idx, "completionDate", e.target.value)}
+                    disabled={disabled}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
+                  />
+                </td>
+                <td className="p-3 text-center align-top pt-4">
+                  {contracts.length > 1 && (
+                    <button
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => handleRemoveContract(idx)}
+                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                      title="Remove contract row"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-              <div>
-                <label className="block font-medium text-slate-700 mb-1">Anticipated Completion Date</label>
-                <input
-                  type="date"
-                  value={c.completionDate || ""}
-                  onChange={(e) => handleContractChange(idx, "completionDate", e.target.value)}
-                  disabled={disabled}
-                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
-                />
-              </div>
-            </div>
-          </div>
-        );
-      })}
+      <div className="flex items-center justify-between pt-1">
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={handleAddContract}
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-sm transition-all"
+        >
+          <Plus className="w-4 h-4" />
+          <span>+ Add Ongoing Contract</span>
+        </button>
+        <span className="text-[11px] font-medium text-slate-500">
+          {contracts.filter((c) => c.contractName).length} of {contracts.length} contracts specified
+        </span>
+      </div>
     </div>
   );
 }
 
 /**
- * Built-in Similar Works Repeating Contracts Renderer (Up to 3 Completed Contracts)
+ * Built-in Similar Works Repeating Contracts Table Renderer (With Dynamic Add/Remove)
  */
 function renderSimilarWorksContracts(
   value: any,
@@ -1203,119 +1269,218 @@ function renderSimilarWorksContracts(
     onChange(list);
   };
 
+  const handleAddContract = () => {
+    if (disabled) return;
+    const list = [...contracts];
+    list.push({
+      contractIndex: list.length + 1,
+      contractType: "",
+      contractName: "",
+      contractAmount: null,
+      startDate: null,
+      completionDate: null,
+      completionStatus: "",
+    });
+    onChange(list);
+  };
+
+  const handleRemoveContract = (idx: number) => {
+    if (disabled) return;
+    if (contracts.length <= 1) {
+      onChange([
+        {
+          contractIndex: 1,
+          contractType: "",
+          contractName: "",
+          contractAmount: null,
+          startDate: null,
+          completionDate: null,
+          completionStatus: "",
+        },
+      ]);
+      return;
+    }
+    const list = contracts.filter((_, i) => i !== idx).map((c, i) => ({
+      ...c,
+      contractIndex: i + 1,
+    }));
+    onChange(list);
+  };
+
   return (
     <div className="space-y-3">
-      {[0, 1, 2].map((idx) => {
-        const c = contracts[idx] || {};
-        return (
-          <div
-            key={idx}
-            className="p-4 bg-slate-50/70 border border-slate-200 rounded-xl space-y-3 text-xs"
-          >
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-blue-900 uppercase text-[11px]">
-                Contract {idx + 1}
-              </span>
-              <span className="text-[10px] text-slate-500">
-                {idx === 0 ? "Required if experience exists, else enter N/A" : "Optional"}
-              </span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Contract Type</label>
-                <select
-                  value={c.contractType || ""}
-                  onChange={(e) => handleContractChange(idx, "contractType", e.target.value)}
-                  disabled={disabled}
-                  className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800 font-medium"
+      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+        <table className="w-full min-w-[960px] text-left border-collapse text-xs">
+          <thead>
+            <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-700 font-bold uppercase text-[10px] tracking-wider">
+              <th className="p-3 w-12 text-center">#</th>
+              <th className="p-3 min-w-[200px]">Contract Name / Project</th>
+              <th className="p-3 w-48">Contract Type</th>
+              <th className="p-3 w-44">Amount (LKR)</th>
+              <th className="p-3 w-52">Duration (Start - Completion)</th>
+              <th className="p-3 w-48">Completion Status</th>
+              <th className="p-3 w-14 text-center">Action</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-200/80">
+            {contracts.map((c, idx) => {
+              const isNA = Boolean(c.contractName && c.contractName.trim().toUpperCase() === "N/A");
+              return (
+                <tr
+                  key={idx}
+                  className={`hover:bg-slate-50/70 transition-colors ${
+                    isNA ? "bg-slate-50/40 opacity-70" : ""
+                  }`}
                 >
-                  <option value="">— Select Contract Type —</option>
-                  {CONTRACT_TYPE_OPTIONS.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
-                  ))}
-                </select>
-                {c.contractType === "Other" && (
-                  <div className="mt-1.5">
+                  <td className="p-3 text-center font-bold text-blue-900 bg-slate-50/50 align-top pt-4">
+                    #{idx + 1}
+                  </td>
+                  <td className="p-3 align-top space-y-1">
                     <input
                       type="text"
-                      placeholder="Specify contract type..."
-                      value={c.contractTypeOther || ""}
-                      onChange={(e) => handleContractChange(idx, "contractTypeOther", e.target.value)}
+                      placeholder={idx === 0 ? "Project Title or enter N/A" : "Project Title"}
+                      value={c.contractName || ""}
+                      onChange={(e) => handleContractChange(idx, "contractName", e.target.value)}
                       disabled={disabled}
-                      className="w-full p-1.5 bg-amber-50/60 border border-amber-300 rounded text-slate-900 text-xs focus:ring-1 focus:ring-blue-800"
+                      className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
                     />
-                  </div>
-                )}
-              </div>
+                    {isNA && (
+                      <span className="text-[10px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded font-mono font-bold inline-block">
+                        Marked N/A
+                      </span>
+                    )}
+                  </td>
+                  <td className="p-3 align-top space-y-1">
+                    <select
+                      value={c.contractType || ""}
+                      onChange={(e) => handleContractChange(idx, "contractType", e.target.value)}
+                      disabled={disabled || isNA}
+                      className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-medium disabled:opacity-50"
+                    >
+                      <option value="">— Select Type —</option>
+                      {CONTRACT_TYPE_OPTIONS.map((t) => (
+                        <option key={t} value={t}>
+                          {t}
+                        </option>
+                      ))}
+                    </select>
+                    {c.contractType === "Other" && (
+                      <input
+                        type="text"
+                        placeholder="Specify contract type..."
+                        value={c.contractTypeOther || ""}
+                        onChange={(e) => handleContractChange(idx, "contractTypeOther", e.target.value)}
+                        disabled={disabled || isNA}
+                        className="w-full p-1.5 bg-amber-50/60 border border-amber-300 rounded text-slate-900 text-xs focus:ring-1 focus:ring-blue-800 disabled:opacity-50"
+                      />
+                    )}
+                  </td>
+                  <td className="p-3 align-top space-y-1">
+                    <input
+                      type="number"
+                      placeholder="Amount in LKR"
+                      value={c.contractAmount ?? ""}
+                      onChange={(e) =>
+                        handleContractChange(
+                          idx,
+                          "contractAmount",
+                          e.target.value === "" ? null : Number(e.target.value)
+                        )
+                      }
+                      disabled={disabled || isNA}
+                      className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono disabled:opacity-50"
+                    />
+                    {!isNA &&
+                      c.contractAmount !== null &&
+                      c.contractAmount !== undefined &&
+                      c.contractAmount !== "" && (
+                        <span className="text-[10px] font-mono text-slate-600 block">
+                          = LKR {Number(c.contractAmount).toLocaleString()}
+                        </span>
+                      )}
+                  </td>
+                  <td className="p-3 align-top">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] text-slate-400 w-9 shrink-0 font-medium">
+                          Start:
+                        </span>
+                        <input
+                          type="date"
+                          value={c.startDate || ""}
+                          onChange={(e) => handleContractChange(idx, "startDate", e.target.value)}
+                          disabled={disabled || isNA}
+                          className="flex-1 p-1.5 bg-slate-50 border border-slate-300 rounded text-slate-900 text-[11px] focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 disabled:opacity-50"
+                        />
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] text-slate-400 w-9 shrink-0 font-medium">
+                          End:
+                        </span>
+                        <input
+                          type="date"
+                          value={c.completionDate || ""}
+                          onChange={(e) => handleContractChange(idx, "completionDate", e.target.value)}
+                          disabled={disabled || isNA}
+                          className="flex-1 p-1.5 bg-slate-50 border border-slate-300 rounded text-slate-900 text-[11px] focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 disabled:opacity-50"
+                        />
+                      </div>
+                    </div>
+                  </td>
+                  <td className="p-3 align-top">
+                    <select
+                      value={c.completionStatus || ""}
+                      onChange={(e) => handleContractChange(idx, "completionStatus", e.target.value)}
+                      disabled={disabled || isNA}
+                      className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-medium disabled:opacity-50"
+                    >
+                      <option value="">— Select Status —</option>
+                      {COMPLETION_STATUS_OPTIONS.map((st) => (
+                        <option key={st} value={st}>
+                          {st}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="p-3 text-center align-top pt-4">
+                    {contracts.length > 1 && (
+                      <button
+                        type="button"
+                        disabled={disabled}
+                        onClick={() => handleRemoveContract(idx)}
+                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                        title="Remove contract row"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
 
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Contract Name / Project</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Central Expressway Section II"
-                  value={c.contractName || ""}
-                  onChange={(e) => handleContractChange(idx, "contractName", e.target.value)}
-                  disabled={disabled}
-                  className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Contract Amount (LKR)</label>
-                <input
-                  type="number"
-                  placeholder="Total amount in LKR"
-                  value={c.contractAmount ?? ""}
-                  onChange={(e) => handleContractChange(idx, "contractAmount", e.target.value === "" ? null : Number(e.target.value))}
-                  disabled={disabled}
-                  className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Start Date</label>
-                <input
-                  type="date"
-                  value={c.startDate || ""}
-                  onChange={(e) => handleContractChange(idx, "startDate", e.target.value)}
-                  disabled={disabled}
-                  className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Completion Date</label>
-                <input
-                  type="date"
-                  value={c.completionDate || ""}
-                  onChange={(e) => handleContractChange(idx, "completionDate", e.target.value)}
-                  disabled={disabled}
-                  className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Completion Status</label>
-                <select
-                  value={c.completionStatus || ""}
-                  onChange={(e) => handleContractChange(idx, "completionStatus", e.target.value)}
-                  disabled={disabled}
-                  className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800 font-medium"
-                >
-                  <option value="">— Select Completion Status —</option>
-                  {COMPLETION_STATUS_OPTIONS.map((st) => (
-                    <option key={st} value={st}>
-                      {st}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
-        );
-      })}
+      <div className="flex items-center justify-between pt-1">
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={handleAddContract}
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-sm transition-all"
+        >
+          <Plus className="w-4 h-4" />
+          <span>+ Add Similar Work Contract</span>
+        </button>
+        <span className="text-[11px] font-medium text-slate-500">
+          {
+            contracts.filter(
+              (c) => c.contractName && c.contractName.trim().toUpperCase() !== "N/A"
+            ).length
+          }{" "}
+          similar contract(s) listed
+        </span>
+      </div>
     </div>
   );
 }

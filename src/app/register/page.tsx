@@ -28,6 +28,7 @@ import {
   RotateCcw,
   History,
   X,
+  Trash2,
 } from "lucide-react";
 import Link from "next/link";
 import { evaluateConditionalRule } from "@/components/dynamic-form/DynamicFormRenderer";
@@ -1150,6 +1151,66 @@ function RegisterForm() {
       [field]: parsedValue,
     };
     setFormData({ ...formData, similarWorks: list });
+  };
+
+  const handleAddOngoingContract = () => {
+    const list = [...(formData.ongoingContracts || createEmptyOngoingWorks())];
+    list.push({
+      contractIndex: list.length + 1,
+      contractName: "",
+      contractAmount: null,
+      currency: "LKR",
+      completionDate: null,
+    });
+    setFormData({ ...formData, ongoingContracts: list });
+  };
+
+  const handleRemoveOngoingContract = (index: number) => {
+    const current = formData.ongoingContracts || createEmptyOngoingWorks();
+    if (current.length <= 1) {
+      handleOngoingContractChange(0, "contractName", "");
+      handleOngoingContractChange(0, "contractAmount", null);
+      handleOngoingContractChange(0, "currency", "LKR");
+      handleOngoingContractChange(0, "completionDate", null);
+      return;
+    }
+    const filtered = current.filter((_, i) => i !== index).map((c, i) => ({
+      ...c,
+      contractIndex: i + 1,
+    }));
+    setFormData({ ...formData, ongoingContracts: filtered });
+  };
+
+  const handleAddSimilarWork = () => {
+    const list = [...(formData.similarWorks || createEmptySimilarWorks())];
+    list.push({
+      contractIndex: list.length + 1,
+      contractType: "",
+      contractName: "",
+      contractAmount: null,
+      startDate: null,
+      completionDate: null,
+      completionStatus: "",
+    });
+    setFormData({ ...formData, similarWorks: list });
+  };
+
+  const handleRemoveSimilarWork = (index: number) => {
+    const current = formData.similarWorks || createEmptySimilarWorks();
+    if (current.length <= 1) {
+      handleContractChange(0, "contractName", "");
+      handleContractChange(0, "contractType", "");
+      handleContractChange(0, "contractAmount", null);
+      handleContractChange(0, "startDate", null);
+      handleContractChange(0, "completionDate", null);
+      handleContractChange(0, "completionStatus", "");
+      return;
+    }
+    const filtered = current.filter((_, i) => i !== index).map((c, i) => ({
+      ...c,
+      contractIndex: i + 1,
+    }));
+    setFormData({ ...formData, similarWorks: filtered });
   };
 
   // Official receipt screen upon completed submission
@@ -2875,99 +2936,118 @@ function RegisterForm() {
                             </div>
 
                             <div className="space-y-3 pt-2">
-                              <span className="font-bold text-slate-800 text-[11px] block">
-                                Key Ongoing Contracts (Up to 3 Contracts - Optional)
-                              </span>
-                              {[0, 1, 2].map((idx) => {
-                                const contract = (formData.ongoingContracts || createEmptyOngoingWorks())[idx] || {
-                                  contractIndex: idx + 1,
-                                  contractName: "",
-                                  contractAmount: null,
-                                  currency: "LKR",
-                                  completionDate: null,
-                                };
+                              <div className="flex items-center justify-between">
+                                <span className="font-bold text-slate-800 text-[11px] block uppercase tracking-wide">
+                                  Key Ongoing Contracts (Optional)
+                                </span>
+                                <span className="text-[10px] text-slate-500 font-semibold bg-slate-100 px-2 py-0.5 rounded-full">
+                                  {(formData.ongoingContracts || []).filter((c) => c.contractName).length} of{" "}
+                                  {(formData.ongoingContracts || []).length} Specified
+                                </span>
+                              </div>
 
-                                return (
-                                  <div
-                                    key={idx}
-                                    className="p-3.5 bg-white border border-slate-200 rounded-lg space-y-2.5"
-                                  >
-                                    <span className="font-semibold text-blue-900 text-[11px]">
-                                      Ongoing Contract {idx + 1}
-                                    </span>
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                      <div>
-                                        <label className="block font-medium text-slate-700 mb-1">
-                                          Contract Name
-                                        </label>
-                                        <input
-                                          type="text"
-                                          value={contract.contractName || ""}
-                                          onChange={(e) => handleOngoingContractChange(idx, "contractName", e.target.value)}
-                                          placeholder="Project Title"
-                                          className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
-                                        />
-                                      </div>
-
-                                      <div>
-                                        <label className="block font-medium text-slate-700 mb-1">
-                                          Contract Amount &amp; Currency (Total Amount in LKR)
-                                        </label>
-                                        <p className="text-[10px] text-slate-500 mb-1">
-                                          Enter total amount (e.g. for 1 Lakh enter 100000, not 1 Lakh)
-                                        </p>
-                                        <div className="flex gap-1.5">
+                              <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+                                <table className="w-full min-w-[720px] text-left border-collapse text-xs">
+                                  <thead>
+                                    <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-700 font-bold uppercase text-[10px] tracking-wider">
+                                      <th className="p-3 w-12 text-center">#</th>
+                                      <th className="p-3">Contract Name / Project Title</th>
+                                      <th className="p-3 w-64">Contract Amount &amp; Currency</th>
+                                      <th className="p-3 w-48">Anticipated Completion</th>
+                                      <th className="p-3 w-14 text-center">Action</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-slate-200/80">
+                                    {(formData.ongoingContracts || createEmptyOngoingWorks()).map((contract, idx) => (
+                                      <tr key={idx} className="hover:bg-slate-50/70 transition-colors">
+                                        <td className="p-3 text-center font-bold text-blue-900 bg-slate-50/50 align-top pt-4">
+                                          #{idx + 1}
+                                        </td>
+                                        <td className="p-3 align-top">
                                           <input
-                                            type="number"
-                                            value={contract.contractAmount ?? ""}
-                                            onChange={(e) => handleOngoingContractChange(idx, "contractAmount", e.target.value)}
-                                            className="w-2/3 p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
+                                            type="text"
+                                            value={contract.contractName || ""}
+                                            onChange={(e) => handleOngoingContractChange(idx, "contractName", e.target.value)}
+                                            placeholder="Project Title"
+                                            className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
                                           />
-                                          <select
-                                            value={contract.currency || "LKR"}
-                                            onChange={(e) => handleOngoingContractChange(idx, "currency", e.target.value)}
-                                            className="w-1/3 p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none font-bold"
-                                          >
-                                            {CURRENCY_OPTIONS.map((cur) => (
-                                              <option key={cur} value={cur}>
-                                                {cur}
-                                              </option>
-                                            ))}
-                                          </select>
-                                        </div>
-                                        {contract.currency === "Other" && (
-                                          <div className="mt-1.5">
+                                        </td>
+                                        <td className="p-3 align-top space-y-1">
+                                          <div className="flex gap-1.5">
+                                            <input
+                                              type="number"
+                                              value={contract.contractAmount ?? ""}
+                                              onChange={(e) => handleOngoingContractChange(idx, "contractAmount", e.target.value)}
+                                              placeholder="Amount"
+                                              className="flex-1 p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
+                                            />
+                                            <select
+                                              value={contract.currency || "LKR"}
+                                              onChange={(e) => handleOngoingContractChange(idx, "currency", e.target.value)}
+                                              className="w-24 p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none font-bold"
+                                            >
+                                              {CURRENCY_OPTIONS.map((cur) => (
+                                                <option key={cur} value={cur}>
+                                                  {cur}
+                                                </option>
+                                              ))}
+                                            </select>
+                                          </div>
+                                          {contract.currency === "Other" && (
                                             <input
                                               type="text"
                                               value={(contract as any).currencyOther || ""}
                                               onChange={(e) => handleOngoingContractChange(idx, "currencyOther", e.target.value)}
-                                              placeholder="Specify custom currency (e.g. AUD, SGD)..."
-                                              className="w-full p-2 text-xs bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
+                                              placeholder="Specify currency..."
+                                              className="w-full p-1.5 bg-amber-50/60 border border-amber-300 rounded text-slate-900 text-xs focus:ring-1 focus:ring-blue-800"
                                             />
-                                          </div>
-                                        )}
-                                        {contract.contractAmount !== null && contract.contractAmount !== undefined && contract.contractAmount !== "" && (
-                                          <span className="text-[10px] font-mono text-slate-600 block mt-1">
-                                            = {contract.currency || "LKR"} {Number(contract.contractAmount).toLocaleString()}
-                                          </span>
-                                        )}
-                                      </div>
+                                          )}
+                                          {contract.contractAmount !== null && contract.contractAmount !== undefined && contract.contractAmount !== "" && (
+                                            <span className="text-[10px] font-mono text-slate-600 block">
+                                              = {contract.currency === "Other" ? ((contract as any).currencyOther || "Other") : (contract.currency || "LKR")}{" "}
+                                              {Number(contract.contractAmount).toLocaleString()}
+                                            </span>
+                                          )}
+                                        </td>
+                                        <td className="p-3 align-top">
+                                          <input
+                                            type="date"
+                                            value={contract.completionDate || ""}
+                                            onChange={(e) => handleOngoingContractChange(idx, "completionDate", e.target.value)}
+                                            className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
+                                          />
+                                        </td>
+                                        <td className="p-3 text-center align-top pt-4">
+                                          {(formData.ongoingContracts || []).length > 1 && (
+                                            <button
+                                              type="button"
+                                              onClick={() => handleRemoveOngoingContract(idx)}
+                                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                                              title="Remove contract row"
+                                            >
+                                              <Trash2 className="w-4 h-4" />
+                                            </button>
+                                          )}
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
 
-                                      <div>
-                                        <label className="block font-medium text-slate-700 mb-1">
-                                          Anticipated Completion Date
-                                        </label>
-                                        <input
-                                          type="date"
-                                          value={contract.completionDate || ""}
-                                          onChange={(e) => handleOngoingContractChange(idx, "completionDate", e.target.value)}
-                                          className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
-                                        />
-                                      </div>
-                                    </div>
-                                  </div>
-                                );
-                              })}
+                              <div className="flex items-center justify-between pt-1">
+                                <button
+                                  type="button"
+                                  onClick={handleAddOngoingContract}
+                                  className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-sm transition-all"
+                                >
+                                  <Plus className="w-4 h-4" />
+                                  <span>+ Add Ongoing Contract</span>
+                                </button>
+                                <span className="text-[10px] text-slate-400 italic">
+                                  You can add additional ongoing contracts as needed
+                                </span>
+                              </div>
                             </div>
                           </div>
                         )}
@@ -3027,149 +3107,159 @@ function RegisterForm() {
                         </p>
                       </div>
 
-                      <div className="space-y-6 text-xs">
-                        {[0, 1, 2].map((idx) => {
-                          const contract = (formData.similarWorks || createEmptySimilarWorks())[idx] || {
-                            contractIndex: idx + 1,
-                            contractType: "",
-                            contractName: "",
-                            contractAmount: null,
-                            startDate: null,
-                            completionDate: null,
-                            completionStatus: "",
-                          };
-                          const isNA = Boolean(contract.contractName && contract.contractName.trim().toUpperCase() === "N/A");
+                      <div className="space-y-3">
+                        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+                          <table className="w-full min-w-[960px] text-left border-collapse text-xs">
+                            <thead>
+                              <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-700 font-bold uppercase text-[10px] tracking-wider">
+                                <th className="p-3 w-12 text-center">#</th>
+                                <th className="p-3 min-w-[200px]">Contract Name / Project</th>
+                                <th className="p-3 w-48">Contract Type</th>
+                                <th className="p-3 w-44">Amount (LKR)</th>
+                                <th className="p-3 w-52">Duration (Start - Completion)</th>
+                                <th className="p-3 w-48">Completion Status</th>
+                                <th className="p-3 w-14 text-center">Action</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-200/80">
+                              {(formData.similarWorks || createEmptySimilarWorks()).map((contract, idx) => {
+                                const isNA = Boolean(contract.contractName && contract.contractName.trim().toUpperCase() === "N/A");
 
-                          return (
-                            <div
-                              key={idx}
-                              className="p-4 bg-slate-50/70 border border-slate-200 rounded-xl space-y-3"
-                            >
-                              <div className="flex items-center justify-between border-b border-slate-200/60 pb-2">
-                                <span className="font-bold text-blue-900">
-                                  Contract {idx + 1} {idx === 0 ? "(Required or N/A)" : "(Optional)"}
-                                </span>
-                                {isNA && (
-                                  <span className="text-[10px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded font-mono font-bold">
-                                    Marked N/A
-                                  </span>
-                                )}
-                              </div>
-
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div>
-                                  <label className="block font-semibold text-slate-700 mb-1">
-                                    Contract name {idx === 0 ? "*" : ""}
-                                  </label>
-                                  <input
-                                    type="text"
-                                    value={contract.contractName || ""}
-                                    onChange={(e) => handleContractChange(idx, "contractName", e.target.value)}
-                                    placeholder={idx === 0 ? "Project Title or enter N/A" : "Project Title"}
-                                    className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800"
-                                  />
-                                </div>
-
-                                <div>
-                                  <label className="block font-semibold text-slate-700 mb-1">
-                                    Contract type
-                                  </label>
-                                  <select
-                                    disabled={isNA}
-                                    value={contract.contractType || ""}
-                                    onChange={(e) => handleContractChange(idx, "contractType", e.target.value)}
-                                    className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800 disabled:opacity-50"
+                                return (
+                                  <tr
+                                    key={idx}
+                                    className={`hover:bg-slate-50/70 transition-colors ${
+                                      isNA ? "bg-slate-50/40 opacity-70" : ""
+                                    }`}
                                   >
-                                    <option value="">— Select Contract Type —</option>
-                                    {CONTRACT_TYPE_OPTIONS.map((t) => (
-                                      <option key={t} value={t}>
-                                        {t}
-                                      </option>
-                                    ))}
-                                  </select>
-                                  {contract.contractType === "Other" && (
-                                    <div className="mt-2">
+                                    <td className="p-3 text-center font-bold text-blue-900 bg-slate-50/50 align-top pt-4">
+                                      #{idx + 1}
+                                    </td>
+                                    <td className="p-3 align-top space-y-1">
                                       <input
                                         type="text"
-                                        disabled={isNA}
-                                        value={(contract as any).contractTypeOther || ""}
-                                        onChange={(e) => handleContractChange(idx, "contractTypeOther", e.target.value)}
-                                        placeholder="Specify contract type (e.g. Tunneling, Marine Works)..."
-                                        className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-800 disabled:opacity-50"
+                                        value={contract.contractName || ""}
+                                        onChange={(e) => handleContractChange(idx, "contractName", e.target.value)}
+                                        placeholder={idx === 0 ? "Project Title or enter N/A *" : "Project Title"}
+                                        className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
                                       />
-                                    </div>
-                                  )}
-                                </div>
+                                      {isNA && (
+                                        <span className="text-[10px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded font-mono font-bold inline-block">
+                                          Marked N/A
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td className="p-3 align-top space-y-1">
+                                      <select
+                                        disabled={isNA}
+                                        value={contract.contractType || ""}
+                                        onChange={(e) => handleContractChange(idx, "contractType", e.target.value)}
+                                        className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-medium disabled:opacity-50"
+                                      >
+                                        <option value="">— Select Type —</option>
+                                        {CONTRACT_TYPE_OPTIONS.map((t) => (
+                                          <option key={t} value={t}>
+                                            {t}
+                                          </option>
+                                        ))}
+                                      </select>
+                                      {contract.contractType === "Other" && (
+                                        <input
+                                          type="text"
+                                          disabled={isNA}
+                                          value={(contract as any).contractTypeOther || ""}
+                                          onChange={(e) => handleContractChange(idx, "contractTypeOther", e.target.value)}
+                                          placeholder="Specify contract type..."
+                                          className="w-full p-1.5 bg-amber-50/60 border border-amber-300 rounded text-slate-900 text-xs focus:ring-1 focus:ring-blue-800 disabled:opacity-50"
+                                        />
+                                      )}
+                                    </td>
+                                    <td className="p-3 align-top space-y-1">
+                                      <input
+                                        type="number"
+                                        disabled={isNA}
+                                        value={contract.contractAmount ?? ""}
+                                        onChange={(e) => handleContractChange(idx, "contractAmount", e.target.value)}
+                                        placeholder="Amount in LKR"
+                                        className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono disabled:opacity-50"
+                                      />
+                                      {!isNA && contract.contractAmount !== null && contract.contractAmount !== undefined && contract.contractAmount !== "" && (
+                                        <span className="text-[10px] font-mono text-slate-600 block">
+                                          = LKR {Number(contract.contractAmount).toLocaleString()}
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td className="p-3 align-top">
+                                      <div className="space-y-1">
+                                        <div className="flex items-center gap-1">
+                                          <span className="text-[10px] text-slate-400 w-9 shrink-0 font-medium">Start:</span>
+                                          <input
+                                            type="date"
+                                            disabled={isNA}
+                                            value={contract.startDate || ""}
+                                            onChange={(e) => handleContractChange(idx, "startDate", e.target.value)}
+                                            className="flex-1 p-1.5 bg-slate-50 border border-slate-300 rounded text-slate-900 text-[11px] focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 disabled:opacity-50"
+                                          />
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                          <span className="text-[10px] text-slate-400 w-9 shrink-0 font-medium">End:</span>
+                                          <input
+                                            type="date"
+                                            disabled={isNA}
+                                            value={contract.completionDate || ""}
+                                            onChange={(e) => handleContractChange(idx, "completionDate", e.target.value)}
+                                            className="flex-1 p-1.5 bg-slate-50 border border-slate-300 rounded text-slate-900 text-[11px] focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 disabled:opacity-50"
+                                          />
+                                        </div>
+                                      </div>
+                                    </td>
+                                    <td className="p-3 align-top">
+                                      <select
+                                        disabled={isNA}
+                                        value={contract.completionStatus || ""}
+                                        onChange={(e) => handleContractChange(idx, "completionStatus", e.target.value)}
+                                        className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-medium disabled:opacity-50"
+                                      >
+                                        <option value="">— Select Status —</option>
+                                        {COMPLETION_STATUS_OPTIONS.map((s) => (
+                                          <option key={s} value={s}>
+                                            {s}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </td>
+                                    <td className="p-3 text-center align-top pt-4">
+                                      {(formData.similarWorks || []).length > 1 && (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleRemoveSimilarWork(idx)}
+                                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                                          title="Remove contract row"
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                        </button>
+                                      )}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
 
-                                <div>
-                                  <label className="block font-semibold text-slate-700 mb-1">
-                                    Contract amount (Total Amount in LKR)
-                                  </label>
-                                  <p className="text-[10px] text-slate-500 mb-1">
-                                    Enter full total amount in LKR (e.g. for 1 Lakh enter 100000, not 1 Lakh)
-                                  </p>
-                                  <input
-                                    type="number"
-                                    disabled={isNA}
-                                    value={contract.contractAmount ?? ""}
-                                    onChange={(e) => handleContractChange(idx, "contractAmount", e.target.value)}
-                                    className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono disabled:opacity-50"
-                                  />
-                                  {!isNA && contract.contractAmount !== null && contract.contractAmount !== undefined && contract.contractAmount !== "" && (
-                                    <span className="text-[10px] font-mono text-slate-600 block mt-1">
-                                      = LKR {Number(contract.contractAmount).toLocaleString()}
-                                    </span>
-                                  )}
-                                </div>
-
-                                <div>
-                                  <label className="block font-semibold text-slate-700 mb-1">
-                                    Completion Status
-                                  </label>
-                                  <select
-                                    disabled={isNA}
-                                    value={contract.completionStatus || ""}
-                                    onChange={(e) => handleContractChange(idx, "completionStatus", e.target.value)}
-                                    className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800 disabled:opacity-50"
-                                  >
-                                    <option value="">— Select Completion Status —</option>
-                                    {COMPLETION_STATUS_OPTIONS.map((s) => (
-                                      <option key={s} value={s}>
-                                        {s}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-
-                                <div>
-                                  <label className="block font-semibold text-slate-700 mb-1">
-                                    Start Date
-                                  </label>
-                                  <input
-                                    type="date"
-                                    disabled={isNA}
-                                    value={contract.startDate || ""}
-                                    onChange={(e) => handleContractChange(idx, "startDate", e.target.value)}
-                                    className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800 disabled:opacity-50"
-                                  />
-                                </div>
-
-                                <div>
-                                  <label className="block font-semibold text-slate-700 mb-1">
-                                    Completion date
-                                  </label>
-                                  <input
-                                    type="date"
-                                    disabled={isNA}
-                                    value={contract.completionDate || ""}
-                                    onChange={(e) => handleContractChange(idx, "completionDate", e.target.value)}
-                                    className="w-full p-2 bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800 disabled:opacity-50"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
+                        <div className="flex items-center justify-between pt-1">
+                          <button
+                            type="button"
+                            onClick={handleAddSimilarWork}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-sm transition-all"
+                          >
+                            <Plus className="w-4 h-4" />
+                            <span>+ Add Similar Work Contract</span>
+                          </button>
+                          <span className="text-[10px] text-slate-400 italic">
+                            You can add additional completed contracts as needed
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </>

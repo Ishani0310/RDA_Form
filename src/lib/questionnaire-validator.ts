@@ -256,8 +256,8 @@ export function validateQuestionnaireSubmission(
     }
   }
 
-  // Contracts 2 and 3: optional, validated only if non-empty and not N/A
-  for (let i = 1; i < 3; i++) {
+  // Contracts 2+: optional, validated only if non-empty and not N/A
+  for (let i = 1; i < contracts.length; i++) {
     const c = contracts[i];
     if (c && c.contractName && c.contractName.trim() && c.contractName.trim().toUpperCase() !== "N/A") {
       if (!c.contractType) {
@@ -317,11 +317,14 @@ export function normalizeQuestionnaireData(
 
   // 2. Similar Works
   const rawWorks = Array.isArray(raw.similarWorks) ? raw.similarWorks : [];
-  const similarWorks: SimilarWorkContract[] = [1, 2, 3].map((idx) => {
-    const item = rawWorks[idx - 1] || {};
+  const maxWorks = Math.max(rawWorks.length, 3);
+  const similarWorks: SimilarWorkContract[] = Array.from({ length: maxWorks }, (_, i) => {
+    const idx = i + 1;
+    const item = rawWorks[i] || {};
     return {
       contractIndex: idx,
       contractType: item.contractType || "",
+      contractTypeOther: item.contractTypeOther || undefined,
       contractName: item.contractName ? String(item.contractName).trim() : "",
       contractAmount: parseNumOrNull(item.contractAmount),
       startDate: item.startDate || null,
@@ -332,13 +335,16 @@ export function normalizeQuestionnaireData(
 
   // 3. Ongoing Works
   const rawOngoing = Array.isArray(raw.ongoingContracts) ? raw.ongoingContracts : [];
-  const ongoingContracts: OngoingWorkContract[] = [1, 2, 3].map((idx) => {
-    const item = rawOngoing[idx - 1] || {};
+  const maxOngoing = Math.max(rawOngoing.length, 3);
+  const ongoingContracts: OngoingWorkContract[] = Array.from({ length: maxOngoing }, (_, i) => {
+    const idx = i + 1;
+    const item = rawOngoing[i] || {};
     return {
       contractIndex: idx,
       contractName: item.contractName ? String(item.contractName).trim() : "",
       contractAmount: parseNumOrNull(item.contractAmount),
       currency: String(item.currency || "LKR").trim().toUpperCase(),
+      currencyOther: item.currencyOther || undefined,
       completionDate: item.completionDate || null,
     };
   });
