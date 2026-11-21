@@ -1,4 +1,5 @@
 import { google } from "googleapis";
+import { NextRequest } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { SystemSetting } from "@/models/SystemSetting";
 
@@ -12,28 +13,100 @@ export interface GmailCredentials {
 }
 
 /**
- * Derives the active Google OAuth2 redirect URI based on environment or request origin
+ * Resolves the absolute application public base URL.
+ * Strictly prevents internal container addresses (e.g. localhost:8080, 0.0.0.0, 127.0.0.1:8080) from leaking in production.
  */
-export function getGoogleRedirectUri(requestOrigin?: string): string {
-  const envUri = (process.env.GOOGLE_REDIRECT_URI || "").trim();
-  if (envUri) return envUri;
-
-  if (requestOrigin) {
-    const cleanOrigin = requestOrigin.replace(/\/+$/, "");
-    return `${cleanOrigin}/api/admin/gmail/callback`;
+export function getAppBaseUrl(request?: NextRequest | string): string {
+  // 1. Explicitly configured public application URL (highest priority)
+  const envAppUrl = (
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.APP_URL ||
+    ""
+  ).trim();
+  if (envAppUrl && !envAppUrl.includes("localhost:8080") && !envAppUrl.includes("127.0.0.1:8080")) {
+    return envAppUrl.replace(/\/+$/, "");
   }
 
-  // Fallback default
-  return "http://localhost:3000/api/admin/gmail/callback";
+  // 2. Derive origin from GOOGLE_REDIRECT_URI if set
+  const envRedirectUri = (process.env.GOOGLE_REDIRECT_URI || "").trim();
+  if (envRedirectUri && !envRedirectUri.includes("localhost:8080") && !envRedirectUri.includes("127.0.0.1:8080")) {
+    try {
+      const parsed = new URL(envRedirectUri);
+      return `${parsed.protocol}//${parsed.host}`.replace(/\/+$/, "");
+    } catch {
+      // ignore parse failure
+    }
+  }
+
+  // 3. Railway-provided public domain environment variables
+  const railwayDomain = (process.env.RAILWAY_PUBLIC_DOMAIN || process.env.RAILWAY_STATIC_URL || "").trim();
+  if (railwayDomain && !railwayDomain.includes("localhost:8080")) {
+    const cleanDomain = railwayDomain.replace(/^https?:\/\//i, "").replace(/\/+$/, "");
+    return `https://${cleanDomain}`;
+  }
+
+  // 4. Extract from incoming NextRequest headers (behind Railway / edge reverse proxies)
+  if (request && typeof request !== "string") {
+    const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
+    const forwardedProto = request.headers.get("x-forwarded-proto") || "https";
+
+    if (forwardedHost && !forwardedHost.includes("localhost") && !forwardedHost.includes("127.0.0.1")) {
+      return `${forwardedProto}://${forwardedHost}`.replace(/\/+$/, "");
+    }
+
+    const hostHeader = request.headers.get("host")?.trim();
+    if (hostHeader && !hostHeader.includes("localhost") && !hostHeader.includes("127.0.0.1")) {
+      return `${forwardedProto}://${hostHeader}`.replace(/\/+$/, "");
+    }
+
+    const origin = request.nextUrl?.origin;
+    if (origin && !origin.includes("localhost:8080") && !origin.includes("127.0.0.1:8080")) {
+      if (process.env.NODE_ENV !== "production" || (!origin.includes("localhost") && !origin.includes("127.0.0.1"))) {
+        return origin.replace(/\/+$/, "");
+      }
+    }
+  } else if (typeof request === "string" && request.startsWith("http")) {
+    try {
+      const parsed = new URL(request);
+      if (!parsed.host.includes("localhost:8080") && !parsed.host.includes("127.0.0.1:8080")) {
+        if (process.env.NODE_ENV !== "production" || (!parsed.host.includes("localhost") && !parsed.host.includes("127.0.0.1"))) {
+          return `${parsed.protocol}//${parsed.host}`.replace(/\/+$/, "");
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  // 5. Production Railway fallback (guarantees official production domain is used rather than container port 8080)
+  if (process.env.NODE_ENV === "production") {
+    return "https://rdaform-production.up.railway.app";
+  }
+
+  // 6. Local development fallback
+  return "http://localhost:3000";
+}
+
+/**
+ * Derives the active Google OAuth2 redirect URI based on environment or request
+ */
+export function getGoogleRedirectUri(request?: NextRequest | string): string {
+  const envUri = (process.env.GOOGLE_REDIRECT_URI || "").trim();
+  if (envUri && !envUri.includes("localhost:8080")) {
+    return envUri;
+  }
+
+  const baseUrl = getAppBaseUrl(request);
+  return `${baseUrl}/api/admin/gmail/callback`;
 }
 
 /**
  * Returns an unauthenticated or partially configured OAuth2 client
  */
-export function getGoogleOAuthClient(requestOrigin?: string) {
+export function getGoogleOAuthClient(request?: NextRequest | string) {
   const clientId = (process.env.GOOGLE_CLIENT_ID || "").trim();
   const clientSecret = (process.env.GOOGLE_CLIENT_SECRET || "").trim();
-  const redirectUri = getGoogleRedirectUri(requestOrigin);
+  const redirectUri = getGoogleRedirectUri(request);
 
   return new google.auth.OAuth2(clientId, clientSecret, redirectUri);
 }
@@ -69,14 +142,15 @@ export async function getStoredGmailCredentials(): Promise<GmailCredentials | nu
   // 2. Check MongoDB persistent storage
   try {
     await connectToDatabase();
-    const setting = await SystemSetting.findOne({ key: "GMAIL_OAUTH_CONFIG" });
-    if (setting && setting.value?.refreshToken) {
+    const setting = await SystemSetting.findOne({ key: "GMAIL_OAUTH_CONFIG" }).lean();
+    if (setting && (setting as any).value?.refreshToken) {
+      const val = (setting as any).value;
       return {
         clientId,
         clientSecret,
         redirectUri,
-        refreshToken: String(setting.value.refreshToken).trim(),
-        senderEmail: String(setting.value.senderEmail || envSenderEmail || "wbicdpbid@gmail.com").trim(),
+        refreshToken: String(val.refreshToken).trim(),
+        senderEmail: String(val.senderEmail || envSenderEmail || "wbicdpbid@gmail.com").trim(),
         source: "database",
       };
     }

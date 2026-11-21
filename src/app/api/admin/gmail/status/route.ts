@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
         credentialSource: creds?.source || null,
         hasClientId: Boolean(process.env.GOOGLE_CLIENT_ID),
         hasClientSecret: Boolean(process.env.GOOGLE_CLIENT_SECRET),
-        redirectUri: getGoogleRedirectUri(request.nextUrl.origin),
+        redirectUri: getGoogleRedirectUri(request),
       },
       resend: {
         isConfigured: hasResend,

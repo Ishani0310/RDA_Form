@@ -55,38 +55,48 @@ export default function SettingsPage() {
       const data = await res.json();
       if (data.success) {
         setEmailStatus(data);
+        return data;
       }
     } catch (err: any) {
       console.error("Failed to load email status:", err);
     } finally {
       setLoadingStatus(false);
     }
+    return null;
   };
 
   useEffect(() => {
-    fetchStatus();
+    fetchStatus().then((data) => {
+      // Check URL parameters for OAuth outcomes
+      if (typeof window !== "undefined") {
+        const params = new URLSearchParams(window.location.search);
+        const statusParam = params.get("status");
+        const errorParam = params.get("error");
+        const senderParam = params.get("sender");
 
-    // Check URL parameters for OAuth outcomes
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const statusParam = params.get("status");
-      const errorParam = params.get("error");
-      const senderParam = params.get("sender");
-
-      if (statusParam === "connected") {
-        setActionAlert({
-          type: "success",
-          message: `Gmail API authorization granted successfully! Sender: ${senderParam || "Authorized Account"}`,
-        });
-        window.history.replaceState({}, "", "/settings");
-      } else if (errorParam) {
-        setActionAlert({
-          type: "error",
-          message: `Google OAuth authorization could not be completed: ${errorParam.replace(/_/g, " ")}.`,
-        });
-        window.history.replaceState({}, "", "/settings");
+        if (statusParam === "connected") {
+          // Strictly verify that the database/status endpoint confirms isConfigured
+          if (data && data.gmail?.isConfigured) {
+            setActionAlert({
+              type: "success",
+              message: `Gmail API authorization granted and verified! Active Sender: ${data.gmail.senderEmail || senderParam || "Authorized Account"}`,
+            });
+          } else {
+            setActionAlert({
+              type: "error",
+              message: "Google OAuth completed, but persistent token storage could not be verified in MongoDB. Please check database connectivity and retry.",
+            });
+          }
+          window.history.replaceState({}, "", "/settings?tab=email");
+        } else if (errorParam) {
+          setActionAlert({
+            type: "error",
+            message: `Google OAuth authorization could not be completed: ${errorParam.replace(/_/g, " ")}.`,
+          });
+          window.history.replaceState({}, "", "/settings?tab=email");
+        }
       }
-    }
+    });
   }, []);
 
   const handleDisconnectGmail = async () => {

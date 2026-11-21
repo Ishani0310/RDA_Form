@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
 import { getCurrentOfficerSession } from "@/lib/auth";
-import { getGoogleOAuthClient, saveStoredGmailCredentials } from "@/lib/gmail-oauth";
+import {
+  getGoogleOAuthClient,
+  getAppBaseUrl,
+  saveStoredGmailCredentials,
+  getStoredGmailCredentials,
+} from "@/lib/gmail-oauth";
 import { recordActivityLog } from "@/lib/audit";
 import { getClientIp } from "@/lib/rate-limiter";
 
@@ -12,6 +17,8 @@ import { getClientIp } from "@/lib/rate-limiter";
  * - Exchanges authorization code for tokens (specifically refresh_token).
  * - Identifies authorized Gmail address.
  * - Stores credentials securely in MongoDB for non-blocking email dispatch.
+ * - Verifies storage before redirecting to prevent false "Connected" statuses.
+ * - Strictly guarantees redirects to production domain (never internal container ports like localhost:8080).
  */
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
@@ -19,7 +26,8 @@ export async function GET(request: NextRequest) {
   const state = searchParams.get("state");
   const error = searchParams.get("error");
 
-  const settingsUrl = new URL("/settings", request.url);
+  const baseUrl = getAppBaseUrl(request);
+  const settingsUrl = new URL("/settings", baseUrl);
   settingsUrl.searchParams.set("tab", "email");
 
   const cookieState = request.cookies.get("gmail_oauth_state")?.value;
@@ -50,14 +58,13 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const requestOrigin = request.nextUrl.origin;
-    const oauth2Client = getGoogleOAuthClient(requestOrigin);
+    const oauth2Client = getGoogleOAuthClient(request);
 
     // Exchange authorization code for OAuth tokens
     const { tokens } = await oauth2Client.getToken(code);
 
-    if (!tokens.refresh_token) {
-      console.warn("[GmailCallback] No refresh token returned. User may have previously authorized without consent prompt.");
+    if (!tokens || !tokens.access_token) {
+      throw new Error("token_exchange_empty_response");
     }
 
     oauth2Client.setCredentials(tokens);
@@ -81,17 +88,39 @@ export async function GET(request: NextRequest) {
     const session = await getCurrentOfficerSession();
     const performerName = session?.fullName || "RDA Officer";
 
+    // Handle refresh token
+    let storedRefreshToken = tokens.refresh_token;
+
+    if (!storedRefreshToken) {
+      // Check if we already have an existing refresh token in MongoDB or environment
+      const existing = await getStoredGmailCredentials();
+      if (existing && existing.refreshToken) {
+        storedRefreshToken = existing.refreshToken;
+        console.log("[GmailCallback] Preserving existing refresh token for re-authorized session.");
+      } else {
+        console.error("[GmailCallback] No refresh token returned by Google and none exists in storage.");
+        settingsUrl.searchParams.set("error", "missing_refresh_token_reauth_required");
+        return response(settingsUrl);
+      }
+    }
+
     // Persist refresh token securely in MongoDB
-    if (tokens.refresh_token) {
-      await saveStoredGmailCredentials(
-        {
-          refreshToken: tokens.refresh_token,
-          senderEmail,
-          expiryDate: tokens.expiry_date,
-          scope: tokens.scope,
-        },
-        performerName
-      );
+    await saveStoredGmailCredentials(
+      {
+        refreshToken: storedRefreshToken,
+        senderEmail,
+        expiryDate: tokens.expiry_date,
+        scope: tokens.scope,
+      },
+      performerName
+    );
+
+    // VERIFY STORAGE: Ensure the credentials can actually be read back from the database
+    const verifyStorage = await getStoredGmailCredentials();
+    if (!verifyStorage || !verifyStorage.refreshToken) {
+      console.error("[GmailCallback] Token storage verification failed: could not retrieve token from MongoDB.");
+      settingsUrl.searchParams.set("error", "database_storage_verification_failed");
+      return response(settingsUrl);
     }
 
     // Record tamper-evident audit event
@@ -101,17 +130,19 @@ export async function GET(request: NextRequest) {
       performerRole: session?.role || "SUPER_ADMIN",
       targetType: "System",
       targetId: "GMAIL_OAUTH_CONFIG",
-      description: `Gmail API authorized successfully for account ${senderEmail}`,
+      description: `Gmail API authorized and verified successfully for account ${senderEmail}`,
       ipAddress: getClientIp(request),
       metadata: {
         senderEmail,
-        hasRefreshToken: Boolean(tokens.refresh_token),
+        credentialSource: verifyStorage.source,
+        hasRefreshToken: true,
         scope: tokens.scope,
       },
     });
 
-    console.log(`[GmailCallback] Gmail API successfully connected as ${senderEmail}`);
+    console.log(`[GmailCallback] Gmail API successfully connected and verified as ${senderEmail}`);
 
+    // Set success query params ONLY after token exchange and DB verification succeed
     settingsUrl.searchParams.set("status", "connected");
     settingsUrl.searchParams.set("sender", senderEmail);
     return response(settingsUrl);
