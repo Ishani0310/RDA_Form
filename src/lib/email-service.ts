@@ -23,8 +23,15 @@ export interface RegistrationEmailParams {
  * SMTP_FROM (e.g., "RDA ICDP <wbicdpbid@gmail.com>")
  */
 function createEmailTransporter() {
-  const user = (process.env.SMTP_USER || process.env.GMAIL_USER || "").trim();
-  const pass = (process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || "").trim();
+  const user = (process.env.SMTP_USER || process.env.GMAIL_USER || "").trim().replace(/^["']|["']$/g, "");
+  let pass = (process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || "").trim().replace(/^["']|["']$/g, "");
+  
+  // Google App Passwords are 16 letters, often displayed and copied with spaces (e.g. "xxxx xxxx xxxx xxxx")
+  // Spaces must be stripped so Google SMTP authentication succeeds.
+  if (user.toLowerCase().endsWith("@gmail.com") || process.env.SMTP_HOST === "smtp.gmail.com") {
+    pass = pass.replace(/\s+/g, "");
+  }
+
   const host = (process.env.SMTP_HOST || (user.toLowerCase().endsWith("@gmail.com") ? "smtp.gmail.com" : "")).trim();
   const port = parseInt(process.env.SMTP_PORT || (host === "smtp.gmail.com" ? "465" : "587"), 10);
   const secure = process.env.SMTP_SECURE === "true" || port === 465;
@@ -76,7 +83,9 @@ export async function sendRegistrationConfirmationEmail(
       : submittedAt.toLocaleString("en-GB");
 
   const isAttending = willParticipate === "Yes";
-  const fromAddress = process.env.SMTP_FROM || '"RDA ICDP Project" <wbicdpbid@gmail.com>';
+  const user = (process.env.SMTP_USER || process.env.GMAIL_USER || "").trim().replace(/^["']|["']$/g, "");
+  const defaultFrom = user ? `"RDA ICDP Project" <${user}>` : '"RDA ICDP Project" <wbicdpbid@gmail.com>';
+  const fromAddress = process.env.SMTP_FROM || defaultFrom;
 
   const subject = `Official Registration Confirmation: ${reference} - Early Market Engagement Workshop`;
 
