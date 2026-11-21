@@ -1340,52 +1340,27 @@ function RegisterForm() {
 
     try {
       const orgName = formData.organizationName.trim() || formData.supplierDetails?.companyName?.trim();
+      const tokenToSubmit = currentDraftToken?.trim() || undefined;
 
-      // Step 1: Sync all form inputs to server to obtain/refresh token
-      const payload: any = {
-        questionnaireData: formData,
-        data: formData,
-        businessName: orgName || "RDA Participant",
-        organizationName: orgName || "RDA Participant",
-        registrationNumber: formData.ictadRegistrationNumber?.trim() || undefined,
-        cidaGrade: formData.cidaGrade?.trim() || undefined,
-        province: formData.supplierDetails?.province?.trim() || "Western Province",
-        district: formData.supplierDetails?.district?.trim() || undefined,
-        contactOfficer: {
-          name: formData.participant1?.fullName?.trim() || "Authorized Representative",
-          phone: formData.participant1?.mobileNumber?.trim() || formData.contactNumber?.trim() || "+94 11 000 0000",
-          email: formData.participant1?.email?.trim() || formData.email?.trim() || "contact@rda.gov.lk",
-        },
-        primaryContact: {
-          fullName: formData.participant1?.fullName?.trim() || "Authorized Representative",
-          mobileNumber: formData.participant1?.mobileNumber?.trim() || formData.contactNumber?.trim() || "0112865766",
-          email: formData.participant1?.email?.trim() || formData.email?.trim() || "contact@rda.gov.lk",
-        },
-      };
-
-      if (currentDraftToken) {
-        payload.resumeToken = currentDraftToken;
-      }
-
-      const saveRes = await fetch("/api/public/draft", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const saveData = await saveRes.json();
-
-      if (!saveRes.ok || !saveData.success || !saveData.token) {
-        throw new Error(saveData.message || "Failed to sync latest questionnaire inputs.");
-      }
-
-      const tokenToSubmit = saveData.token;
-
-      // Step 2: Finalize declaration (transitions DRAFT -> SUBMITTED and permanently revokes token)
+      // Direct single-roundtrip final submission (eliminates unnecessary draft roundtrip & async-dispatches email)
       const subRes = await fetch("/api/public/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           resumeToken: tokenToSubmit,
+          questionnaireData: formData,
+          data: formData,
+          businessName: orgName || "RDA Participant",
+          organizationName: orgName || "RDA Participant",
+          registrationNumber: formData.ictadRegistrationNumber?.trim() || undefined,
+          cidaGrade: formData.cidaGrade?.trim() || undefined,
+          province: formData.supplierDetails?.province?.trim() || "Western Province",
+          district: formData.supplierDetails?.district?.trim() || undefined,
+          contactOfficer: {
+            name: formData.participant1?.fullName?.trim() || "Authorized Representative",
+            phone: formData.participant1?.mobileNumber?.trim() || formData.contactNumber?.trim() || "+94 11 000 0000",
+            email: formData.participant1?.email?.trim() || formData.email?.trim() || "contact@rda.gov.lk",
+          },
           confirmationEmail: trimmedConfirmEmail,
         }),
       });
@@ -1393,7 +1368,7 @@ function RegisterForm() {
 
       if (subRes.ok && subData.success && subData.submission) {
         // Purge submitted draft from browser recovery storage
-        removeBrowserDraft(tokenToSubmit);
+        if (tokenToSubmit) removeBrowserDraft(tokenToSubmit);
         if (currentReference) removeBrowserDraft(currentReference);
         if (subData.submission.reference) removeBrowserDraft(subData.submission.reference);
         setSavedDraftsList(getBrowserSavedDrafts());

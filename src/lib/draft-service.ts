@@ -398,7 +398,8 @@ export async function getDraftByToken(rawToken: string): Promise<{
  */
 export async function submitFinalDeclaration(
   rawToken: string,
-  clientIp?: string
+  clientIp?: string,
+  latestQuestionnaireData?: Record<string, any>
 ): Promise<{
   submissionReference: string;
   businessName: string;
@@ -441,7 +442,9 @@ export async function submitFinalDeclaration(
   const targetFormCode = submission.formId || DEFAULT_QUESTIONNAIRE_CODE;
 
   // Normalize & validate official questionnaire if populated
-  const rawQ = (submission.questionnaireData as Record<string, any>) || {};
+  const rawQ = ((latestQuestionnaireData && Object.keys(latestQuestionnaireData).length > 0)
+    ? latestQuestionnaireData
+    : (submission.questionnaireData as Record<string, any>)) || {};
   if (rawQ && Object.keys(rawQ).length > 0) {
     const normalizedQ = normalizeQuestionnaireData(rawQ);
 
