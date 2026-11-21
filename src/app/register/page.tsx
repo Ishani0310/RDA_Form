@@ -671,11 +671,52 @@ function RegisterForm() {
     submittedAt: string;
     provincialOffice: string;
     confirmationEmailSentTo?: string | null;
-    emailStatus?: string;
+    emailStatus?: "not_provided" | "pending" | "sent" | "failed" | string;
+    emailSentTo?: string | null;
+    emailMessageId?: string | null;
+    emailError?: string | null;
+    emailProvider?: string | null;
   } | null>(null);
   const [confirmationEmail, setConfirmationEmail] = useState<string>("");
   const [confirmationEmailError, setConfirmationEmailError] = useState<string | null>(null);
   const [publishedQuestionnaire, setPublishedQuestionnaire] = useState<any>(null);
+
+  // Poll for verified Resend email dispatch when status is pending
+  useEffect(() => {
+    if (!submissionSuccess || submissionSuccess.emailStatus !== "pending") return;
+
+    let attempts = 0;
+    const interval = setInterval(async () => {
+      attempts++;
+      if (attempts > 12) {
+        clearInterval(interval);
+        return;
+      }
+      try {
+        const res = await fetch(`/api/public/submit?reference=${encodeURIComponent(submissionSuccess.reference)}`);
+        const data = await res.json();
+        if (data.success && data.emailStatus && data.emailStatus !== "pending") {
+          setSubmissionSuccess((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  emailStatus: data.emailStatus,
+                  emailSentTo: data.emailSentTo || prev.emailSentTo,
+                  emailMessageId: data.emailMessageId || prev.emailMessageId,
+                  emailError: data.emailError || prev.emailError,
+                  emailProvider: data.emailProvider || prev.emailProvider,
+                }
+              : null
+          );
+          clearInterval(interval);
+        }
+      } catch {
+        // silent retry
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [submissionSuccess?.reference, submissionSuccess?.emailStatus]);
 
   // Check saved drafts on mount
   useEffect(() => {
@@ -1797,15 +1838,37 @@ function RegisterForm() {
           </div>
 
           {submissionSuccess.confirmationEmailSentTo && (
-            <div className="p-3.5 bg-blue-50/80 border border-blue-200 rounded-xl text-left flex items-start gap-3">
-              <Mail className="w-5 h-5 text-blue-900 shrink-0 mt-0.5" />
-              <div className="space-y-0.5 text-xs">
-                <span className="font-bold text-blue-950 block">Official Confirmation Email Dispatched</span>
-                <p className="text-blue-900/90 text-[11px] leading-relaxed">
-                  An official acknowledgment receipt with reference number <strong>{submissionSuccess.reference}</strong> and workshop details (<strong>07 December 2026 at 9:00 AM</strong>) was sent to <strong className="font-mono text-blue-950">{submissionSuccess.confirmationEmailSentTo}</strong>.
-                </p>
+            submissionSuccess.emailStatus === "sent" ? (
+              <div className="p-3.5 bg-blue-50/80 border border-blue-200 rounded-xl text-left flex items-start gap-3">
+                <Mail className="w-5 h-5 text-blue-900 shrink-0 mt-0.5" />
+                <div className="space-y-0.5 text-xs">
+                  <span className="font-bold text-blue-950 block">Official Confirmation Email Dispatched</span>
+                  <p className="text-blue-900/90 text-[11px] leading-relaxed">
+                    An official acknowledgment receipt with reference number <strong>{submissionSuccess.reference}</strong> and workshop details (<strong>07 December 2026 at 9:00 AM</strong>) was verified and dispatched to <strong className="font-mono text-blue-950">{submissionSuccess.emailSentTo || submissionSuccess.confirmationEmailSentTo}</strong>.
+                  </p>
+                </div>
               </div>
-            </div>
+            ) : submissionSuccess.emailStatus === "failed" ? (
+              <div className="p-3.5 bg-amber-50/80 border border-amber-200 rounded-xl text-left flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <div className="space-y-0.5 text-xs">
+                  <span className="font-bold text-amber-950 block">Confirmation Email Delivery Notice</span>
+                  <p className="text-amber-900/90 text-[11px] leading-relaxed">
+                    Your registration has been securely filed with reference <strong>{submissionSuccess.reference}</strong>. Automated email to <strong className="font-mono text-amber-950">{submissionSuccess.confirmationEmailSentTo}</strong> could not be delivered{submissionSuccess.emailError ? ` (${submissionSuccess.emailError})` : ""}. Please retain your reference number or print your receipt below.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="p-3.5 bg-blue-50/60 border border-blue-200 rounded-xl text-left flex items-start gap-3">
+                <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin shrink-0 mt-0.5" />
+                <div className="space-y-0.5 text-xs">
+                  <span className="font-bold text-blue-950 block">Dispatching Confirmation Email...</span>
+                  <p className="text-blue-900/90 text-[11px] leading-relaxed">
+                    Transmitting acknowledgment receipt for <strong>{submissionSuccess.reference}</strong> to <strong className="font-mono text-blue-950">{submissionSuccess.confirmationEmailSentTo}</strong> via Resend API.
+                  </p>
+                </div>
+              </div>
+            )
           )}
 
           <div className="p-5 rounded-xl bg-slate-50 border border-slate-200 text-left text-xs space-y-2.5 font-mono">
@@ -1820,7 +1883,16 @@ function RegisterForm() {
             {submissionSuccess.confirmationEmailSentTo && (
               <div className="flex justify-between border-b border-slate-200/60 pb-2">
                 <span className="text-slate-500 font-sans">Confirmation Sent To:</span>
-                <span className="font-bold text-slate-800 font-mono">{submissionSuccess.confirmationEmailSentTo}</span>
+                <span className="font-bold text-slate-800 font-mono">
+                  {submissionSuccess.emailSentTo || submissionSuccess.confirmationEmailSentTo}
+                  {submissionSuccess.emailStatus === "sent" ? (
+                    <span className="ml-1.5 text-[10px] text-emerald-700 font-sans font-semibold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">Dispatched</span>
+                  ) : submissionSuccess.emailStatus === "failed" ? (
+                    <span className="ml-1.5 text-[10px] text-amber-700 font-sans font-semibold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">Not Dispatched</span>
+                  ) : (
+                    <span className="ml-1.5 text-[10px] text-blue-700 font-sans font-semibold bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">Sending...</span>
+                  )}
+                </span>
               </div>
             )}
             <div className="flex justify-between border-b border-slate-200/60 pb-2">

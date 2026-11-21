@@ -1,3 +1,4 @@
+import { Resend } from "resend";
 import nodemailer from "nodemailer";
 
 export interface RegistrationEmailParams {
@@ -11,6 +12,16 @@ export interface RegistrationEmailParams {
   workshopTime?: string;
   submittedAt?: string | Date;
   questionnaireData?: Record<string, any>;
+}
+
+export interface SendEmailResult {
+  success: boolean;
+  provider: "resend" | "smtp" | "simulated";
+  messageId?: string;
+  sentTo?: string;
+  intendedRecipient?: string;
+  simulated?: boolean;
+  error?: string;
 }
 
 function escapeHtml(str: any): string {
@@ -30,21 +41,23 @@ function formatNumber(val: any): string {
 }
 
 /**
- * Configure SMTP transporter using environment variables or a safe fallback.
- * Supported env vars:
- * SMTP_HOST (e.g., smtp.gmail.com)
- * SMTP_PORT (e.g., 587 or 465)
- * SMTP_SECURE (e.g., true for 465, false for 587)
- * SMTP_USER
- * SMTP_PASS
- * SMTP_FROM (e.g., "RDA ICDP <wbicdpbid@gmail.com>")
+ * Initialize Resend client using process.env.RESEND_API_KEY
+ */
+function getResendClient(): Resend | null {
+  const apiKey = (process.env.RESEND_API_KEY || "").trim().replace(/^["']|["']$/g, "");
+  if (apiKey) {
+    return new Resend(apiKey);
+  }
+  return null;
+}
+
+/**
+ * Configure SMTP transporter fallback using environment variables.
  */
 function createEmailTransporter() {
   const user = (process.env.SMTP_USER || process.env.GMAIL_USER || "").trim().replace(/^["']|["']$/g, "");
   let pass = (process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || "").trim().replace(/^["']|["']$/g, "");
 
-  // Google App Passwords are 16 letters, often displayed and copied with spaces (e.g. "xxxx xxxx xxxx xxxx")
-  // Spaces must be stripped so Google SMTP authentication succeeds.
   if (user.toLowerCase().endsWith("@gmail.com") || process.env.SMTP_HOST === "smtp.gmail.com") {
     pass = pass.replace(/\s+/g, "");
   }
@@ -71,13 +84,12 @@ function createEmailTransporter() {
     }
   }
 
-  // Fallback: If SMTP credentials are not yet configured in .env.local, log safely in dev
   return null;
 }
 
 export async function sendRegistrationConfirmationEmail(
   params: RegistrationEmailParams
-): Promise<{ success: boolean; messageId?: string; simulated?: boolean; error?: string }> {
+): Promise<SendEmailResult> {
   const {
     to,
     reference,
@@ -92,7 +104,11 @@ export async function sendRegistrationConfirmationEmail(
   } = params;
 
   if (!to || !to.trim()) {
-    return { success: false, error: "Recipient email address is required." };
+    return {
+      success: false,
+      provider: "resend",
+      error: "Recipient email address is required.",
+    };
   }
 
   const q = questionnaireData || {};
@@ -100,18 +116,37 @@ export async function sendRegistrationConfirmationEmail(
   const category = q.participantCategory || "";
   const effectiveOrgName = q.organizationName || businessName || "Valued Registrant";
   const contactPhone = q.contactNumber || q.participant1?.mobileNumber || "—";
-  const contactEmail = q.email || to;
+  const contactEmail = q.email || to.trim();
 
   const formattedDate =
     typeof submittedAt === "string"
       ? new Date(submittedAt).toLocaleString("en-GB")
       : submittedAt.toLocaleString("en-GB");
 
-  const user = (process.env.SMTP_USER || process.env.GMAIL_USER || "").trim().replace(/^["']|["']$/g, "");
-  const defaultFrom = user ? `"RDA ICDP Project" <${user}>` : '"RDA ICDP Project" <wbicdpbid@gmail.com>';
-  const fromAddress = process.env.SMTP_FROM || defaultFrom;
+  // Configurable sender: default to onboarding@resend.dev for initial free testing,
+  // but respects RESEND_FROM / EMAIL_FROM when an official RDA domain is configured later.
+  const configuredFrom = (process.env.RESEND_FROM || process.env.EMAIL_FROM || "").trim().replace(/^["']|["']$/g, "");
+  const defaultResendFrom = "Road Development Authority <onboarding@resend.dev>";
+  const fromAddress = configuredFrom || defaultResendFrom;
 
-  const subject = `Official Registration Confirmation: ${reference} - Early Market Engagement Workshop`;
+  // Resend Free Tier Test Restriction:
+  // When sending from onboarding@resend.dev, Resend strictly allows delivering ONLY to the
+  // email address associated with the Resend account.
+  const isResendDevSender = fromAddress.toLowerCase().includes("resend.dev");
+  const resendAccountEmail = (
+    process.env.RESEND_TEST_RECIPIENT ||
+    process.env.RESEND_ACCOUNT_EMAIL ||
+    process.env.SMTP_USER ||
+    "edutrack0310@gmail.com"
+  ).trim();
+
+  // If using resend.dev test domain, route to the verified account owner email so Resend accepts it
+  const actualRecipient = isResendDevSender ? resendAccountEmail : to.trim();
+  const isRoutedToTestAccount = isResendDevSender && actualRecipient.toLowerCase() !== to.trim().toLowerCase();
+
+  const subject = isRoutedToTestAccount
+    ? `Official Registration Confirmation: ${reference} - Early Market Engagement Workshop [Test Mode - For: ${to.trim()}]`
+    : `Official Registration Confirmation: ${reference} - Early Market Engagement Workshop`;
 
   // ---------------------------------------------------------------------------
   // 1. BUILD PLAIN TEXT CONTENT (Including All Filled Details)
@@ -125,7 +160,11 @@ Inclusive Connectivity and Development Project (ICDP)
 REGISTRATION CONFIRMATION & OFFICIAL ACKNOWLEDGMENT RECEIPT
 =======================================================
 
-Dear ${effectiveOrgName},
+${
+  isRoutedToTestAccount
+    ? `[RESEND TEST MODE NOTICE]\nThis test email is delivered to Resend account (${actualRecipient}) because onboarding@resend.dev is active.\nIntended registrant email entered in form: ${to.trim()}\n=======================================================\n\n`
+    : ""
+}Dear ${effectiveOrgName},
 
 Thank you for completing and submitting your registration for the Early Market Engagement Workshop.
 Below is the full official record of all details submitted under your application.
@@ -717,6 +756,16 @@ Inclusive Connectivity and Development Project (ICDP)
     <!-- Main Container -->
     <div style="padding: 24px 24px 16px 24px;">
       
+      ${
+        isRoutedToTestAccount
+          ? `
+      <div style="background-color: #fef3c7; border: 1px solid #fde68a; border-radius: 10px; padding: 12px 14px; margin-bottom: 18px; font-size: 12px; color: #92400e;">
+        <strong>Resend Test Mode (onboarding@resend.dev):</strong> This confirmation email was routed to the verified Resend account (<strong>${escapeHtml(actualRecipient)}</strong>).<br>
+        <span style="font-size: 11px; color: #b45309;">Registrant email entered during submission: <strong>${escapeHtml(to.trim())}</strong></span>
+      </div>`
+          : ""
+      }
+
       <!-- Thank You Banner -->
       <div style="background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
         <h2 style="margin: 0 0 4px 0; color: #065f46; font-size: 15px; font-weight: 800;">
@@ -775,7 +824,7 @@ Inclusive Connectivity and Development Project (ICDP)
         <p style="margin: 0 0 4px 0; font-size: 12px; color: #334155;">
           <strong>General Telephone:</strong> 011 286 5766
         </p>
-        <p style="margin: 0; font-size: 12px; color: #334155;">
+        <p style="margin: 0 0 4px 0; font-size: 12px; color: #334155;">
           <strong>Mr. Indunil Madhusanka:</strong> 071 286 3433 (<a href="mailto:amindunil@gmail.com" style="color: #2563eb; text-decoration: none;">amindunil@gmail.com</a>)
         </p>
       </div>
@@ -797,35 +846,102 @@ Inclusive Connectivity and Development Project (ICDP)
 </html>
   `.trim();
 
-  const transporter = createEmailTransporter();
-
-  if (transporter) {
+  // ---------------------------------------------------------------------------
+  // 3. ATTEMPT DISPATCH VIA OFFICIAL RESEND SDK (PRIMARY)
+  // ---------------------------------------------------------------------------
+  const resend = getResendClient();
+  if (resend) {
     try {
-      const info = await transporter.sendMail({
+      const { data, error } = await resend.emails.send({
         from: fromAddress,
-        to: to.trim(),
+        to: actualRecipient,
         subject,
         text: textDetails,
         html: htmlContent,
       });
 
-      console.log(`[EmailService] Confirmation email sent successfully to ${to}. MessageId: ${info.messageId}`);
-      return { success: true, messageId: info.messageId, simulated: false };
-    } catch (err) {
-      console.error(`[EmailService] Failed to send email via SMTP to ${to}:`, err);
-      // Return simulated success with logged details so user submission is never blocked
+      if (error) {
+        console.error(`[EmailService - Resend] Resend API rejected message to ${actualRecipient}:`, error);
+        return {
+          success: false,
+          provider: "resend",
+          error: error.message || "Resend API rejected message",
+          simulated: false,
+          sentTo: actualRecipient,
+          intendedRecipient: to.trim(),
+        };
+      }
+
+      console.log(`[EmailService - Resend] Confirmation email accepted by Resend! Message ID: ${data?.id} -> ${actualRecipient}`);
       return {
         success: true,
-        simulated: true,
-        error: err instanceof Error ? err.message : "SMTP send failed",
+        provider: "resend",
+        messageId: data?.id,
+        sentTo: actualRecipient,
+        intendedRecipient: to.trim(),
+        simulated: false,
+      };
+    } catch (resendErr: any) {
+      console.error(`[EmailService - Resend] Network or SDK exception dispatching to ${actualRecipient}:`, resendErr);
+      return {
+        success: false,
+        provider: "resend",
+        error: resendErr?.message || "Resend connection error",
+        simulated: false,
+        sentTo: actualRecipient,
+        intendedRecipient: to.trim(),
       };
     }
-  } else {
-    // Simulated delivery (SMTP not configured in local environment)
-    console.log(`[EmailService - Simulated] Official confirmation email generated for ${to}:`);
-    console.log(`  Reference: ${reference}`);
-    console.log(`  Workshop: ${workshopDate} at ${workshopTime}`);
-    console.log(`  Recipient: ${to}`);
-    return { success: true, simulated: true };
   }
+
+  // ---------------------------------------------------------------------------
+  // 4. ATTEMPT DISPATCH VIA SMTP TRANSPORTER (SECONDARY FALLBACK)
+  // ---------------------------------------------------------------------------
+  const transporter = createEmailTransporter();
+  if (transporter) {
+    try {
+      const info = await transporter.sendMail({
+        from: fromAddress,
+        to: actualRecipient,
+        subject,
+        text: textDetails,
+        html: htmlContent,
+      });
+
+      console.log(`[EmailService - SMTP] Confirmation email sent successfully to ${actualRecipient}. MessageId: ${info.messageId}`);
+      return {
+        success: true,
+        provider: "smtp",
+        messageId: info.messageId,
+        sentTo: actualRecipient,
+        intendedRecipient: to.trim(),
+        simulated: false,
+      };
+    } catch (smtpErr: any) {
+      console.error(`[EmailService - SMTP] Failed to send email via SMTP to ${actualRecipient}:`, smtpErr);
+      return {
+        success: false,
+        provider: "smtp",
+        error: smtpErr?.message || "SMTP send failed",
+        simulated: false,
+        sentTo: actualRecipient,
+        intendedRecipient: to.trim(),
+      };
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // 5. LOCAL SIMULATED FALLBACK (When no Resend key or SMTP configured)
+  // ---------------------------------------------------------------------------
+  console.log(`[EmailService - Simulated] Confirmation email generated for ${to}:`);
+  console.log(`  Reference: ${reference}`);
+  console.log(`  Recipient: ${actualRecipient}`);
+  return {
+    success: true,
+    provider: "simulated",
+    messageId: `sim-${Date.now()}`,
+    sentTo: actualRecipient,
+    intendedRecipient: to.trim(),
+    simulated: true,
+  };
 }
