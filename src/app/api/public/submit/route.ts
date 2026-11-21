@@ -133,6 +133,7 @@ export async function POST(request: NextRequest) {
         workshopDate: "07 December 2026",
         workshopTime: "9:00 AM",
         submittedAt: result.submittedAt,
+        questionnaireData: result.questionnaireData || latestQData,
       }).catch((emailErr) => {
         console.error("Non-blocking error dispatching confirmation email:", emailErr);
       });
