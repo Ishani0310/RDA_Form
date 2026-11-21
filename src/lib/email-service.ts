@@ -23,22 +23,31 @@ export interface RegistrationEmailParams {
  * SMTP_FROM (e.g., "RDA ICDP <wbicdpbid@gmail.com>")
  */
 function createEmailTransporter() {
-  const host = process.env.SMTP_HOST;
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-  const port = parseInt(process.env.SMTP_PORT || "587", 10);
+  const user = (process.env.SMTP_USER || process.env.GMAIL_USER || "").trim();
+  const pass = (process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || "").trim();
+  const host = (process.env.SMTP_HOST || (user.toLowerCase().endsWith("@gmail.com") ? "smtp.gmail.com" : "")).trim();
+  const port = parseInt(process.env.SMTP_PORT || (host === "smtp.gmail.com" ? "465" : "587"), 10);
   const secure = process.env.SMTP_SECURE === "true" || port === 465;
 
-  if (host && user && pass) {
-    return nodemailer.createTransport({
-      host,
-      port,
-      secure,
-      auth: { user, pass },
-    });
+  if (user && pass) {
+    if (user.toLowerCase().endsWith("@gmail.com") || host === "smtp.gmail.com") {
+      return nodemailer.createTransport({
+        service: "gmail",
+        auth: { user, pass },
+      });
+    }
+
+    if (host) {
+      return nodemailer.createTransport({
+        host,
+        port,
+        secure,
+        auth: { user, pass },
+      });
+    }
   }
 
-  // Fallback: If SMTP is not configured in env, create a test/stream transport that logs safely
+  // Fallback: If SMTP credentials are not yet configured in .env.local, log safely in dev
   return null;
 }
 
