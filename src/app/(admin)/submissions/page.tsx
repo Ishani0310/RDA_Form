@@ -569,6 +569,10 @@ function generateSubmissionHtml(sub: FormattedSubmission): string {
             <div class="field-label">General Civil Construction Experience</div>
             <div class="field-value">${escapeHtml(q.generalExperience || "N/A")}</div>
           </div>
+          <div>
+            <div class="field-label">RDA / ICDP Experience</div>
+            <div class="field-value">${escapeHtml(q.hasRdaOrIcdpExperience === "Yes" ? `Yes (${q.rdaIcdpExperienceType || "RDA/ICDP"}${q.rdaIcdpProjectDetails ? ` - ${q.rdaIcdpProjectDetails}` : ""})` : (q.hasRdaOrIcdpExperience === "No" ? "No" : "N/A"))}</div>
+          </div>
         </div>
         ${q.areasOfSpecialty && q.areasOfSpecialty.length > 0 ? `
         <div style="margin-top: 6px;">
@@ -1718,8 +1722,18 @@ function SubmissionsContent() {
                         )}
                         {selectedSub.questionnaireData.generalExperience && (
                           <div>
-                            <span className="text-slate-500 text-[10px] uppercase font-bold">Experience</span>
+                            <span className="text-slate-500 text-[10px] uppercase font-bold">General Experience</span>
                             <p className="font-semibold text-slate-800">{selectedSub.questionnaireData.generalExperience}</p>
+                          </div>
+                        )}
+                        {selectedSub.questionnaireData.hasRdaOrIcdpExperience && (
+                          <div>
+                            <span className="text-slate-500 text-[10px] uppercase font-bold">RDA / ICDP Experience</span>
+                            <p className="font-semibold text-slate-800">
+                              {selectedSub.questionnaireData.hasRdaOrIcdpExperience === "Yes"
+                                ? `Yes (${selectedSub.questionnaireData.rdaIcdpExperienceType || "RDA/ICDP"}${selectedSub.questionnaireData.rdaIcdpProjectDetails ? ` - ${selectedSub.questionnaireData.rdaIcdpProjectDetails}` : ""})`
+                                : "No"}
+                            </p>
                           </div>
                         )}
                         {selectedSub.questionnaireData.hasOngoingContracts && (

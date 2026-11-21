@@ -266,6 +266,11 @@ export function validateQuestionnaireSubmission(
   if (!data.generalExperience || !validExp.includes(data.generalExperience)) {
     errors.generalExperience = "Please select your firm's general experience in the construction industry.";
   }
+  if (!data.hasRdaOrIcdpExperience || (data.hasRdaOrIcdpExperience !== "Yes" && data.hasRdaOrIcdpExperience !== "No")) {
+    errors.hasRdaOrIcdpExperience = "Please indicate whether your company already has or has worked in the past with RDA or with ICDP.";
+  } else if (data.hasRdaOrIcdpExperience === "Yes" && !data.rdaIcdpExperienceType) {
+    errors.rdaIcdpExperienceType = "Please specify whether your experience is with RDA, ICDP, or both.";
+  }
 
   // Section 10: Similar Work Experience (3 Contracts)
   const contracts = data.similarWorks || [];
@@ -480,6 +485,9 @@ export function normalizeQuestionnaireData(
     totalOutstandingValueLkrMillion: parseNumOrNull(raw.totalOutstandingValueLkrMillion),
     ongoingContracts,
     generalExperience: (raw.generalExperience as any) || "",
+    hasRdaOrIcdpExperience: (raw.hasRdaOrIcdpExperience as any) || "",
+    rdaIcdpExperienceType: (raw.rdaIcdpExperienceType as any) || "",
+    rdaIcdpProjectDetails: String(raw.rdaIcdpProjectDetails || "").trim(),
     similarWorks,
     mattersForDiscussion: Array.isArray(raw.mattersForDiscussionList) && (raw.mattersForDiscussionList as any[]).length > 0
       ? (raw.mattersForDiscussionList as any[]).map((m) => String(m || "").trim()).filter(Boolean).map((m, i) => `${i + 1}. ${m}`).join("\n\n")

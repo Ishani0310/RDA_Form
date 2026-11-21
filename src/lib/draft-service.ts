@@ -428,8 +428,10 @@ export async function submitFinalDeclaration(
     throw new Error("This draft session has expired. Submissions must occur within the active 30-day window.");
   }
 
-  const contractor = await Contractor.findById(draftTokenDoc.contractor);
-  const submission = await Submission.findById(draftTokenDoc.submission);
+  const [contractor, submission] = await Promise.all([
+    Contractor.findById(draftTokenDoc.contractor),
+    Submission.findById(draftTokenDoc.submission),
+  ]);
 
   if (!contractor || !submission) {
     throw new Error("Draft records not found in database.");
@@ -529,24 +531,24 @@ export async function submitFinalDeclaration(
 
   const submittedAt = new Date();
 
-  // Transition submission: update status to Submitted and preserve permanent registration reference
+  // Transition submission, contractor and draft token
   submission.status = "Submitted";
   submission.submittedAt = submittedAt;
-  await submission.save();
+  contractor.status = "Pending_Review";
+  draftTokenDoc.isRevoked = true;
+  draftTokenDoc.revokedAt = submittedAt;
+
+  // Parallelize all 3 MongoDB document writes concurrently for sub-second execution
+  await Promise.all([
+    submission.save(),
+    contractor.save(),
+    draftTokenDoc.save(),
+  ]);
 
   const officialSubmissionRef = submission.submissionReference;
 
-  // Transition contractor
-  contractor.status = "Pending_Review";
-  await contractor.save();
-
-  // Revoke token immediately to lock the draft
-  draftTokenDoc.isRevoked = true;
-  draftTokenDoc.revokedAt = submittedAt;
-  await draftTokenDoc.save();
-
-  // Record audit log
-  await recordActivityLog({
+  // Non-blocking audit log record
+  recordActivityLog({
     action: "CONTRACTOR_SUBMISSION_RECEIVED",
     performerName: contractor.contactOfficer?.name || contractor.businessName || "Authorized Representative",
     performerRole: "CONTRACTOR",
@@ -560,7 +562,7 @@ export async function submitFinalDeclaration(
       submissionReference: officialSubmissionRef,
       cidaGrade: contractor.cidaGrade,
     },
-  });
+  }).catch((err) => console.error("Non-blocking audit log error:", err));
 
   return {
     submissionReference: officialSubmissionRef,

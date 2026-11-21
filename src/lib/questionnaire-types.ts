@@ -219,6 +219,9 @@ export interface OfficialQuestionnaireData {
 
   // SECTION 9: General Experience (Contractors)
   generalExperience?: GeneralExperienceOption | "";
+  hasRdaOrIcdpExperience?: "Yes" | "No" | "";
+  rdaIcdpExperienceType?: "RDA" | "ICDP" | "Both" | "None" | string;
+  rdaIcdpProjectDetails?: string;
 
   // SECTION 10: Similar Work Experience (Contractors)
   similarWorks?: SimilarWorkContract[];

@@ -57,6 +57,9 @@ export async function POST(request: NextRequest) {
           Bridges: "C2",
         },
         generalExperience: "More than 10 and up to 20 years",
+        hasRdaOrIcdpExperience: "Yes",
+        rdaIcdpExperienceType: "Both",
+        rdaIcdpProjectDetails: "Central Expressway & ICDP Rural Connectivity",
         mattersForDiscussion: "Test of Gmail API integration with RDA ICDP Registration Portal.",
       },
     });

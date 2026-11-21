@@ -154,6 +154,9 @@ function createInitialFormData(): OfficialQuestionnaireData {
     totalOutstandingValueLkrMillion: null,
     ongoingContracts: createEmptyOngoingWorks(),
     generalExperience: "",
+    hasRdaOrIcdpExperience: "",
+    rdaIcdpExperienceType: "",
+    rdaIcdpProjectDetails: "",
     similarWorks: createEmptySimilarWorks(),
     mattersForDiscussion: "",
     mattersForDiscussionList: [""],
@@ -242,6 +245,8 @@ const QUESTIONNAIRE_FIELD_ORDER = [
   "totalOutstandingValueLkrMillion",
   // Section 9: Experience
   "generalExperience",
+  "hasRdaOrIcdpExperience",
+  "rdaIcdpExperienceType",
   // Section 10: Similar Works
   "similarWorks.0.contractName",
   "similarWorks.0.contractType",
@@ -296,6 +301,7 @@ function mapServerErrorMessageToField(message: string): { key: string; message: 
   if (/CIDA grade/i.test(clean)) return { key: "cidaGrade", message: clean };
   if (/area.*specialty/i.test(clean)) return { key: "areasOfSpecialty", message: clean };
   if (/general experience/i.test(clean)) return { key: "generalExperience", message: clean };
+  if (/rda.*icdp|icdp.*rda|worked in the past/i.test(clean)) return { key: "hasRdaOrIcdpExperience", message: clean };
   if (/contract 1/i.test(clean) || /similar work/i.test(clean)) return { key: "similarWorks.0.contractName", message: clean };
   if (/descending order/i.test(clean) || /cannot exceed/i.test(clean)) return { key: "similarWorks.descending", message: clean };
 
@@ -1033,6 +1039,9 @@ function RegisterForm() {
               ? q.ongoingContracts
               : createEmptyOngoingWorks(),
           generalExperience: q.generalExperience || "",
+          hasRdaOrIcdpExperience: q.hasRdaOrIcdpExperience || "",
+          rdaIcdpExperienceType: q.rdaIcdpExperienceType || "",
+          rdaIcdpProjectDetails: q.rdaIcdpProjectDetails || "",
           similarWorks:
             Array.isArray(q.similarWorks) && q.similarWorks.length > 0
               ? q.similarWorks
@@ -1864,7 +1873,7 @@ function RegisterForm() {
                 <div className="space-y-0.5 text-xs">
                   <span className="font-bold text-blue-950 block">Dispatching Confirmation Email...</span>
                   <p className="text-blue-900/90 text-[11px] leading-relaxed">
-                    Transmitting acknowledgment receipt for <strong>{submissionSuccess.reference}</strong> to <strong className="font-mono text-blue-950">{submissionSuccess.confirmationEmailSentTo}</strong> via Resend API.
+                    Transmitting acknowledgment receipt for <strong>{submissionSuccess.reference}</strong> to <strong className="font-mono text-blue-950">{submissionSuccess.confirmationEmailSentTo}</strong>.
                   </p>
                 </div>
               </div>
@@ -1942,6 +1951,9 @@ function RegisterForm() {
                   totalOutstandingValueLkrMillion: null,
                   ongoingContracts: createEmptyOngoingWorks(),
                   generalExperience: "",
+                  hasRdaOrIcdpExperience: "",
+                  rdaIcdpExperienceType: "",
+                  rdaIcdpProjectDetails: "",
                   similarWorks: createEmptySimilarWorks(),
                   mattersForDiscussion: "",
                   mattersForDiscussionList: [""],
@@ -3977,6 +3989,122 @@ function RegisterForm() {
                               </div>
                             )}
                           </div>
+
+                          {/* QUESTION: RDA or ICDP Experience */}
+                          <div id="field-hasRdaOrIcdpExperience" className="space-y-2 pt-3 border-t border-slate-100">
+                            <label className="block font-semibold text-slate-700">
+                              Already have or have worked in the past with RDA or with ICDP? *
+                            </label>
+
+                            <div className="flex flex-wrap items-center gap-4 pt-0.5">
+                              <label className="inline-flex items-center gap-2 cursor-pointer group">
+                                <input
+                                  type="radio"
+                                  name="hasRdaOrIcdpExperience"
+                                  value="Yes"
+                                  checked={formData.hasRdaOrIcdpExperience === "Yes"}
+                                  onChange={() => {
+                                    setFormData({
+                                      ...formData,
+                                      hasRdaOrIcdpExperience: "Yes",
+                                      rdaIcdpExperienceType: formData.rdaIcdpExperienceType || "Both",
+                                    });
+                                    if (fieldErrors.hasRdaOrIcdpExperience) clearFieldError("hasRdaOrIcdpExperience");
+                                  }}
+                                  className="w-4 h-4 text-blue-900 border-slate-300 focus:ring-blue-800"
+                                />
+                                <span className="font-semibold text-slate-800 group-hover:text-blue-900">Yes</span>
+                              </label>
+
+                              <label className="inline-flex items-center gap-2 cursor-pointer group">
+                                <input
+                                  type="radio"
+                                  name="hasRdaOrIcdpExperience"
+                                  value="No"
+                                  checked={formData.hasRdaOrIcdpExperience === "No"}
+                                  onChange={() => {
+                                    setFormData({
+                                      ...formData,
+                                      hasRdaOrIcdpExperience: "No",
+                                      rdaIcdpExperienceType: "",
+                                      rdaIcdpProjectDetails: "",
+                                    });
+                                    if (fieldErrors.hasRdaOrIcdpExperience) clearFieldError("hasRdaOrIcdpExperience");
+                                    if (fieldErrors.rdaIcdpExperienceType) clearFieldError("rdaIcdpExperienceType");
+                                  }}
+                                  className="w-4 h-4 text-blue-900 border-slate-300 focus:ring-blue-800"
+                                />
+                                <span className="font-semibold text-slate-800 group-hover:text-blue-900">No</span>
+                              </label>
+                            </div>
+
+                            {fieldErrors.hasRdaOrIcdpExperience && (
+                              <div id="error-hasRdaOrIcdpExperience" role="alert" className="flex items-start gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
+                                <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                                <span>{fieldErrors.hasRdaOrIcdpExperience}</span>
+                              </div>
+                            )}
+
+                            {/* Entity Details when Yes */}
+                            {formData.hasRdaOrIcdpExperience === "Yes" && (
+                              <div className="p-3.5 mt-2 bg-slate-50 border border-slate-200 rounded-xl space-y-3 animate-fadeIn">
+                                <div>
+                                  <label className="block font-semibold text-slate-700 mb-1.5">
+                                    Please specify entity: *
+                                  </label>
+                                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                    {[
+                                      { id: "RDA", label: "Road Development Authority (RDA)" },
+                                      { id: "ICDP", label: "Inclusive Connectivity & Development Project (ICDP)" },
+                                      { id: "Both", label: "Both RDA & ICDP" },
+                                    ].map((item) => (
+                                      <label
+                                        key={item.id}
+                                        className={`flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer transition-all ${
+                                          formData.rdaIcdpExperienceType === item.id
+                                            ? "bg-blue-50/90 border-blue-900 text-blue-950 font-bold shadow-sm"
+                                            : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                                        }`}
+                                      >
+                                        <input
+                                          type="radio"
+                                          name="rdaIcdpExperienceType"
+                                          value={item.id}
+                                          checked={formData.rdaIcdpExperienceType === item.id}
+                                          onChange={() => {
+                                            setFormData({ ...formData, rdaIcdpExperienceType: item.id });
+                                            if (fieldErrors.rdaIcdpExperienceType) clearFieldError("rdaIcdpExperienceType");
+                                          }}
+                                          className="w-3.5 h-3.5 text-blue-900 border-slate-300 focus:ring-blue-800"
+                                        />
+                                        <span className="text-[11px] leading-snug">{item.label}</span>
+                                      </label>
+                                    ))}
+                                  </div>
+                                  {fieldErrors.rdaIcdpExperienceType && (
+                                    <div id="error-rdaIcdpExperienceType" role="alert" className="flex items-start gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
+                                      <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                                      <span>{fieldErrors.rdaIcdpExperienceType}</span>
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div>
+                                  <label htmlFor="input-rdaIcdpProjectDetails" className="block font-semibold text-slate-700 mb-1">
+                                    Contract or project details with RDA / ICDP (Optional)
+                                  </label>
+                                  <input
+                                    type="text"
+                                    id="input-rdaIcdpProjectDetails"
+                                    value={formData.rdaIcdpProjectDetails || ""}
+                                    onChange={(e) => setFormData({ ...formData, rdaIcdpProjectDetails: e.target.value })}
+                                    placeholder="e.g., Contract Name, Contract Number, Year, or Province"
+                                    className="w-full p-2.5 rounded-lg bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-800 text-xs font-medium"
+                                  />
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
 
@@ -4817,6 +4945,16 @@ function RegisterForm() {
                     <div>
                       <span className="text-slate-500 font-medium text-[11px] block">General Construction Experience:</span>
                       <span className="font-bold text-slate-900 text-xs">{formData.generalExperience || "N/A"}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 font-medium text-[11px] block">Past / Current Experience with RDA or ICDP:</span>
+                      <span className="font-bold text-slate-900 text-xs">
+                        {formData.hasRdaOrIcdpExperience === "Yes"
+                          ? `Yes (${formData.rdaIcdpExperienceType || "RDA/ICDP"}${formData.rdaIcdpProjectDetails ? ` - ${formData.rdaIcdpProjectDetails}` : ""})`
+                          : formData.hasRdaOrIcdpExperience === "No"
+                          ? "No"
+                          : "N/A"}
+                      </span>
                     </div>
                   </div>
 

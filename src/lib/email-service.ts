@@ -279,6 +279,7 @@ CONTRACTOR QUALIFICATIONS & TECHNICAL SPECIALTY:
 • ICTAD / CIDA Registration Number: ${q.ictadRegistrationNumber || "—"}
 • Overall CIDA Grade: ${q.cidaGrade === "Other" && q.cidaGradeOther ? `Other (${q.cidaGradeOther})` : (q.cidaGrade || "—")}
 • General Experience: ${q.generalExperience || "—"}
+• Worked with RDA / ICDP: ${q.hasRdaOrIcdpExperience || "—"}${q.hasRdaOrIcdpExperience === "Yes" ? ` (${q.rdaIcdpExperienceType || "RDA/ICDP"}${q.rdaIcdpProjectDetails ? ` - ${q.rdaIcdpProjectDetails}` : ""})` : ""}
 `;
 
       if (q.areasOfSpecialty && q.areasOfSpecialty.length > 0) {
@@ -568,6 +569,10 @@ Inclusive Connectivity and Development Project (ICDP)
             <tr style="border-bottom: 1px solid #edf2f7;">
               <td style="padding: 6px 0; color: #64748b; font-weight: 600;">General Experience:</td>
               <td style="padding: 6px 0; color: #0f172a;">${escapeHtml(q.generalExperience || "—")}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #edf2f7;">
+              <td style="padding: 6px 0; color: #64748b; font-weight: 600;">Worked with RDA / ICDP:</td>
+              <td style="padding: 6px 0; color: #0f172a; font-weight: 700;">${escapeHtml(q.hasRdaOrIcdpExperience || "—")}${q.hasRdaOrIcdpExperience === "Yes" ? ` (${escapeHtml(q.rdaIcdpExperienceType || "")}${q.rdaIcdpProjectDetails ? ` - ${escapeHtml(q.rdaIcdpProjectDetails)}` : ""})` : ""}</td>
             </tr>
             <tr>
               <td style="padding: 6px 0; color: #64748b; font-weight: 600;">Has Ongoing Contracts:</td>

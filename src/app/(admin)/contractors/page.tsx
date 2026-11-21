@@ -499,6 +499,12 @@ export default function ContractorsPage() {
             <div class="field-value font-bold">${escapeHtml(q.generalExperience)}</div>
           </div>
           ` : ""}
+          ${q.hasRdaOrIcdpExperience ? `
+          <div>
+            <div class="field-label">RDA / ICDP Experience</div>
+            <div class="field-value font-bold">${escapeHtml(q.hasRdaOrIcdpExperience === "Yes" ? `Yes (${q.rdaIcdpExperienceType || "RDA/ICDP"}${q.rdaIcdpProjectDetails ? ` - ${q.rdaIcdpProjectDetails}` : ""})` : "No")}</div>
+          </div>
+          ` : ""}
           ${q.hasOngoingContracts ? `
           <div>
             <div class="field-label">Ongoing RDA Contracts</div>
@@ -1345,6 +1351,16 @@ export default function ContractorsPage() {
                         <div>
                           <span className="text-slate-500 font-medium">General Construction Experience:</span>
                           <p className="font-bold text-slate-900 mt-0.5">{q.generalExperience}</p>
+                        </div>
+                      )}
+                      {q.hasRdaOrIcdpExperience && (
+                        <div>
+                          <span className="text-slate-500 font-medium">RDA / ICDP Experience:</span>
+                          <p className="font-bold text-slate-900 mt-0.5">
+                            {q.hasRdaOrIcdpExperience === "Yes"
+                              ? `Yes (${q.rdaIcdpExperienceType || "RDA/ICDP"}${q.rdaIcdpProjectDetails ? ` - ${q.rdaIcdpProjectDetails}` : ""})`
+                              : "No"}
+                          </p>
                         </div>
                       )}
                       {q.hasOngoingContracts && (

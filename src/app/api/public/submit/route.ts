@@ -175,8 +175,9 @@ export async function POST(request: NextRequest) {
     let emailProvider: string | null = null;
 
     if (targetEmail) {
-      // Execute email delivery via Resend SDK asynchronously
-      const emailPromise = sendRegistrationConfirmationEmail({
+      // Execute email delivery completely asynchronously in background
+      // Does not block the HTTP response so submission confirmation renders instantly (<300ms)
+      sendRegistrationConfirmationEmail({
         to: targetEmail,
         reference: result.submissionReference,
         businessName: result.businessName,
@@ -208,9 +209,8 @@ export async function POST(request: NextRequest) {
           } catch (dbErr) {
             console.error("Non-blocking error persisting email status to MongoDB:", dbErr);
           }
-          return emailRes;
         })
-        .catch(async (emailErr): Promise<SendEmailResult> => {
+        .catch(async (emailErr) => {
           console.error("Non-blocking error dispatching confirmation email:", emailErr);
           try {
             await connectToDatabase();
@@ -224,28 +224,7 @@ export async function POST(request: NextRequest) {
               }
             );
           } catch {}
-          return {
-            success: false,
-            provider: "resend",
-            sentTo: targetEmail,
-            error: emailErr?.message || "Email dispatch failed",
-          };
         });
-
-      // Quick-resolve without blocking: wait up to 1200ms so fast Resend API responses
-      // return the verified "sent" status immediately in turn 1 without waiting on slow networks.
-      const timeoutPromise = new Promise<{ timeout: true }>((resolve) =>
-        setTimeout(() => resolve({ timeout: true }), 1200)
-      );
-
-      const raceResult = await Promise.race([emailPromise, timeoutPromise]);
-      if (!("timeout" in raceResult)) {
-        emailStatus = raceResult.success ? "sent" : "failed";
-        emailSentTo = raceResult.sentTo || targetEmail;
-        emailMessageId = raceResult.messageId || null;
-        emailError = raceResult.error || null;
-        emailProvider = raceResult.provider;
-      }
     }
 
     return NextResponse.json({
