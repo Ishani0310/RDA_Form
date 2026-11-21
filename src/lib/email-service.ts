@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import nodemailer from "nodemailer";
+import { sendEmailViaGmailApi, getStoredGmailCredentials } from "@/lib/gmail-oauth";
 
 export interface RegistrationEmailParams {
   to: string;
@@ -16,7 +17,7 @@ export interface RegistrationEmailParams {
 
 export interface SendEmailResult {
   success: boolean;
-  provider: "resend" | "smtp" | "simulated";
+  provider: "gmail" | "resend" | "smtp" | "simulated";
   messageId?: string;
   sentTo?: string;
   intendedRecipient?: string;
@@ -38,6 +39,40 @@ function formatNumber(val: any): string {
   if (val === null || val === undefined || val === "") return "—";
   const num = Number(val);
   return isNaN(num) ? String(val) : num.toLocaleString();
+}
+
+/**
+ * Determines which email provider to use:
+ * 1. If process.env.EMAIL_PROVIDER is explicitly set to "gmail", "resend", or "smtp", use that.
+ * 2. Auto-detection priority:
+ *    - Gmail API (if GOOGLE_REFRESH_TOKEN or stored OAuth tokens exist)
+ *    - Resend API (if RESEND_API_KEY is present)
+ *    - SMTP (if SMTP_USER and SMTP_PASS are present)
+ *    - Simulated fallback (for local development)
+ */
+export async function resolveEmailProvider(): Promise<"gmail" | "resend" | "smtp" | "simulated"> {
+  const envChoice = (process.env.EMAIL_PROVIDER || "").toLowerCase().trim();
+  if (envChoice === "gmail" || envChoice === "resend" || envChoice === "smtp") {
+    return envChoice;
+  }
+
+  const gmailCreds = await getStoredGmailCredentials();
+  if (gmailCreds && gmailCreds.refreshToken) {
+    return "gmail";
+  }
+
+  const resendKey = (process.env.RESEND_API_KEY || "").trim();
+  if (resendKey) {
+    return "resend";
+  }
+
+  const smtpUser = (process.env.SMTP_USER || process.env.GMAIL_USER || "").trim();
+  const smtpPass = (process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || "").trim();
+  if (smtpUser && smtpPass) {
+    return "smtp";
+  }
+
+  return "simulated";
 }
 
 /**
@@ -106,10 +141,12 @@ export async function sendRegistrationConfirmationEmail(
   if (!to || !to.trim()) {
     return {
       success: false,
-      provider: "resend",
+      provider: "gmail",
       error: "Recipient email address is required.",
     };
   }
+
+  const provider = await resolveEmailProvider();
 
   const q = questionnaireData || {};
   const isAttending = (q.willParticipate || willParticipate) === "Yes";
@@ -123,16 +160,15 @@ export async function sendRegistrationConfirmationEmail(
       ? new Date(submittedAt).toLocaleString("en-GB")
       : submittedAt.toLocaleString("en-GB");
 
-  // Configurable sender: default to onboarding@resend.dev for initial free testing,
-  // but respects RESEND_FROM / EMAIL_FROM when an official RDA domain is configured later.
+  // Determine sender and test routing parameters
   const configuredFrom = (process.env.RESEND_FROM || process.env.EMAIL_FROM || "").trim().replace(/^["']|["']$/g, "");
   const defaultResendFrom = "Road Development Authority <onboarding@resend.dev>";
   const fromAddress = configuredFrom || defaultResendFrom;
 
-  // Resend Free Tier Test Restriction:
-  // When sending from onboarding@resend.dev, Resend strictly allows delivering ONLY to the
-  // email address associated with the Resend account.
-  const isResendDevSender = fromAddress.toLowerCase().includes("resend.dev");
+  // In Resend free-tier test mode (when using @resend.dev), Resend strictly requires
+  // delivering to the account owner email.
+  // GMAIL API DOES NOT HAVE THIS RESTRICTION and sends to the applicant's real email address!
+  const isResendDevSender = provider === "resend" && fromAddress.toLowerCase().includes("resend.dev");
   const resendAccountEmail = (
     process.env.RESEND_TEST_RECIPIENT ||
     process.env.RESEND_ACCOUNT_EMAIL ||
@@ -140,7 +176,6 @@ export async function sendRegistrationConfirmationEmail(
     "edutrack0310@gmail.com"
   ).trim();
 
-  // If using resend.dev test domain, route to the verified account owner email so Resend accepts it
   const actualRecipient = isResendDevSender ? resendAccountEmail : to.trim();
   const isRoutedToTestAccount = isResendDevSender && actualRecipient.toLowerCase() !== to.trim().toLowerCase();
 
@@ -847,92 +882,125 @@ Inclusive Connectivity and Development Project (ICDP)
   `.trim();
 
   // ---------------------------------------------------------------------------
-  // 3. ATTEMPT DISPATCH VIA OFFICIAL RESEND SDK (PRIMARY)
+  // 3. DISPATCH VIA RESOLVED EMAIL PROVIDER (EXACTLY ONE PROVIDER EXECUTES)
   // ---------------------------------------------------------------------------
-  const resend = getResendClient();
-  if (resend) {
+
+  // PROVIDER 1: GMAIL API (OAuth 2.0)
+  if (provider === "gmail") {
     try {
-      const { data, error } = await resend.emails.send({
-        from: fromAddress,
-        to: actualRecipient,
+      const gmailResult = await sendEmailViaGmailApi({
+        to: to.trim(), // Sent directly to the applicant's real registered email address
         subject,
         text: textDetails,
         html: htmlContent,
       });
 
-      if (error) {
-        console.error(`[EmailService - Resend] Resend API rejected message to ${actualRecipient}:`, error);
+      return {
+        success: gmailResult.success,
+        provider: "gmail",
+        messageId: gmailResult.messageId,
+        sentTo: to.trim(),
+        intendedRecipient: to.trim(),
+        simulated: false,
+        error: gmailResult.error,
+      };
+    } catch (err: any) {
+      console.error("[EmailService - Gmail] Unhandled exception:", err);
+      return {
+        success: false,
+        provider: "gmail",
+        sentTo: to.trim(),
+        intendedRecipient: to.trim(),
+        error: err?.message || "Gmail API dispatch error",
+      };
+    }
+  }
+
+  // PROVIDER 2: RESEND SDK (Alternative Provider)
+  if (provider === "resend") {
+    const resend = getResendClient();
+    if (resend) {
+      try {
+        const { data, error } = await resend.emails.send({
+          from: fromAddress,
+          to: actualRecipient,
+          subject,
+          text: textDetails,
+          html: htmlContent,
+        });
+
+        if (error) {
+          console.error(`[EmailService - Resend] Resend API rejected message to ${actualRecipient}:`, error);
+          return {
+            success: false,
+            provider: "resend",
+            error: error.message || "Resend API rejected message",
+            simulated: false,
+            sentTo: actualRecipient,
+            intendedRecipient: to.trim(),
+          };
+        }
+
+        console.log(`[EmailService - Resend] Confirmation email accepted by Resend! Message ID: ${data?.id} -> ${actualRecipient}`);
+        return {
+          success: true,
+          provider: "resend",
+          messageId: data?.id,
+          sentTo: actualRecipient,
+          intendedRecipient: to.trim(),
+          simulated: false,
+        };
+      } catch (resendErr: any) {
+        console.error(`[EmailService - Resend] Network or SDK exception dispatching to ${actualRecipient}:`, resendErr);
         return {
           success: false,
           provider: "resend",
-          error: error.message || "Resend API rejected message",
+          error: resendErr?.message || "Resend connection error",
           simulated: false,
           sentTo: actualRecipient,
           intendedRecipient: to.trim(),
         };
       }
-
-      console.log(`[EmailService - Resend] Confirmation email accepted by Resend! Message ID: ${data?.id} -> ${actualRecipient}`);
-      return {
-        success: true,
-        provider: "resend",
-        messageId: data?.id,
-        sentTo: actualRecipient,
-        intendedRecipient: to.trim(),
-        simulated: false,
-      };
-    } catch (resendErr: any) {
-      console.error(`[EmailService - Resend] Network or SDK exception dispatching to ${actualRecipient}:`, resendErr);
-      return {
-        success: false,
-        provider: "resend",
-        error: resendErr?.message || "Resend connection error",
-        simulated: false,
-        sentTo: actualRecipient,
-        intendedRecipient: to.trim(),
-      };
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // 4. ATTEMPT DISPATCH VIA SMTP TRANSPORTER (SECONDARY FALLBACK)
-  // ---------------------------------------------------------------------------
-  const transporter = createEmailTransporter();
-  if (transporter) {
-    try {
-      const info = await transporter.sendMail({
-        from: fromAddress,
-        to: actualRecipient,
-        subject,
-        text: textDetails,
-        html: htmlContent,
-      });
+  // PROVIDER 3: SMTP TRANSPORTER (Fallback Provider)
+  if (provider === "smtp") {
+    const transporter = createEmailTransporter();
+    if (transporter) {
+      try {
+        const info = await transporter.sendMail({
+          from: fromAddress,
+          to: actualRecipient,
+          subject,
+          text: textDetails,
+          html: htmlContent,
+        });
 
-      console.log(`[EmailService - SMTP] Confirmation email sent successfully to ${actualRecipient}. MessageId: ${info.messageId}`);
-      return {
-        success: true,
-        provider: "smtp",
-        messageId: info.messageId,
-        sentTo: actualRecipient,
-        intendedRecipient: to.trim(),
-        simulated: false,
-      };
-    } catch (smtpErr: any) {
-      console.error(`[EmailService - SMTP] Failed to send email via SMTP to ${actualRecipient}:`, smtpErr);
-      return {
-        success: false,
-        provider: "smtp",
-        error: smtpErr?.message || "SMTP send failed",
-        simulated: false,
-        sentTo: actualRecipient,
-        intendedRecipient: to.trim(),
-      };
+        console.log(`[EmailService - SMTP] Confirmation email sent successfully to ${actualRecipient}. MessageId: ${info.messageId}`);
+        return {
+          success: true,
+          provider: "smtp",
+          messageId: info.messageId,
+          sentTo: actualRecipient,
+          intendedRecipient: to.trim(),
+          simulated: false,
+        };
+      } catch (smtpErr: any) {
+        console.error(`[EmailService - SMTP] Failed to send email via SMTP to ${actualRecipient}:`, smtpErr);
+        return {
+          success: false,
+          provider: "smtp",
+          error: smtpErr?.message || "SMTP send failed",
+          simulated: false,
+          sentTo: actualRecipient,
+          intendedRecipient: to.trim(),
+        };
+      }
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // 5. LOCAL SIMULATED FALLBACK (When no Resend key or SMTP configured)
-  // ---------------------------------------------------------------------------
+  // PROVIDER 4: LOCAL SIMULATED FALLBACK
   console.log(`[EmailService - Simulated] Confirmation email generated for ${to}:`);
   console.log(`  Reference: ${reference}`);
   console.log(`  Recipient: ${actualRecipient}`);

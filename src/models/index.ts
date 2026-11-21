@@ -16,6 +16,9 @@ export type { IActivityLog } from "./ActivityLog";
 export { DraftToken } from "./DraftToken";
 export type { IDraftToken } from "./DraftToken";
 
+export { SystemSetting } from "./SystemSetting";
+export type { ISystemSetting } from "./SystemSetting";
+
 export { Questionnaire, computeQuestionnaireStats } from "./Questionnaire";
 export type {
   IQuestionnaire,
