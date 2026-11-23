@@ -304,7 +304,8 @@ export function getBaselineOfficialSections(): IFormSection[] {
             { id: "mat-cement", value: "Cement", label: "Cement", displayOrder: 3, isActive: true },
             { id: "mat-aggregates", value: "Aggregates", label: "Aggregates", displayOrder: 4, isActive: true },
             { id: "mat-steel", value: "Steel", label: "Steel", displayOrder: 5, isActive: true },
-            { id: "mat-other", value: "Other", label: "Other", displayOrder: 6, isActive: true },
+            { id: "mat-soil", value: "Soil", label: "Soil", displayOrder: 6, isActive: true },
+            { id: "mat-other", value: "Other", label: "Other", displayOrder: 7, isActive: true },
           ],
         },
         {

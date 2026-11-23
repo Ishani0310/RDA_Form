@@ -56,6 +56,7 @@ export const SUPPLIER_MATERIALS = [
   "Cement",
   "Aggregates",
   "Steel",
+  "Soil",
   "Other",
 ] as const;
 
