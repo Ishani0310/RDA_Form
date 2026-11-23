@@ -487,12 +487,13 @@ export function normalizeQuestionnaireData(
 
   // 5. Supplier Details
   const rawSup = (raw.supplierDetails as Record<string, any>) || {};
-  const supplyCapacities: Record<string, { quantity: number | string | null; unit: string }> = {};
+  const supplyCapacities: Record<string, { quantity: number | string | null; unit: string; rate?: number | string | null }> = {};
   if (rawSup.supplyCapacities && typeof rawSup.supplyCapacities === "object") {
     for (const [mat, cap] of Object.entries(rawSup.supplyCapacities as Record<string, any>)) {
       supplyCapacities[mat] = {
         quantity: cap?.quantity !== undefined && cap?.quantity !== null ? cap.quantity : null,
-        unit: String(cap?.unit || "").trim(),
+        unit: String(cap?.unit || "").trim() || "cu.m",
+        rate: cap?.rate !== undefined && cap?.rate !== null && String(cap.rate).trim() !== "" ? cap.rate : null,
       };
     }
   }

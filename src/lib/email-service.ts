@@ -262,10 +262,12 @@ SUPPLIER PROFILE & PRODUCTION CAPACITY:
 `;
 
       if (sup.supplyCapacities && Object.keys(sup.supplyCapacities).length > 0) {
-        textDetails += `\nDeclared Supply / Production Capacities:\n`;
+        textDetails += `\nDeclared Supply / Production Capacities & Rates:\n`;
         for (const [mat, cap] of Object.entries(sup.supplyCapacities as Record<string, any>)) {
-          if (cap && (cap.quantity !== null && cap.quantity !== undefined && cap.quantity !== "")) {
-            textDetails += `  • ${mat}: ${cap.quantity} ${cap.unit || "MT per year"}\n`;
+          if (cap && (cap.quantity !== null && cap.quantity !== undefined && cap.quantity !== "" || cap.rate !== null && cap.rate !== undefined && cap.rate !== "")) {
+            const qStr = cap.quantity ? `${cap.quantity} ${cap.unit || "cu.m"}/Year` : "—";
+            const rStr = cap.rate ? ` | Rate: LKR ${cap.rate} / ${cap.unit || "cu.m"}` : "";
+            textDetails += `  • ${mat}: ${qStr}${rStr}\n`;
           }
         }
       }
@@ -559,7 +561,7 @@ Inclusive Connectivity and Development Project (ICDP)
     if (sup.supplyCapacities && Object.keys(sup.supplyCapacities).length > 0) {
       htmlSections += `
         <span style="display: block; font-size: 11px; font-weight: 800; color: #6b21a8; text-transform: uppercase; margin: 10px 0 6px 0;">
-          Declared Annual Production / Supply Capacities
+          Declared Annual Production / Supply Capacities & Rates
         </span>
         <table style="width: 100%; border-collapse: collapse; font-size: 11px; background-color: #ffffff; border-radius: 8px; overflow: hidden; border: 1px solid #e9d5ff;">
           <thead>
@@ -567,17 +569,19 @@ Inclusive Connectivity and Development Project (ICDP)
               <th style="padding: 8px 10px; font-weight: 700;">Material</th>
               <th style="padding: 8px 10px; font-weight: 700;">Annual Capacity</th>
               <th style="padding: 8px 10px; font-weight: 700;">Unit</th>
+              <th style="padding: 8px 10px; font-weight: 700;">Rate per Unit</th>
             </tr>
           </thead>
           <tbody>
       `;
       for (const [mat, cap] of Object.entries(sup.supplyCapacities as Record<string, any>)) {
-        if (cap && (cap.quantity !== null && cap.quantity !== undefined && cap.quantity !== "")) {
+        if (cap && (cap.quantity || cap.rate)) {
           htmlSections += `
             <tr style="border-top: 1px solid #f3e8ff;">
               <td style="padding: 8px 10px; font-weight: 600; color: #0f172a;">${escapeHtml(mat)}</td>
-              <td style="padding: 8px 10px; font-family: monospace; font-weight: 700; color: #581c87;">${escapeHtml(cap.quantity)}</td>
-              <td style="padding: 8px 10px; color: #64748b;">${escapeHtml(cap.unit || "MT / Year")}</td>
+              <td style="padding: 8px 10px; font-family: monospace; font-weight: 700; color: #581c87;">${escapeHtml(cap.quantity || "—")}</td>
+              <td style="padding: 8px 10px; color: #64748b;">${escapeHtml(cap.unit || "cu.m")}</td>
+              <td style="padding: 8px 10px; font-family: monospace; font-weight: 700; color: #059669;">${cap.rate ? `LKR ${escapeHtml(cap.rate)} / ${escapeHtml(cap.unit || "cu.m")}` : "—"}</td>
             </tr>
           `;
         }

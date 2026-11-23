@@ -65,6 +65,7 @@ export type SupplierMaterial = (typeof SUPPLIER_MATERIALS)[number];
 export interface MaterialCapacityItem {
   quantity: string | number | null;
   unit: string;
+  rate?: string | number | null;
 }
 
 export interface SupplierDetails {

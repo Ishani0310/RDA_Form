@@ -1718,7 +1718,7 @@ function RegisterForm() {
       });
     } else {
       if (mat !== "Other") {
-        caps[mat] = caps[mat] || { quantity: "", unit: "MT per year" };
+        caps[mat] = caps[mat] || { quantity: "", unit: mat === "Steel" ? "MT" : "cu.m", rate: "" };
       }
       setFormData({
         ...formData,
@@ -1733,11 +1733,12 @@ function RegisterForm() {
 
   const handleSupplierCapacityChange = (
     mat: string,
-    field: "quantity" | "unit",
+    field: "quantity" | "unit" | "rate",
     value: string
   ) => {
     const currentCaps = { ...(formData.supplierDetails?.supplyCapacities || {}) };
-    const item = currentCaps[mat] || { quantity: "", unit: "MT per year" };
+    const defaultUnit = mat.includes("Steel") ? "MT" : "cu.m";
+    const item = currentCaps[mat] || { quantity: "", unit: defaultUnit, rate: "" };
     currentCaps[mat] = {
       ...item,
       [field]: value,
@@ -3286,11 +3287,19 @@ function RegisterForm() {
                             <div className="space-y-3 p-4 bg-slate-50 border border-slate-200 rounded-xl">
                               <div>
                                 <span className="font-bold text-slate-900 uppercase text-[11px] block">
-                                  Annual Supply Capacity *
+                                  Annual Supply Capacity &amp; Rates *
                                 </span>
                                 <span className="text-[11px] text-slate-500">
-                                  Specify production or supply capacity and unit for each selected material (e.g., Cement: 50,000 MT per year; Sand: 20,000 cubic meters per year).
+                                  Specify annual production or supply capacity, select the unit (cu.m, cube, etc.), and enter the unit rate for each selected material.
                                 </span>
+                              </div>
+
+                              {/* Desktop Header */}
+                              <div className="hidden sm:grid sm:grid-cols-12 gap-2.5 px-3 py-1 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                <div className="sm:col-span-4">Material</div>
+                                <div className="sm:col-span-3">Quantity / Year</div>
+                                <div className="sm:col-span-2">Unit (cu.m / cube)</div>
+                                <div className="sm:col-span-3">Rate per Unit</div>
                               </div>
 
                               <div className="space-y-2.5">
@@ -3317,38 +3326,84 @@ function RegisterForm() {
                                   });
 
                                   return capacityRows.map((row) => {
+                                    const defaultUnit =
+                                      row.label.includes("Steel") || row.label.includes("Bitumen") || row.label.includes("Cement")
+                                        ? "MT"
+                                        : "cu.m";
                                     const cap =
                                       formData.supplierDetails?.supplyCapacities?.[row.key] ||
                                       (row.key.startsWith("Other (") && otherItems.length === 1
                                         ? formData.supplierDetails?.supplyCapacities?.["Other"]
                                         : undefined) || {
                                         quantity: "",
-                                        unit: "MT per year",
+                                        unit: defaultUnit,
+                                        rate: "",
                                       };
+                                    const currentUnit = cap.unit && cap.unit !== "MT per year" ? cap.unit : defaultUnit;
 
                                     return (
                                       <div
                                         key={row.key}
-                                        className="p-3 bg-white border border-slate-200 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
+                                        className="p-3 bg-white border border-slate-200 rounded-lg space-y-2 sm:space-y-0 sm:grid sm:grid-cols-12 sm:gap-2.5 sm:items-center"
                                       >
-                                        <span className="font-semibold text-blue-950 sm:w-1/3">
-                                          {row.label}
-                                        </span>
-                                        <div className="flex items-center gap-2 sm:w-2/3">
+                                        <div className="sm:col-span-4">
+                                          <span className="font-semibold text-blue-950 text-xs sm:text-sm block">
+                                            {row.label}
+                                          </span>
+                                        </div>
+
+                                        {/* 1. Quantity per year */}
+                                        <div className="sm:col-span-3">
+                                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5 sm:hidden">
+                                            Quantity / Year
+                                          </label>
                                           <input
                                             type="text"
                                             value={cap.quantity !== null && cap.quantity !== undefined ? cap.quantity : ""}
                                             onChange={(e) => handleSupplierCapacityChange(row.key, "quantity", e.target.value)}
-                                            placeholder="Quantity (e.g. 50,000)"
-                                            className="w-1/2 p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
+                                            placeholder="Quantity / Year"
+                                            className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
                                           />
-                                          <input
-                                            type="text"
-                                            value={cap.unit || ""}
+                                        </div>
+
+                                        {/* 2. Unit selection (cu.m / cube / MT / etc.) */}
+                                        <div className="sm:col-span-2">
+                                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5 sm:hidden">
+                                            Unit (cu.m / cube)
+                                          </label>
+                                          <select
+                                            value={currentUnit}
                                             onChange={(e) => handleSupplierCapacityChange(row.key, "unit", e.target.value)}
-                                            placeholder="Unit (e.g. MT / cu.m / year)"
-                                            className="w-1/2 p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
-                                          />
+                                            className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-xs text-slate-900 font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
+                                          >
+                                            <option value="cu.m">cu.m</option>
+                                            <option value="cube">cube</option>
+                                            <option value="MT">MT</option>
+                                            <option value="Liters">Liters</option>
+                                            <option value="Nos">Nos</option>
+                                            {!["cu.m", "cube", "MT", "Liters", "Nos"].includes(currentUnit) && (
+                                              <option value={currentUnit}>{currentUnit}</option>
+                                            )}
+                                          </select>
+                                        </div>
+
+                                        {/* 3. Rate per selected unit */}
+                                        <div className="sm:col-span-3">
+                                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5 sm:hidden">
+                                            Rate (LKR per {currentUnit})
+                                          </label>
+                                          <div className="flex items-center">
+                                            <span className="px-2 py-2 bg-slate-100 border border-r-0 border-slate-300 rounded-l text-[10px] font-bold text-slate-600 select-none">
+                                              LKR
+                                            </span>
+                                            <input
+                                              type="text"
+                                              value={cap.rate !== null && cap.rate !== undefined ? cap.rate : ""}
+                                              onChange={(e) => handleSupplierCapacityChange(row.key, "rate", e.target.value)}
+                                              placeholder={`Rate / ${currentUnit}`}
+                                              className="w-full p-2 bg-slate-50 border border-slate-300 rounded-r text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
+                                            />
+                                          </div>
                                         </div>
                                       </div>
                                     );
@@ -6283,10 +6338,10 @@ function RegisterForm() {
 
                   {formData.supplierDetails.materialsSupplied && formData.supplierDetails.materialsSupplied.length > 0 && (
                     <div className="pt-2 border-t border-slate-100 space-y-2">
-                      <span className="text-slate-500 font-medium text-[11px] block">Supplied Materials &amp; Annual Capacity:</span>
+                      <span className="text-slate-500 font-medium text-[11px] block">Supplied Materials, Annual Capacity &amp; Rates:</span>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         {(() => {
-                          const reviewItems: { name: string; cap?: { quantity?: string | number | null; unit?: string } }[] = [];
+                          const reviewItems: { name: string; cap?: { quantity?: string | number | null; unit?: string; rate?: string | number | null } }[] = [];
                           const mats = formData.supplierDetails.materialsSupplied || [];
                           const otherItems = supplierMaterialsOtherList
                             .map((s) => s.trim())
@@ -6316,14 +6371,32 @@ function RegisterForm() {
                             }
                           });
 
-                          return reviewItems.map((item, idx) => (
-                            <div key={idx} className="p-2.5 rounded-lg bg-purple-50/70 border border-purple-200 flex items-center justify-between">
-                              <span className="font-bold text-slate-900 text-xs">{item.name}</span>
-                              <span className="font-bold text-purple-950 font-mono text-xs">
-                                {item.cap?.quantity ? `${item.cap.quantity} ${item.cap.unit || "MT per year"}` : "Capacity not specified"}
-                              </span>
-                            </div>
-                          ));
+                          return reviewItems.map((item, idx) => {
+                            const unit = item.cap?.unit || "cu.m";
+                            const hasQty = item.cap?.quantity !== null && item.cap?.quantity !== undefined && String(item.cap?.quantity).trim() !== "";
+                            const hasRate = item.cap?.rate !== null && item.cap?.rate !== undefined && String(item.cap?.rate).trim() !== "";
+
+                            return (
+                              <div key={idx} className="p-2.5 rounded-lg bg-purple-50/70 border border-purple-200 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                                <span className="font-bold text-slate-900 text-xs">{item.name}</span>
+                                <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                                  {hasQty && (
+                                    <span className="font-bold text-purple-950 font-mono text-xs">
+                                      {item.cap?.quantity} {unit} / Year
+                                    </span>
+                                  )}
+                                  {hasRate && (
+                                    <span className="font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded text-[11px] font-mono">
+                                      LKR {item.cap?.rate} / {unit}
+                                    </span>
+                                  )}
+                                  {!hasQty && !hasRate && (
+                                    <span className="text-slate-400 italic text-xs">Not specified</span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          });
                         })()}
                       </div>
                     </div>

@@ -978,9 +978,10 @@ function renderSupplierMaterialsList(
     onChange(next);
   };
 
-  const handleCapacityChange = (mat: string, field: "quantity" | "unit", val: string) => {
+  const handleCapacityChange = (mat: string, field: "quantity" | "unit" | "rate", val: string) => {
     if (disabled || !onGlobalChange) return;
-    const current = { ...(capacities[mat] || { quantity: "", unit: "MT per year" }) };
+    const defaultUnit = mat.includes("Steel") ? "MT" : "cu.m";
+    const current = { ...(capacities[mat] || { quantity: "", unit: defaultUnit, rate: "" }) };
     current[field] = val;
     onGlobalChange("supplierDetails.supplyCapacities", {
       ...capacities,
@@ -1029,7 +1030,7 @@ function renderSupplierMaterialsList(
       {selectedMaterials.length > 0 && (
         <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
           <span className="text-[11px] font-bold text-blue-900 uppercase block">
-            Annual Supply / Production Capacity for Selected Materials
+            Annual Supply / Production Capacity &amp; Rates for Selected Materials
           </span>
           <div className="space-y-2">
             {(() => {
@@ -1053,33 +1054,59 @@ function renderSupplierMaterialsList(
               });
 
               return rows.map((row) => {
-                const cap = capacities[row.key] || (row.key.startsWith("Other (") && others.length === 1 ? capacities["Other"] : undefined) || { quantity: "", unit: "MT per year" };
+                const defaultUnit =
+                  row.label.includes("Steel") || row.label.includes("Bitumen") || row.label.includes("Cement")
+                    ? "MT"
+                    : "cu.m";
+                const cap =
+                  capacities[row.key] ||
+                  (row.key.startsWith("Other (") && others.length === 1 ? capacities["Other"] : undefined) || {
+                    quantity: "",
+                    unit: defaultUnit,
+                    rate: "",
+                  };
+                const currentUnit = cap.unit && cap.unit !== "MT per year" ? cap.unit : defaultUnit;
+
                 return (
                   <div
                     key={row.key}
-                    className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 p-2 bg-white rounded-lg border border-slate-200 text-xs"
+                    className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 p-2.5 bg-white rounded-lg border border-slate-200 text-xs"
                   >
-                    <span className="font-semibold text-slate-800 sm:w-1/3">{row.label}</span>
-                    <div className="flex gap-2 sm:w-2/3">
+                    <span className="font-semibold text-slate-800 sm:w-1/4">{row.label}</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:w-3/4">
                       <input
-                        type="number"
+                        type="text"
                         placeholder="Annual Quantity"
                         value={cap.quantity || ""}
                         onChange={(e) => handleCapacityChange(row.key, "quantity", e.target.value)}
                         disabled={disabled}
-                        className="w-2/3 p-1.5 border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-800 font-mono text-xs"
+                        className="w-full p-1.5 border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-800 font-mono text-xs"
                       />
                       <select
-                        value={cap.unit || "MT per year"}
+                        value={currentUnit}
                         onChange={(e) => handleCapacityChange(row.key, "unit", e.target.value)}
                         disabled={disabled}
-                        className="w-1/3 p-1.5 border border-slate-300 rounded text-slate-900 font-medium text-xs bg-white"
+                        className="w-full p-1.5 border border-slate-300 rounded text-slate-900 font-medium text-xs bg-white"
                       >
-                        <option value="MT per year">MT per year</option>
-                        <option value="Cu.m per year">Cu.m per year</option>
-                        <option value="Nos per year">Nos per year</option>
-                        <option value="Liters per year">Liters per year</option>
+                        <option value="cu.m">cu.m</option>
+                        <option value="cube">cube</option>
+                        <option value="MT">MT</option>
+                        <option value="Liters">Liters</option>
+                        <option value="Nos">Nos</option>
                       </select>
+                      <div className="flex items-center">
+                        <span className="px-2 py-1.5 bg-slate-100 border border-r-0 border-slate-300 rounded-l text-[10px] font-bold text-slate-600 select-none">
+                          LKR
+                        </span>
+                        <input
+                          type="text"
+                          placeholder={`Rate / ${currentUnit}`}
+                          value={cap.rate || ""}
+                          onChange={(e) => handleCapacityChange(row.key, "rate", e.target.value)}
+                          disabled={disabled}
+                          className="w-full p-1.5 border border-slate-300 rounded-r text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-800 font-mono text-xs"
+                        />
+                      </div>
                     </div>
                   </div>
                 );
