@@ -75,6 +75,8 @@ export interface SupplierDetails {
   companyName: string;
   supplyCapacities: Record<string, MaterialCapacityItem>;
   locationAddress: string;
+  latitude?: string | number | null;
+  longitude?: string | number | null;
   province: string;
   district: string;
 }
@@ -383,6 +385,8 @@ export function createEmptySupplierDetails(): SupplierDetails {
     companyName: "",
     supplyCapacities: {},
     locationAddress: "",
+    latitude: "",
+    longitude: "",
     province: "",
     district: "",
   };

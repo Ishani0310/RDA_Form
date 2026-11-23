@@ -505,6 +505,8 @@ export function normalizeQuestionnaireData(
     companyName: String(rawSup.companyName || "").trim(),
     supplyCapacities,
     locationAddress: String(rawSup.locationAddress || "").trim(),
+    latitude: rawSup.latitude !== undefined && rawSup.latitude !== null && String(rawSup.latitude).trim() !== "" ? String(rawSup.latitude).trim() : null,
+    longitude: rawSup.longitude !== undefined && rawSup.longitude !== null && String(rawSup.longitude).trim() !== "" ? String(rawSup.longitude).trim() : null,
     province: String(rawSup.province || "").trim(),
     district: String(rawSup.district || "").trim(),
   };

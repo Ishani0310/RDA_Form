@@ -258,7 +258,7 @@ SUPPLIER PROFILE & PRODUCTION CAPACITY:
 • Supplier Company: ${sup.companyName || effectiveOrgName}
 • Province & District: ${[sup.province, sup.district].filter(Boolean).join(", ") || "—"}
 • Location Address: ${sup.locationAddress || "—"}
-• Materials Supplied: ${(sup.materialsSupplied || []).map((m: string) => m === "Other" && sup.materialsOther ? `Other (${sup.materialsOther})` : m).join(", ") || "—"}
+${sup.latitude && sup.longitude ? `• GPS Coordinates: ${sup.latitude}, ${sup.longitude} (https://www.google.com/maps?q=${sup.latitude},${sup.longitude})\n` : ""}• Materials Supplied: ${(sup.materialsSupplied || []).map((m: string) => m === "Other" && sup.materialsOther ? `Other (${sup.materialsOther})` : m).join(", ") || "—"}
 `;
 
       if (sup.supplyCapacities && Object.keys(sup.supplyCapacities).length > 0) {
@@ -547,6 +547,18 @@ Inclusive Connectivity and Development Project (ICDP)
             <tr style="border-bottom: 1px solid #f3e8ff;">
               <td style="padding: 6px 0; color: #6b21a8; font-weight: 600;">Location / Plant Address:</td>
               <td style="padding: 6px 0; color: #0f172a;">${escapeHtml(sup.locationAddress)}</td>
+            </tr>`
+                : ""
+            }
+            ${
+              sup.latitude && sup.longitude
+                ? `
+            <tr style="border-bottom: 1px solid #f3e8ff;">
+              <td style="padding: 6px 0; color: #6b21a8; font-weight: 600;">GPS Coordinates:</td>
+              <td style="padding: 6px 0; color: #0f172a;">
+                ${escapeHtml(String(sup.latitude))}, ${escapeHtml(String(sup.longitude))} 
+                <a href="https://www.google.com/maps?q=${encodeURIComponent(String(sup.latitude))},${encodeURIComponent(String(sup.longitude))}" target="_blank" style="color: #2563eb; text-decoration: underline; margin-left: 6px;">(View on Google Maps)</a>
+              </td>
             </tr>`
                 : ""
             }

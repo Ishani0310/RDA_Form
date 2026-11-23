@@ -75,6 +75,7 @@ import {
   ALL_SRI_LANKA_DISTRICTS,
   SriLankaProvince,
 } from "@/lib/questionnaire-types";
+import { LocationMapPicker } from "@/components/LocationMapPicker";
 
 export interface BrowserSavedDraft {
   token: string;
@@ -3447,6 +3448,22 @@ function RegisterForm() {
                             )}
                           </div>
 
+                          {/* Live Location / Coordinates via Map Picker */}
+                          <LocationMapPicker
+                            latitude={formData.supplierDetails?.latitude}
+                            longitude={formData.supplierDetails?.longitude}
+                            onChange={(lat, lng) => {
+                              setFormData((prev) => ({
+                                ...prev,
+                                supplierDetails: {
+                                  ...(prev.supplierDetails || createEmptySupplierDetails()),
+                                  latitude: lat,
+                                  longitude: lng,
+                                },
+                              }));
+                            }}
+                          />
+
                           {/* Province & District (Dependent Dropdown) */}
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
@@ -6331,6 +6348,21 @@ function RegisterForm() {
                     <div className="sm:col-span-2">
                       <span className="text-slate-500 font-medium text-[11px] block">Plant / Production Facility Location:</span>
                       <span className="text-slate-800 text-xs">{formData.supplierDetails.locationAddress || "N/A"}</span>
+                      {formData.supplierDetails.latitude && formData.supplierDetails.longitude && (
+                        <div className="mt-1 flex items-center gap-2 text-[11px]">
+                          <span className="text-slate-600 font-mono">
+                            GPS: {formData.supplierDetails.latitude}, {formData.supplierDetails.longitude}
+                          </span>
+                          <a
+                            href={`https://www.google.com/maps?q=${encodeURIComponent(String(formData.supplierDetails.latitude))},${encodeURIComponent(String(formData.supplierDetails.longitude))}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline font-semibold"
+                          >
+                            (View on Google Maps)
+                          </a>
+                        </div>
+                      )}
                     </div>
                   </div>
 
