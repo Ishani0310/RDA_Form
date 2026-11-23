@@ -178,6 +178,31 @@ export interface LoanCommitments {
 // -----------------------------------------------------------------------------
 // ROOT OFFICIAL QUESTIONNAIRE DATA CONTAINER
 // -----------------------------------------------------------------------------
+export type HistoricalLitigationOption =
+  | "None"
+  | "Non performing contract"
+  | "Pending litigation"
+  | "Litigation history past"
+  | "";
+
+export interface HistoricalLitigationRecord {
+  litigationType: HistoricalLitigationOption;
+  contractIdentification: string;
+  employerName: string;
+  reason: string;
+  matterDispute?: string;
+}
+
+export function createEmptyHistoricalLitigationRecord(): HistoricalLitigationRecord {
+  return {
+    litigationType: "",
+    contractIdentification: "",
+    employerName: "",
+    reason: "",
+    matterDispute: "",
+  };
+}
+
 export interface OfficialQuestionnaireData {
   [key: string]: unknown;
 
@@ -225,12 +250,8 @@ export interface OfficialQuestionnaireData {
 
   // SECTION 10: Similar Work Experience (Contractors)
   similarWorks?: SimilarWorkContract[];
-  historicalLitigationType?:
-    | "None"
-    | "Non performing contract"
-    | "Pending litigation"
-    | "Litigation history past"
-    | "";
+  historicalLitigationRecords?: HistoricalLitigationRecord[];
+  historicalLitigationType?: HistoricalLitigationOption;
   historicalContractIdentification?: string;
   historicalEmployerName?: string;
   historicalReason?: string;

@@ -646,37 +646,54 @@ function generateSubmissionHtml(sub: FormattedSubmission): string {
     </div>
     ` : ""}
 
-    ${q.historicalLitigationType && q.historicalLitigationType !== "None" ? `
+    ${(() => {
+      const histRecords = Array.isArray(q.historicalLitigationRecords) && q.historicalLitigationRecords.length > 0
+        ? q.historicalLitigationRecords.filter((r: any) => r && r.litigationType && r.litigationType !== "None")
+        : q.historicalLitigationType && q.historicalLitigationType !== "None"
+        ? [{
+            litigationType: q.historicalLitigationType,
+            contractIdentification: q.historicalContractIdentification,
+            employerName: q.historicalEmployerName,
+            reason: q.historicalReason,
+            matterDispute: q.historicalMatterDispute,
+          }]
+        : [];
+
+      if (histRecords.length === 0) return "";
+
+      return `
     <div class="section-card">
-      <div class="section-head">Historical Contract Non-Performance &amp; Litigation</div>
+      <div class="section-head">Historical Contract Non-Performance &amp; Litigation (${histRecords.length} Record${histRecords.length > 1 ? "s" : ""})</div>
       <div class="section-body">
-        <div class="grid-2">
-          <div>
-            <div class="field-label">Category:</div>
-            <div class="field-value font-bold" style="color: #b91c1c;">${escapeHtml(q.historicalLitigationType)}</div>
+        ${histRecords.map((r: any, idx: number) => `
+        <div style="${idx > 0 ? 'margin-top: 10px; padding-top: 10px; border-top: 1px dashed #cbd5e1;' : ''}">
+          <div style="font-weight: bold; font-size: 8.5pt; color: #b91c1c; margin-bottom: 4px;">Record #${idx + 1}: ${escapeHtml(r.litigationType)}</div>
+          <div class="grid-2">
+            <div>
+              <div class="field-label">Contract Identification:</div>
+              <div class="field-value">${escapeHtml(r.contractIdentification || "—")}</div>
+            </div>
+            <div>
+              <div class="field-label">Name of Employer:</div>
+              <div class="field-value">${escapeHtml(r.employerName || "—")}</div>
+            </div>
+            <div style="grid-column: span 2;">
+              <div class="field-label">Reason:</div>
+              <div class="field-value">${escapeHtml(r.reason || "—")}</div>
+            </div>
+            ${r.matterDispute ? `
+            <div style="grid-column: span 2;">
+              <div class="field-label">Matter in Dispute:</div>
+              <div class="field-value">${escapeHtml(r.matterDispute)}</div>
+            </div>
+            ` : ""}
           </div>
-          <div>
-            <div class="field-label">Contract Identification:</div>
-            <div class="field-value">${escapeHtml(q.historicalContractIdentification || "—")}</div>
-          </div>
-          <div>
-            <div class="field-label">Name of Employer:</div>
-            <div class="field-value">${escapeHtml(q.historicalEmployerName || "—")}</div>
-          </div>
-          <div>
-            <div class="field-label">Reason:</div>
-            <div class="field-value">${escapeHtml(q.historicalReason || "—")}</div>
-          </div>
-          ${q.historicalMatterDispute ? `
-          <div style="grid-column: span 2;">
-            <div class="field-label">Matter in Dispute:</div>
-            <div class="field-value">${escapeHtml(q.historicalMatterDispute)}</div>
-          </div>
-          ` : ""}
         </div>
+        `).join("")}
       </div>
     </div>
-    ` : ""}
+      `;
+    })()}
 
     ${financialRows ? `
     <div class="section-card">
@@ -1903,38 +1920,65 @@ function SubmissionsContent() {
                     )}
 
                     {/* Historical Litigation & Non-Performance */}
-                    {selectedSub.questionnaireData.historicalLitigationType && selectedSub.questionnaireData.historicalLitigationType !== "None" && (
-                      <div className="p-3.5 rounded-xl border border-red-200 bg-red-50/30 space-y-2">
-                        <span className="font-bold text-red-950 uppercase text-[11px] tracking-wide flex items-center gap-1.5">
-                          <Scale className="w-3.5 h-3.5 text-red-700" />
-                          Historical Contract Non-Performance &amp; Litigation
-                        </span>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1">
-                          <div>
-                            <span className="text-slate-500 font-medium block">Category:</span>
-                            <span className="font-bold text-red-700">{selectedSub.questionnaireData.historicalLitigationType}</span>
+                    {(() => {
+                      const histRecords = Array.isArray(selectedSub.questionnaireData.historicalLitigationRecords) && selectedSub.questionnaireData.historicalLitigationRecords.length > 0
+                        ? selectedSub.questionnaireData.historicalLitigationRecords.filter((r: any) => r && r.litigationType && r.litigationType !== "None")
+                        : selectedSub.questionnaireData.historicalLitigationType && selectedSub.questionnaireData.historicalLitigationType !== "None"
+                        ? [{
+                            litigationType: selectedSub.questionnaireData.historicalLitigationType,
+                            contractIdentification: selectedSub.questionnaireData.historicalContractIdentification,
+                            employerName: selectedSub.questionnaireData.historicalEmployerName,
+                            reason: selectedSub.questionnaireData.historicalReason,
+                            matterDispute: selectedSub.questionnaireData.historicalMatterDispute,
+                          }]
+                        : [];
+
+                      if (histRecords.length === 0) return null;
+
+                      return (
+                        <div className="p-3.5 rounded-xl border border-red-200 bg-red-50/30 space-y-3">
+                          <div className="flex items-center justify-between pb-1 border-b border-red-200/60">
+                            <span className="font-bold text-red-950 uppercase text-[11px] tracking-wide flex items-center gap-1.5">
+                              <Scale className="w-3.5 h-3.5 text-red-700" />
+                              Historical Contract Non-Performance &amp; Litigation
+                            </span>
+                            <span className="text-[10px] font-bold text-red-700 bg-red-100 px-2 py-0.5 rounded-full">
+                              {histRecords.length} {histRecords.length === 1 ? "Record" : "Records"}
+                            </span>
                           </div>
-                          <div>
-                            <span className="text-slate-500 font-medium block">Contract Identification:</span>
-                            <span className="font-semibold text-slate-900">{selectedSub.questionnaireData.historicalContractIdentification || "—"}</span>
+                          <div className="space-y-2.5">
+                            {histRecords.map((r: any, i: number) => (
+                              <div key={i} className="p-2.5 bg-white rounded-lg border border-red-100 space-y-2 text-xs">
+                                <div className="flex items-center justify-between border-b border-slate-100 pb-1">
+                                  <span className="font-bold text-slate-900">Record #{i + 1}</span>
+                                  <span className="font-bold text-red-700">{r.litigationType}</span>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                  <div>
+                                    <span className="text-slate-500 font-medium block">Contract Identification:</span>
+                                    <span className="font-semibold text-slate-900">{r.contractIdentification || "—"}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-slate-500 font-medium block">Name of Employer:</span>
+                                    <span className="font-semibold text-slate-900">{r.employerName || "—"}</span>
+                                  </div>
+                                  <div className="sm:col-span-2">
+                                    <span className="text-slate-500 font-medium block">Reason:</span>
+                                    <span className="font-medium text-slate-900 whitespace-pre-wrap">{r.reason || "—"}</span>
+                                  </div>
+                                  {r.matterDispute && (
+                                    <div className="sm:col-span-2">
+                                      <span className="text-slate-500 font-medium block">Matter in Dispute:</span>
+                                      <span className="font-medium text-slate-900 whitespace-pre-wrap">{r.matterDispute}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                          <div>
-                            <span className="text-slate-500 font-medium block">Name of Employer:</span>
-                            <span className="font-semibold text-slate-900">{selectedSub.questionnaireData.historicalEmployerName || "—"}</span>
-                          </div>
-                          <div>
-                            <span className="text-slate-500 font-medium block">Reason:</span>
-                            <span className="font-medium text-slate-900 whitespace-pre-wrap">{selectedSub.questionnaireData.historicalReason || "—"}</span>
-                          </div>
-                          {selectedSub.questionnaireData.historicalMatterDispute && (
-                            <div className="sm:col-span-2">
-                              <span className="text-slate-500 font-medium block">Matter in Dispute:</span>
-                              <span className="font-medium text-slate-900 whitespace-pre-wrap">{selectedSub.questionnaireData.historicalMatterDispute}</span>
-                            </div>
-                          )}
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
 
                     {/* Financial Statements (Past 5 FYs - 40 Fields) */}
                     {selectedSub.questionnaireData.financialStatements && (

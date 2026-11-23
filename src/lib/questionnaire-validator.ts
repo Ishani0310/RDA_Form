@@ -333,44 +333,71 @@ export function validateQuestionnaireSubmission(
   }
 
   // Section 10: Historical Contract Non-Performance & Litigation
-  const histType = data.historicalLitigationType;
-  if (histType === "Non performing contract") {
-    if (!data.historicalContractIdentification?.trim()) {
-      errors.historicalContractIdentification = "Please provide the contract identification for non-performing contract.";
+  const histRecords = Array.isArray(data.historicalLitigationRecords) && data.historicalLitigationRecords.length > 0
+    ? data.historicalLitigationRecords
+    : data.historicalLitigationType && data.historicalLitigationType !== "None"
+    ? [
+        {
+          litigationType: data.historicalLitigationType,
+          contractIdentification: data.historicalContractIdentification || "",
+          employerName: data.historicalEmployerName || "",
+          reason: data.historicalReason || "",
+          matterDispute: data.historicalMatterDispute || "",
+        },
+      ]
+    : [];
+
+  histRecords.forEach((rec, idx) => {
+    const histType = rec.litigationType;
+    if (histType === "Non performing contract") {
+      if (!rec.contractIdentification?.trim()) {
+        errors[`historicalLitigationRecords.${idx}.contractIdentification`] = `Record #${idx + 1}: Please provide the contract identification.`;
+        if (idx === 0) errors.historicalContractIdentification = "Please provide the contract identification for non-performing contract.";
+      }
+      if (!rec.employerName?.trim()) {
+        errors[`historicalLitigationRecords.${idx}.employerName`] = `Record #${idx + 1}: Please provide the name of the employer.`;
+        if (idx === 0) errors.historicalEmployerName = "Please provide the name of the employer.";
+      }
+      if (!rec.reason?.trim()) {
+        errors[`historicalLitigationRecords.${idx}.reason`] = `Record #${idx + 1}: Please provide the reason for non-performance.`;
+        if (idx === 0) errors.historicalReason = "Please provide the reason for non-performance.";
+      }
+    } else if (histType === "Pending litigation") {
+      if (!rec.contractIdentification?.trim()) {
+        errors[`historicalLitigationRecords.${idx}.contractIdentification`] = `Record #${idx + 1}: Please provide the contract identification for pending litigation.`;
+        if (idx === 0) errors.historicalContractIdentification = "Please provide the contract identification for pending litigation.";
+      }
+      if (!rec.employerName?.trim()) {
+        errors[`historicalLitigationRecords.${idx}.employerName`] = `Record #${idx + 1}: Please provide the name of the employer.`;
+        if (idx === 0) errors.historicalEmployerName = "Please provide the name of the employer.";
+      }
+      if (!rec.reason?.trim()) {
+        errors[`historicalLitigationRecords.${idx}.reason`] = `Record #${idx + 1}: Please provide the reason for pending litigation.`;
+        if (idx === 0) errors.historicalReason = "Please provide the reason for pending litigation.";
+      }
+      if (!rec.matterDispute?.trim()) {
+        errors[`historicalLitigationRecords.${idx}.matterDispute`] = `Record #${idx + 1}: Please provide the matter in dispute.`;
+        if (idx === 0) errors.historicalMatterDispute = "Please provide the matter in dispute.";
+      }
+    } else if (histType === "Litigation history past") {
+      if (!rec.contractIdentification?.trim()) {
+        errors[`historicalLitigationRecords.${idx}.contractIdentification`] = `Record #${idx + 1}: Please provide the contract identification for past litigation history.`;
+        if (idx === 0) errors.historicalContractIdentification = "Please provide the contract identification for past litigation history.";
+      }
+      if (!rec.employerName?.trim()) {
+        errors[`historicalLitigationRecords.${idx}.employerName`] = `Record #${idx + 1}: Please provide the name of the employer.`;
+        if (idx === 0) errors.historicalEmployerName = "Please provide the name of the employer.";
+      }
+      if (!rec.reason?.trim()) {
+        errors[`historicalLitigationRecords.${idx}.reason`] = `Record #${idx + 1}: Please provide the reason for past litigation history.`;
+        if (idx === 0) errors.historicalReason = "Please provide the reason for past litigation history.";
+      }
+      if (!rec.matterDispute?.trim()) {
+        errors[`historicalLitigationRecords.${idx}.matterDispute`] = `Record #${idx + 1}: Please provide the matter in dispute.`;
+        if (idx === 0) errors.historicalMatterDispute = "Please provide the matter in dispute.";
+      }
     }
-    if (!data.historicalEmployerName?.trim()) {
-      errors.historicalEmployerName = "Please provide the name of the employer.";
-    }
-    if (!data.historicalReason?.trim()) {
-      errors.historicalReason = "Please provide the reason for non-performance.";
-    }
-  } else if (histType === "Pending litigation") {
-    if (!data.historicalContractIdentification?.trim()) {
-      errors.historicalContractIdentification = "Please provide the contract identification for pending litigation.";
-    }
-    if (!data.historicalEmployerName?.trim()) {
-      errors.historicalEmployerName = "Please provide the name of the employer.";
-    }
-    if (!data.historicalReason?.trim()) {
-      errors.historicalReason = "Please provide the reason for pending litigation.";
-    }
-    if (!data.historicalMatterDispute?.trim()) {
-      errors.historicalMatterDispute = "Please provide the matter in dispute.";
-    }
-  } else if (histType === "Litigation history past") {
-    if (!data.historicalContractIdentification?.trim()) {
-      errors.historicalContractIdentification = "Please provide the contract identification for past litigation history.";
-    }
-    if (!data.historicalEmployerName?.trim()) {
-      errors.historicalEmployerName = "Please provide the name of the employer.";
-    }
-    if (!data.historicalReason?.trim()) {
-      errors.historicalReason = "Please provide the reason for past litigation history.";
-    }
-    if (!data.historicalMatterDispute?.trim()) {
-      errors.historicalMatterDispute = "Please provide the matter in dispute.";
-    }
-  }
+  });
 
   return {
     isValid: Object.keys(errors).length === 0,
@@ -529,11 +556,45 @@ export function normalizeQuestionnaireData(
     rdaIcdpExperienceType: (raw.rdaIcdpExperienceType as any) || "",
     rdaIcdpProjectDetails: String(raw.rdaIcdpProjectDetails || "").trim(),
     similarWorks,
-    historicalLitigationType: (raw.historicalLitigationType as any) || "",
-    historicalContractIdentification: String(raw.historicalContractIdentification || "").trim(),
-    historicalEmployerName: String(raw.historicalEmployerName || "").trim(),
-    historicalReason: String(raw.historicalReason || "").trim(),
-    historicalMatterDispute: String(raw.historicalMatterDispute || "").trim(),
+    historicalLitigationRecords: Array.isArray(raw.historicalLitigationRecords)
+      ? (raw.historicalLitigationRecords as any[]).map((r) => ({
+          litigationType: (r?.litigationType as any) || "",
+          contractIdentification: String(r?.contractIdentification || "").trim(),
+          employerName: String(r?.employerName || "").trim(),
+          reason: String(r?.reason || "").trim(),
+          matterDispute: String(r?.matterDispute || "").trim(),
+        }))
+      : raw.historicalLitigationType && raw.historicalLitigationType !== "None"
+      ? [
+          {
+            litigationType: (raw.historicalLitigationType as any) || "",
+            contractIdentification: String(raw.historicalContractIdentification || "").trim(),
+            employerName: String(raw.historicalEmployerName || "").trim(),
+            reason: String(raw.historicalReason || "").trim(),
+            matterDispute: String(raw.historicalMatterDispute || "").trim(),
+          },
+        ]
+      : [],
+    historicalLitigationType:
+      Array.isArray(raw.historicalLitigationRecords) && raw.historicalLitigationRecords[0]?.litigationType
+        ? (raw.historicalLitigationRecords[0].litigationType as any)
+        : (raw.historicalLitigationType as any) || "",
+    historicalContractIdentification:
+      Array.isArray(raw.historicalLitigationRecords) && raw.historicalLitigationRecords[0]?.contractIdentification
+        ? String(raw.historicalLitigationRecords[0].contractIdentification || "").trim()
+        : String(raw.historicalContractIdentification || "").trim(),
+    historicalEmployerName:
+      Array.isArray(raw.historicalLitigationRecords) && raw.historicalLitigationRecords[0]?.employerName
+        ? String(raw.historicalLitigationRecords[0].employerName || "").trim()
+        : String(raw.historicalEmployerName || "").trim(),
+    historicalReason:
+      Array.isArray(raw.historicalLitigationRecords) && raw.historicalLitigationRecords[0]?.reason
+        ? String(raw.historicalLitigationRecords[0].reason || "").trim()
+        : String(raw.historicalReason || "").trim(),
+    historicalMatterDispute:
+      Array.isArray(raw.historicalLitigationRecords) && raw.historicalLitigationRecords[0]?.matterDispute
+        ? String(raw.historicalLitigationRecords[0].matterDispute || "").trim()
+        : String(raw.historicalMatterDispute || "").trim(),
     mattersForDiscussion: Array.isArray(raw.mattersForDiscussionList) && (raw.mattersForDiscussionList as any[]).length > 0
       ? (raw.mattersForDiscussionList as any[]).map((m) => String(m || "").trim()).filter(Boolean).map((m, i) => `${i + 1}. ${m}`).join("\n\n")
       : String(raw.mattersForDiscussion || "").trim(),
