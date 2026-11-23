@@ -282,6 +282,16 @@ CONTRACTOR QUALIFICATIONS & TECHNICAL SPECIALTY:
 • Worked with RDA / ICDP: ${q.hasRdaOrIcdpExperience || "—"}${q.hasRdaOrIcdpExperience === "Yes" ? ` (${q.rdaIcdpExperienceType || "RDA/ICDP"}${q.rdaIcdpProjectDetails ? ` - ${q.rdaIcdpProjectDetails}` : ""})` : ""}
 `;
 
+      if (q.peakProductionRates) {
+        const hasRates = q.peakProductionRates.asp !== null || q.peakProductionRates.concrete !== null || q.peakProductionRates.abc !== null;
+        if (hasRates) {
+          textDetails += `• Peak Production Rate (12 months within last 10 years):\n`;
+          textDetails += `    - Asp: ${q.peakProductionRates.asp !== null && q.peakProductionRates.asp !== undefined ? `${formatNumber(q.peakProductionRates.asp)} SQM` : "—"}\n`;
+          textDetails += `    - Concrete: ${q.peakProductionRates.concrete !== null && q.peakProductionRates.concrete !== undefined ? `${formatNumber(q.peakProductionRates.concrete)} Cum` : "—"}\n`;
+          textDetails += `    - ABC: ${q.peakProductionRates.abc !== null && q.peakProductionRates.abc !== undefined ? `${formatNumber(q.peakProductionRates.abc)} Cum` : "—"}\n`;
+        }
+      }
+
       if (q.areasOfSpecialty && q.areasOfSpecialty.length > 0) {
         textDetails += `• Areas of Specialty & Assigned Grades:\n`;
         for (const spec of q.areasOfSpecialty) {
@@ -635,6 +645,46 @@ Inclusive Connectivity and Development Project (ICDP)
         }
       }
       htmlSections += `</div>`;
+    }
+
+    // Peak Production Rates
+    if (q.peakProductionRates) {
+      const hasRates = q.peakProductionRates.asp !== null || q.peakProductionRates.concrete !== null || q.peakProductionRates.abc !== null;
+      if (hasRates) {
+        htmlSections += `
+          <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #edf2f7;">
+            <span style="display: block; font-size: 11px; font-weight: 800; color: #475569; text-transform: uppercase; margin-bottom: 6px;">
+              Peak Production Rate (12 Months within Last 10 Years):
+            </span>
+            <table style="width: 100%; border-collapse: collapse; font-size: 11px; background-color: #ffffff; border-radius: 6px; overflow: hidden; border: 1px solid #e2e8f0;">
+              <thead>
+                <tr style="background-color: #f1f5f9; color: #334155; text-align: left;">
+                  <th style="padding: 6px 10px; width: 40%;">Name</th>
+                  <th style="padding: 6px 10px; width: 25%;">Unit</th>
+                  <th style="padding: 6px 10px; text-align: right;">Quantity</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-top: 1px solid #e2e8f0;">
+                  <td style="padding: 6px 10px; font-weight: 600;">Asp (Asphalt Concrete)</td>
+                  <td style="padding: 6px 10px; color: #64748b;">SQM</td>
+                  <td style="padding: 6px 10px; text-align: right; font-family: monospace; font-weight: 700;">${q.peakProductionRates.asp !== null && q.peakProductionRates.asp !== undefined ? formatNumber(q.peakProductionRates.asp) : "—"}</td>
+                </tr>
+                <tr style="border-top: 1px solid #e2e8f0;">
+                  <td style="padding: 6px 10px; font-weight: 600;">Concrete</td>
+                  <td style="padding: 6px 10px; color: #64748b;">Cum</td>
+                  <td style="padding: 6px 10px; text-align: right; font-family: monospace; font-weight: 700;">${q.peakProductionRates.concrete !== null && q.peakProductionRates.concrete !== undefined ? formatNumber(q.peakProductionRates.concrete) : "—"}</td>
+                </tr>
+                <tr style="border-top: 1px solid #e2e8f0;">
+                  <td style="padding: 6px 10px; font-weight: 600;">ABC (Aggregate Base Course)</td>
+                  <td style="padding: 6px 10px; color: #64748b;">Cum</td>
+                  <td style="padding: 6px 10px; text-align: right; font-family: monospace; font-weight: 700;">${q.peakProductionRates.abc !== null && q.peakProductionRates.abc !== undefined ? formatNumber(q.peakProductionRates.abc) : "—"}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
     }
 
     htmlSections += `</div>`;

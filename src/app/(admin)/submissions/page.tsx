@@ -597,6 +597,37 @@ function generateSubmissionHtml(sub: FormattedSubmission): string {
           </div>
         </div>
         ` : ""}
+        ${q.peakProductionRates && (q.peakProductionRates.asp !== null || q.peakProductionRates.concrete !== null || q.peakProductionRates.abc !== null) ? `
+        <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e2e8f0;">
+          <div class="field-label">Peak Production Rate (12 Months within Last 10 Years):</div>
+          <table class="table-data" style="margin-top: 4px;">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Unit</th>
+                <th style="text-align: right;">Quantity</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Asp (Asphalt Concrete)</td>
+                <td>SQM</td>
+                <td style="text-align: right; font-weight: bold;">${q.peakProductionRates.asp !== null && q.peakProductionRates.asp !== undefined ? Number(q.peakProductionRates.asp).toLocaleString() : "—"}</td>
+              </tr>
+              <tr>
+                <td>Concrete</td>
+                <td>Cum</td>
+                <td style="text-align: right; font-weight: bold;">${q.peakProductionRates.concrete !== null && q.peakProductionRates.concrete !== undefined ? Number(q.peakProductionRates.concrete).toLocaleString() : "—"}</td>
+              </tr>
+              <tr>
+                <td>ABC (Aggregate Base Course)</td>
+                <td>Cum</td>
+                <td style="text-align: right; font-weight: bold;">${q.peakProductionRates.abc !== null && q.peakProductionRates.abc !== undefined ? Number(q.peakProductionRates.abc).toLocaleString() : "—"}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        ` : ""}
       </div>
     </div>
 
@@ -1831,6 +1862,45 @@ function SubmissionsContent() {
                                 </span>
                               );
                             })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Peak Production Rates */}
+                      {selectedSub.questionnaireData.peakProductionRates && (
+                        selectedSub.questionnaireData.peakProductionRates.asp !== null ||
+                        selectedSub.questionnaireData.peakProductionRates.concrete !== null ||
+                        selectedSub.questionnaireData.peakProductionRates.abc !== null
+                      ) && (
+                        <div className="pt-2.5 border-t border-slate-200/80 space-y-1.5">
+                          <span className="text-slate-500 text-[10px] uppercase font-bold block">
+                            Peak Production Rate (12 Months within Last 10 Years):
+                          </span>
+                          <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                            <div className="p-2 bg-white rounded-lg border border-slate-200">
+                              <span className="text-[10px] text-slate-500 font-medium block">Asp (SQM)</span>
+                              <span className="font-bold text-slate-900 font-mono text-xs">
+                                {selectedSub.questionnaireData.peakProductionRates.asp !== null && selectedSub.questionnaireData.peakProductionRates.asp !== undefined
+                                  ? Number(selectedSub.questionnaireData.peakProductionRates.asp).toLocaleString()
+                                  : "—"}
+                              </span>
+                            </div>
+                            <div className="p-2 bg-white rounded-lg border border-slate-200">
+                              <span className="text-[10px] text-slate-500 font-medium block">Concrete (Cum)</span>
+                              <span className="font-bold text-slate-900 font-mono text-xs">
+                                {selectedSub.questionnaireData.peakProductionRates.concrete !== null && selectedSub.questionnaireData.peakProductionRates.concrete !== undefined
+                                  ? Number(selectedSub.questionnaireData.peakProductionRates.concrete).toLocaleString()
+                                  : "—"}
+                              </span>
+                            </div>
+                            <div className="p-2 bg-white rounded-lg border border-slate-200">
+                              <span className="text-[10px] text-slate-500 font-medium block">ABC (Cum)</span>
+                              <span className="font-bold text-slate-900 font-mono text-xs">
+                                {selectedSub.questionnaireData.peakProductionRates.abc !== null && selectedSub.questionnaireData.peakProductionRates.abc !== undefined
+                                  ? Number(selectedSub.questionnaireData.peakProductionRates.abc).toLocaleString()
+                                  : "—"}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       )}

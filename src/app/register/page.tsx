@@ -55,6 +55,8 @@ import {
   createEmptySimilarWorks,
   createEmptyOngoingWorks,
   createEmptySupplierDetails,
+  createEmptyPeakProductionRates,
+  PeakProductionRates,
   createEmptyHistoricalLitigationRecord,
   HistoricalLitigationRecord,
   calculateTotalEquity,
@@ -160,6 +162,7 @@ function createInitialFormData(): OfficialQuestionnaireData {
     hasRdaOrIcdpExperience: "",
     rdaIcdpExperienceType: "",
     rdaIcdpProjectDetails: "",
+    peakProductionRates: createEmptyPeakProductionRates(),
     similarWorks: createEmptySimilarWorks(),
     historicalLitigationRecords: [createEmptyHistoricalLitigationRecord()],
     historicalLitigationType: "",
@@ -1061,6 +1064,11 @@ function RegisterForm() {
           hasRdaOrIcdpExperience: q.hasRdaOrIcdpExperience || "",
           rdaIcdpExperienceType: q.rdaIcdpExperienceType || "",
           rdaIcdpProjectDetails: q.rdaIcdpProjectDetails || "",
+          peakProductionRates: {
+            asp: q.peakProductionRates?.asp !== undefined && q.peakProductionRates?.asp !== null ? Number(q.peakProductionRates.asp) : null,
+            concrete: q.peakProductionRates?.concrete !== undefined && q.peakProductionRates?.concrete !== null ? Number(q.peakProductionRates.concrete) : null,
+            abc: q.peakProductionRates?.abc !== undefined && q.peakProductionRates?.abc !== null ? Number(q.peakProductionRates.abc) : null,
+          },
           similarWorks:
             Array.isArray(q.similarWorks) && q.similarWorks.length > 0
               ? q.similarWorks
@@ -2066,6 +2074,7 @@ function RegisterForm() {
                   hasRdaOrIcdpExperience: "",
                   rdaIcdpExperienceType: "",
                   rdaIcdpProjectDetails: "",
+                  peakProductionRates: createEmptyPeakProductionRates(),
                   similarWorks: createEmptySimilarWorks(),
                   historicalLitigationRecords: [createEmptyHistoricalLitigationRecord()],
                   historicalLitigationType: "",
@@ -4223,6 +4232,136 @@ function RegisterForm() {
                               </div>
                             )}
                           </div>
+
+                          {/* QUESTION: Peak Production Rate (12 months within last 10 years) */}
+                          <div id="field-peakProductionRates" className="space-y-3 pt-4 border-t border-slate-100">
+                            <div>
+                              <label className="block font-semibold text-slate-800 text-xs">
+                                Production rate within to consider 12 months with last 10 years
+                              </label>
+                              <p className="text-[11px] text-slate-500 mt-0.5">
+                                Please specify the peak annual production achieved within any consecutive 12 months during the last 10 years:
+                              </p>
+                            </div>
+
+                            <div className="overflow-x-auto rounded-xl border border-slate-200 shadow-sm">
+                              <table className="w-full text-left border-collapse text-xs">
+                                <thead>
+                                  <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                                    <th className="p-3 w-1/3">Name</th>
+                                    <th className="p-3 w-1/4">Unit</th>
+                                    <th className="p-3">Qty</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-200 bg-white font-medium">
+                                  {/* Row 1: Asp */}
+                                  <tr className="hover:bg-slate-50/60 transition-colors">
+                                    <td className="p-3">
+                                      <span className="font-bold text-slate-900 block">Asp</span>
+                                      <span className="text-[10px] text-slate-500">Asphalt Concrete</span>
+                                    </td>
+                                    <td className="p-3">
+                                      <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-900 font-mono font-bold text-[11px] border border-blue-200">
+                                        SQM
+                                      </span>
+                                    </td>
+                                    <td className="p-3">
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        step="any"
+                                        id="input-peakProductionRates-asp"
+                                        value={formData.peakProductionRates?.asp ?? ""}
+                                        onChange={(e) => {
+                                          const val = e.target.value === "" ? null : Number(e.target.value);
+                                          setFormData((prev) => ({
+                                            ...prev,
+                                            peakProductionRates: {
+                                              ...createEmptyPeakProductionRates(),
+                                              ...prev.peakProductionRates,
+                                              asp: isNaN(val as number) ? null : val,
+                                            },
+                                          }));
+                                        }}
+                                        placeholder="Enter Asp quantity (SQM)..."
+                                        className="w-full p-2 rounded bg-slate-50 border border-slate-300 text-slate-900 font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 text-xs"
+                                      />
+                                    </td>
+                                  </tr>
+
+                                  {/* Row 2: Concrete */}
+                                  <tr className="hover:bg-slate-50/60 transition-colors">
+                                    <td className="p-3">
+                                      <span className="font-bold text-slate-900 block">Concrete</span>
+                                      <span className="text-[10px] text-slate-500">Structural &amp; Pavement Concrete</span>
+                                    </td>
+                                    <td className="p-3">
+                                      <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-900 font-mono font-bold text-[11px] border border-emerald-200">
+                                        Cum
+                                      </span>
+                                    </td>
+                                    <td className="p-3">
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        step="any"
+                                        id="input-peakProductionRates-concrete"
+                                        value={formData.peakProductionRates?.concrete ?? ""}
+                                        onChange={(e) => {
+                                          const val = e.target.value === "" ? null : Number(e.target.value);
+                                          setFormData((prev) => ({
+                                            ...prev,
+                                            peakProductionRates: {
+                                              ...createEmptyPeakProductionRates(),
+                                              ...prev.peakProductionRates,
+                                              concrete: isNaN(val as number) ? null : val,
+                                            },
+                                          }));
+                                        }}
+                                        placeholder="Enter Concrete quantity (Cum)..."
+                                        className="w-full p-2 rounded bg-slate-50 border border-slate-300 text-slate-900 font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 text-xs"
+                                      />
+                                    </td>
+                                  </tr>
+
+                                  {/* Row 3: ABC */}
+                                  <tr className="hover:bg-slate-50/60 transition-colors">
+                                    <td className="p-3">
+                                      <span className="font-bold text-slate-900 block">ABC</span>
+                                      <span className="text-[10px] text-slate-500">Aggregate Base Course</span>
+                                    </td>
+                                    <td className="p-3">
+                                      <span className="px-2 py-0.5 rounded bg-purple-50 text-purple-900 font-mono font-bold text-[11px] border border-purple-200">
+                                        Cum
+                                      </span>
+                                    </td>
+                                    <td className="p-3">
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        step="any"
+                                        id="input-peakProductionRates-abc"
+                                        value={formData.peakProductionRates?.abc ?? ""}
+                                        onChange={(e) => {
+                                          const val = e.target.value === "" ? null : Number(e.target.value);
+                                          setFormData((prev) => ({
+                                            ...prev,
+                                            peakProductionRates: {
+                                              ...createEmptyPeakProductionRates(),
+                                              ...prev.peakProductionRates,
+                                              abc: isNaN(val as number) ? null : val,
+                                            },
+                                          }));
+                                        }}
+                                        placeholder="Enter ABC quantity (Cum)..."
+                                        className="w-full p-2 rounded bg-slate-50 border border-slate-300 text-slate-900 font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 text-xs"
+                                      />
+                                    </td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
                         </div>
                       </div>
 
@@ -5492,6 +5631,42 @@ function RegisterForm() {
                           : "N/A"}
                       </span>
                     </div>
+                    {/* Production Rates in Review Modal */}
+                    {(formData.peakProductionRates?.asp !== null ||
+                      formData.peakProductionRates?.concrete !== null ||
+                      formData.peakProductionRates?.abc !== null) && (
+                      <div className="pt-2 border-t border-slate-100">
+                        <span className="text-slate-500 font-medium text-[11px] block mb-1">
+                          Production Rate (Peak 12 months within last 10 years):
+                        </span>
+                        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                          <div className="p-1.5 bg-slate-50 rounded border border-slate-200">
+                            <span className="text-[10px] text-slate-500 block font-semibold">Asp (SQM)</span>
+                            <span className="font-bold text-slate-900 font-mono">
+                              {formData.peakProductionRates?.asp !== null && formData.peakProductionRates?.asp !== undefined
+                                ? Number(formData.peakProductionRates.asp).toLocaleString()
+                                : "—"}
+                            </span>
+                          </div>
+                          <div className="p-1.5 bg-slate-50 rounded border border-slate-200">
+                            <span className="text-[10px] text-slate-500 block font-semibold">Concrete (Cum)</span>
+                            <span className="font-bold text-slate-900 font-mono">
+                              {formData.peakProductionRates?.concrete !== null && formData.peakProductionRates?.concrete !== undefined
+                                ? Number(formData.peakProductionRates.concrete).toLocaleString()
+                                : "—"}
+                            </span>
+                          </div>
+                          <div className="p-1.5 bg-slate-50 rounded border border-slate-200">
+                            <span className="text-[10px] text-slate-500 block font-semibold">ABC (Cum)</span>
+                            <span className="font-bold text-slate-900 font-mono">
+                              {formData.peakProductionRates?.abc !== null && formData.peakProductionRates?.abc !== undefined
+                                ? Number(formData.peakProductionRates.abc).toLocaleString()
+                                : "—"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Section 10: Similar Work Experience */}

@@ -555,6 +555,11 @@ export function normalizeQuestionnaireData(
     hasRdaOrIcdpExperience: (raw.hasRdaOrIcdpExperience as any) || "",
     rdaIcdpExperienceType: (raw.rdaIcdpExperienceType as any) || "",
     rdaIcdpProjectDetails: String(raw.rdaIcdpProjectDetails || "").trim(),
+    peakProductionRates: {
+      asp: parseNumOrNull((raw.peakProductionRates as Record<string, any>)?.asp),
+      concrete: parseNumOrNull((raw.peakProductionRates as Record<string, any>)?.concrete),
+      abc: parseNumOrNull((raw.peakProductionRates as Record<string, any>)?.abc),
+    },
     similarWorks,
     historicalLitigationRecords: Array.isArray(raw.historicalLitigationRecords)
       ? (raw.historicalLitigationRecords as any[]).map((r) => ({

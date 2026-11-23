@@ -178,6 +178,20 @@ export interface LoanCommitments {
 // -----------------------------------------------------------------------------
 // ROOT OFFICIAL QUESTIONNAIRE DATA CONTAINER
 // -----------------------------------------------------------------------------
+export interface PeakProductionRates {
+  asp: number | null;
+  concrete: number | null;
+  abc: number | null;
+}
+
+export function createEmptyPeakProductionRates(): PeakProductionRates {
+  return {
+    asp: null,
+    concrete: null,
+    abc: null,
+  };
+}
+
 export type HistoricalLitigationOption =
   | "None"
   | "Non performing contract"
@@ -247,6 +261,7 @@ export interface OfficialQuestionnaireData {
   hasRdaOrIcdpExperience?: "Yes" | "No" | "";
   rdaIcdpExperienceType?: "RDA" | "ICDP" | "Both" | "None" | string;
   rdaIcdpProjectDetails?: string;
+  peakProductionRates?: PeakProductionRates;
 
   // SECTION 10: Similar Work Experience (Contractors)
   similarWorks?: SimilarWorkContract[];
