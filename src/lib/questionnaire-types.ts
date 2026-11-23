@@ -66,6 +66,7 @@ export interface MaterialCapacityItem {
   quantity: string | number | null;
   unit: string;
   rate?: string | number | null;
+  rateUnit?: string;
 }
 
 export interface SupplierDetails {

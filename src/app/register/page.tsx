@@ -1718,7 +1718,7 @@ function RegisterForm() {
       });
     } else {
       if (mat !== "Other") {
-        caps[mat] = caps[mat] || { quantity: "", unit: mat === "Steel" ? "MT" : "cu.m", rate: "" };
+        caps[mat] = caps[mat] || { quantity: "", unit: "MT per year", rate: "", rateUnit: "cu.m" };
       }
       setFormData({
         ...formData,
@@ -1733,12 +1733,11 @@ function RegisterForm() {
 
   const handleSupplierCapacityChange = (
     mat: string,
-    field: "quantity" | "unit" | "rate",
+    field: "quantity" | "unit" | "rate" | "rateUnit",
     value: string
   ) => {
     const currentCaps = { ...(formData.supplierDetails?.supplyCapacities || {}) };
-    const defaultUnit = mat.includes("Steel") ? "MT" : "cu.m";
-    const item = currentCaps[mat] || { quantity: "", unit: defaultUnit, rate: "" };
+    const item = currentCaps[mat] || { quantity: "", unit: "MT per year", rate: "", rateUnit: "cu.m" };
     currentCaps[mat] = {
       ...item,
       [field]: value,
@@ -3290,16 +3289,15 @@ function RegisterForm() {
                                   Annual Supply Capacity &amp; Rates *
                                 </span>
                                 <span className="text-[11px] text-slate-500">
-                                  Specify annual production or supply capacity, select the unit (cu.m, cube, etc.), and enter the unit rate for each selected material.
+                                  Specify annual production or supply capacity with its unit (e.g. MT per year), and enter the unit rate with selected unit (cu.m or cube).
                                 </span>
                               </div>
 
                               {/* Desktop Header */}
-                              <div className="hidden sm:grid sm:grid-cols-12 gap-2.5 px-3 py-1 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                                <div className="sm:col-span-4">Material</div>
-                                <div className="sm:col-span-3">Quantity / Year</div>
-                                <div className="sm:col-span-2">Unit (cu.m / cube)</div>
-                                <div className="sm:col-span-3">Rate per Unit</div>
+                              <div className="hidden sm:grid sm:grid-cols-12 gap-3 px-3 py-1 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                <div className="sm:col-span-3">Material</div>
+                                <div className="sm:col-span-5">Annual Capacity (Quantity &amp; Unit)</div>
+                                <div className="sm:col-span-4">Rate &amp; Unit (cu.m / cube)</div>
                               </div>
 
                               <div className="space-y-2.5">
@@ -3326,10 +3324,7 @@ function RegisterForm() {
                                   });
 
                                   return capacityRows.map((row) => {
-                                    const defaultUnit =
-                                      row.label.includes("Steel") || row.label.includes("Bitumen") || row.label.includes("Cement")
-                                        ? "MT"
-                                        : "cu.m";
+                                    const defaultUnit = "MT per year";
                                     const cap =
                                       formData.supplierDetails?.supplyCapacities?.[row.key] ||
                                       (row.key.startsWith("Other (") && otherItems.length === 1
@@ -3338,71 +3333,74 @@ function RegisterForm() {
                                         quantity: "",
                                         unit: defaultUnit,
                                         rate: "",
+                                        rateUnit: "cu.m",
                                       };
-                                    const currentUnit = cap.unit && cap.unit !== "MT per year" ? cap.unit : defaultUnit;
 
                                     return (
                                       <div
                                         key={row.key}
-                                        className="p-3 bg-white border border-slate-200 rounded-lg space-y-2 sm:space-y-0 sm:grid sm:grid-cols-12 sm:gap-2.5 sm:items-center"
+                                        className="p-3 bg-white border border-slate-200 rounded-lg space-y-2.5 sm:space-y-0 sm:grid sm:grid-cols-12 sm:gap-3 sm:items-center"
                                       >
-                                        <div className="sm:col-span-4">
+                                        <div className="sm:col-span-3">
                                           <span className="font-semibold text-blue-950 text-xs sm:text-sm block">
                                             {row.label}
                                           </span>
                                         </div>
 
-                                        {/* 1. Quantity per year */}
-                                        <div className="sm:col-span-3">
-                                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5 sm:hidden">
-                                            Quantity / Year
+                                        {/* 1. Annual Capacity: Quantity + Unit (like early!) */}
+                                        <div className="sm:col-span-5">
+                                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1 sm:hidden">
+                                            Annual Capacity (Quantity &amp; Unit)
                                           </label>
-                                          <input
-                                            type="text"
-                                            value={cap.quantity !== null && cap.quantity !== undefined ? cap.quantity : ""}
-                                            onChange={(e) => handleSupplierCapacityChange(row.key, "quantity", e.target.value)}
-                                            placeholder="Quantity / Year"
-                                            className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
-                                          />
-                                        </div>
-
-                                        {/* 2. Unit selection (cu.m / cube / MT / etc.) */}
-                                        <div className="sm:col-span-2">
-                                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5 sm:hidden">
-                                            Unit (cu.m / cube)
-                                          </label>
-                                          <select
-                                            value={currentUnit}
-                                            onChange={(e) => handleSupplierCapacityChange(row.key, "unit", e.target.value)}
-                                            className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-xs text-slate-900 font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
-                                          >
-                                            <option value="cu.m">cu.m</option>
-                                            <option value="cube">cube</option>
-                                            <option value="MT">MT</option>
-                                            <option value="Liters">Liters</option>
-                                            <option value="Nos">Nos</option>
-                                            {!["cu.m", "cube", "MT", "Liters", "Nos"].includes(currentUnit) && (
-                                              <option value={currentUnit}>{currentUnit}</option>
-                                            )}
-                                          </select>
-                                        </div>
-
-                                        {/* 3. Rate per selected unit */}
-                                        <div className="sm:col-span-3">
-                                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5 sm:hidden">
-                                            Rate (LKR per {currentUnit})
-                                          </label>
-                                          <div className="flex items-center">
-                                            <span className="px-2 py-2 bg-slate-100 border border-r-0 border-slate-300 rounded-l text-[10px] font-bold text-slate-600 select-none">
-                                              LKR
-                                            </span>
+                                          <div className="flex items-center gap-1.5">
                                             <input
                                               type="text"
-                                              value={cap.rate !== null && cap.rate !== undefined ? cap.rate : ""}
-                                              onChange={(e) => handleSupplierCapacityChange(row.key, "rate", e.target.value)}
-                                              placeholder={`Rate / ${currentUnit}`}
-                                              className="w-full p-2 bg-slate-50 border border-slate-300 rounded-r text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
+                                              value={cap.quantity !== null && cap.quantity !== undefined ? cap.quantity : ""}
+                                              onChange={(e) => handleSupplierCapacityChange(row.key, "quantity", e.target.value)}
+                                              placeholder="Quantity (e.g. 50,000)"
+                                              className="w-1/2 p-2 bg-slate-50 border border-slate-300 rounded text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
                                             />
+                                            <input
+                                              type="text"
+                                              value={cap.unit || ""}
+                                              onChange={(e) => handleSupplierCapacityChange(row.key, "unit", e.target.value)}
+                                              placeholder="Unit (e.g. MT per year)"
+                                              className="w-1/2 p-2 bg-slate-50 border border-slate-300 rounded text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
+                                            />
+                                          </div>
+                                        </div>
+
+                                        {/* 2. Rate & Unit: Input rate then select cu.m or cube! */}
+                                        <div className="sm:col-span-4">
+                                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1 sm:hidden">
+                                            Rate &amp; Unit
+                                          </label>
+                                          <div className="flex items-center gap-1.5">
+                                            <div className="flex items-center w-3/5">
+                                              <span className="px-2 py-2 bg-slate-100 border border-r-0 border-slate-300 rounded-l text-[10px] font-bold text-slate-600 select-none">
+                                                LKR
+                                              </span>
+                                              <input
+                                                type="text"
+                                                value={cap.rate !== null && cap.rate !== undefined ? cap.rate : ""}
+                                                onChange={(e) => handleSupplierCapacityChange(row.key, "rate", e.target.value)}
+                                                placeholder="Rate (e.g. 4,500)"
+                                                className="w-full p-2 bg-slate-50 border border-slate-300 rounded-r text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
+                                              />
+                                            </div>
+                                            <div className="w-2/5">
+                                              <select
+                                                value={cap.rateUnit || "cu.m"}
+                                                onChange={(e) => handleSupplierCapacityChange(row.key, "rateUnit", e.target.value)}
+                                                className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-xs text-slate-900 font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
+                                              >
+                                                <option value="cu.m">/ cu.m</option>
+                                                <option value="cube">/ cube</option>
+                                                <option value="MT">/ MT</option>
+                                                <option value="Liters">/ Liter</option>
+                                                <option value="Nos">/ Nos</option>
+                                              </select>
+                                            </div>
                                           </div>
                                         </div>
                                       </div>
@@ -6341,7 +6339,7 @@ function RegisterForm() {
                       <span className="text-slate-500 font-medium text-[11px] block">Supplied Materials, Annual Capacity &amp; Rates:</span>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         {(() => {
-                          const reviewItems: { name: string; cap?: { quantity?: string | number | null; unit?: string; rate?: string | number | null } }[] = [];
+                          const reviewItems: { name: string; cap?: { quantity?: string | number | null; unit?: string; rate?: string | number | null; rateUnit?: string } }[] = [];
                           const mats = formData.supplierDetails.materialsSupplied || [];
                           const otherItems = supplierMaterialsOtherList
                             .map((s) => s.trim())
@@ -6382,12 +6380,12 @@ function RegisterForm() {
                                 <div className="flex flex-wrap items-center gap-1.5 text-xs">
                                   {hasQty && (
                                     <span className="font-bold text-purple-950 font-mono text-xs">
-                                      {item.cap?.quantity} {unit} / Year
+                                      {item.cap?.quantity} {item.cap?.unit || ""}
                                     </span>
                                   )}
                                   {hasRate && (
                                     <span className="font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded text-[11px] font-mono">
-                                      LKR {item.cap?.rate} / {unit}
+                                      LKR {item.cap?.rate} / {item.cap?.rateUnit || "cu.m"}
                                     </span>
                                   )}
                                   {!hasQty && !hasRate && (

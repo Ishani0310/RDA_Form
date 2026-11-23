@@ -265,8 +265,8 @@ SUPPLIER PROFILE & PRODUCTION CAPACITY:
         textDetails += `\nDeclared Supply / Production Capacities & Rates:\n`;
         for (const [mat, cap] of Object.entries(sup.supplyCapacities as Record<string, any>)) {
           if (cap && (cap.quantity !== null && cap.quantity !== undefined && cap.quantity !== "" || cap.rate !== null && cap.rate !== undefined && cap.rate !== "")) {
-            const qStr = cap.quantity ? `${cap.quantity} ${cap.unit || "cu.m"}/Year` : "—";
-            const rStr = cap.rate ? ` | Rate: LKR ${cap.rate} / ${cap.unit || "cu.m"}` : "";
+            const qStr = cap.quantity ? `${cap.quantity} ${cap.unit || ""}`.trim() : "—";
+            const rStr = cap.rate ? ` | Rate: LKR ${cap.rate} / ${cap.rateUnit || "cu.m"}` : "";
             textDetails += `  • ${mat}: ${qStr}${rStr}\n`;
           }
         }
@@ -568,8 +568,8 @@ Inclusive Connectivity and Development Project (ICDP)
             <tr style="background-color: #f3e8ff; color: #581c87; text-align: left;">
               <th style="padding: 8px 10px; font-weight: 700;">Material</th>
               <th style="padding: 8px 10px; font-weight: 700;">Annual Capacity</th>
-              <th style="padding: 8px 10px; font-weight: 700;">Unit</th>
-              <th style="padding: 8px 10px; font-weight: 700;">Rate per Unit</th>
+              <th style="padding: 8px 10px; font-weight: 700;">Capacity Unit</th>
+              <th style="padding: 8px 10px; font-weight: 700;">Unit Rate</th>
             </tr>
           </thead>
           <tbody>
@@ -580,8 +580,8 @@ Inclusive Connectivity and Development Project (ICDP)
             <tr style="border-top: 1px solid #f3e8ff;">
               <td style="padding: 8px 10px; font-weight: 600; color: #0f172a;">${escapeHtml(mat)}</td>
               <td style="padding: 8px 10px; font-family: monospace; font-weight: 700; color: #581c87;">${escapeHtml(cap.quantity || "—")}</td>
-              <td style="padding: 8px 10px; color: #64748b;">${escapeHtml(cap.unit || "cu.m")}</td>
-              <td style="padding: 8px 10px; font-family: monospace; font-weight: 700; color: #059669;">${cap.rate ? `LKR ${escapeHtml(cap.rate)} / ${escapeHtml(cap.unit || "cu.m")}` : "—"}</td>
+              <td style="padding: 8px 10px; color: #64748b;">${escapeHtml(cap.unit || "—")}</td>
+              <td style="padding: 8px 10px; font-family: monospace; font-weight: 700; color: #059669;">${cap.rate ? `LKR ${escapeHtml(cap.rate)} / ${escapeHtml(cap.rateUnit || "cu.m")}` : "—"}</td>
             </tr>
           `;
         }
