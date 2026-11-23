@@ -1032,38 +1032,59 @@ function renderSupplierMaterialsList(
             Annual Supply / Production Capacity for Selected Materials
           </span>
           <div className="space-y-2">
-            {selectedMaterials.map((mat) => {
-              const cap = capacities[mat] || { quantity: "", unit: "MT per year" };
-              return (
-                <div
-                  key={mat}
-                  className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 p-2 bg-white rounded-lg border border-slate-200 text-xs"
-                >
-                  <span className="font-semibold text-slate-800 sm:w-1/3">{mat}</span>
-                  <div className="flex gap-2 sm:w-2/3">
-                    <input
-                      type="number"
-                      placeholder="Annual Quantity"
-                      value={cap.quantity || ""}
-                      onChange={(e) => handleCapacityChange(mat, "quantity", e.target.value)}
-                      disabled={disabled}
-                      className="w-2/3 p-1.5 border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-800 font-mono text-xs"
-                    />
-                    <select
-                      value={cap.unit || "MT per year"}
-                      onChange={(e) => handleCapacityChange(mat, "unit", e.target.value)}
-                      disabled={disabled}
-                      className="w-1/3 p-1.5 border border-slate-300 rounded text-slate-900 font-medium text-xs bg-white"
-                    >
-                      <option value="MT per year">MT per year</option>
-                      <option value="Cu.m per year">Cu.m per year</option>
-                      <option value="Nos per year">Nos per year</option>
-                      <option value="Liters per year">Liters per year</option>
-                    </select>
+            {(() => {
+              const rows: { key: string; label: string }[] = [];
+              const rawOther = allValues?.["supplierDetails.materialsOther"] || "";
+              const others = rawOther
+                .split(",")
+                .map((s: string) => s.trim())
+                .filter(Boolean);
+
+              selectedMaterials.forEach((mat) => {
+                if (mat !== "Other") {
+                  rows.push({ key: mat, label: mat });
+                } else if (others.length === 0) {
+                  rows.push({ key: "Other", label: "Other" });
+                } else {
+                  others.forEach((item: string) => {
+                    rows.push({ key: `Other (${item})`, label: `Other (${item})` });
+                  });
+                }
+              });
+
+              return rows.map((row) => {
+                const cap = capacities[row.key] || (row.key.startsWith("Other (") && others.length === 1 ? capacities["Other"] : undefined) || { quantity: "", unit: "MT per year" };
+                return (
+                  <div
+                    key={row.key}
+                    className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 p-2 bg-white rounded-lg border border-slate-200 text-xs"
+                  >
+                    <span className="font-semibold text-slate-800 sm:w-1/3">{row.label}</span>
+                    <div className="flex gap-2 sm:w-2/3">
+                      <input
+                        type="number"
+                        placeholder="Annual Quantity"
+                        value={cap.quantity || ""}
+                        onChange={(e) => handleCapacityChange(row.key, "quantity", e.target.value)}
+                        disabled={disabled}
+                        className="w-2/3 p-1.5 border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-800 font-mono text-xs"
+                      />
+                      <select
+                        value={cap.unit || "MT per year"}
+                        onChange={(e) => handleCapacityChange(row.key, "unit", e.target.value)}
+                        disabled={disabled}
+                        className="w-1/3 p-1.5 border border-slate-300 rounded text-slate-900 font-medium text-xs bg-white"
+                      >
+                        <option value="MT per year">MT per year</option>
+                        <option value="Cu.m per year">Cu.m per year</option>
+                        <option value="Nos per year">Nos per year</option>
+                        <option value="Liters per year">Liters per year</option>
+                      </select>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              });
+            })()}
           </div>
         </div>
       )}

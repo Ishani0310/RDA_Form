@@ -670,17 +670,32 @@ function RegisterForm() {
   };
 
   const handleUpdateSupplierMaterialOther = (index: number, value: string) => {
+    const oldVal = supplierMaterialsOtherList[index]?.trim();
+    const newVal = value.trim();
+
     setSupplierMaterialsOtherList((prev) => {
       const updated = [...prev];
       updated[index] = value;
       const combined = updated.map((s) => s.trim()).filter(Boolean).join(", ");
-      setFormData((f) => ({
-        ...f,
-        supplierDetails: {
-          ...(f.supplierDetails || createEmptySupplierDetails()),
-          materialsOther: combined,
-        },
-      }));
+      setFormData((f) => {
+        const caps = { ...(f.supplierDetails?.supplyCapacities || {}) };
+        if (oldVal && newVal && oldVal !== newVal) {
+          const oldKey = `Other (${oldVal})`;
+          const newKey = `Other (${newVal})`;
+          if (caps[oldKey] !== undefined && caps[newKey] === undefined) {
+            caps[newKey] = caps[oldKey];
+            delete caps[oldKey];
+          }
+        }
+        return {
+          ...f,
+          supplierDetails: {
+            ...(f.supplierDetails || createEmptySupplierDetails()),
+            materialsOther: combined,
+            supplyCapacities: caps,
+          },
+        };
+      });
       return updated;
     });
   };
@@ -694,17 +709,26 @@ function RegisterForm() {
   };
 
   const handleRemoveSupplierMaterialOther = (index: number) => {
+    const removedVal = supplierMaterialsOtherList[index]?.trim();
     setSupplierMaterialsOtherList((prev) => {
       const updated = prev.filter((_, i) => i !== index);
       const finalList = updated.length > 0 ? updated : [""];
       const combined = finalList.map((s) => s.trim()).filter(Boolean).join(", ");
-      setFormData((f) => ({
-        ...f,
-        supplierDetails: {
-          ...(f.supplierDetails || createEmptySupplierDetails()),
-          materialsOther: combined,
-        },
-      }));
+      setFormData((f) => {
+        const caps = { ...(f.supplierDetails?.supplyCapacities || {}) };
+        if (removedVal) {
+          delete caps[`Other (${removedVal})`];
+          delete caps[`Other: ${removedVal}`];
+        }
+        return {
+          ...f,
+          supplierDetails: {
+            ...(f.supplierDetails || createEmptySupplierDetails()),
+            materialsOther: combined,
+            supplyCapacities: caps,
+          },
+        };
+      });
       return finalList;
     });
   };
@@ -1674,7 +1698,15 @@ function RegisterForm() {
 
     if (current.includes(mat)) {
       const filtered = current.filter((m) => m !== mat);
-      delete caps[mat];
+      if (mat === "Other") {
+        Object.keys(caps).forEach((k) => {
+          if (k === "Other" || k.startsWith("Other (") || k.startsWith("Other:")) {
+            delete caps[k];
+          }
+        });
+      } else {
+        delete caps[mat];
+      }
       setFormData({
         ...formData,
         supplierDetails: {
@@ -1685,7 +1717,9 @@ function RegisterForm() {
         },
       });
     } else {
-      caps[mat] = caps[mat] || { quantity: "", unit: "MT per year" };
+      if (mat !== "Other") {
+        caps[mat] = caps[mat] || { quantity: "", unit: "MT per year" };
+      }
       setFormData({
         ...formData,
         supplierDetails: {
@@ -3204,7 +3238,7 @@ function RegisterForm() {
                                     className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-900 hover:text-blue-700 bg-white hover:bg-blue-50 border border-blue-200 rounded-lg shadow-sm transition-colors"
                                   >
                                     <Plus className="w-3.5 h-3.5" />
-                                    <span>+ Add another material</span>
+                                    <span>Add another material</span>
                                   </button>
                                 </div>
                               </div>
@@ -3260,40 +3294,66 @@ function RegisterForm() {
                               </div>
 
                               <div className="space-y-2.5">
-                                {(formData.supplierDetails?.materialsSupplied || []).map((mat) => {
-                                  const cap = formData.supplierDetails?.supplyCapacities?.[mat] || {
-                                    quantity: "",
-                                    unit: "MT per year",
-                                  };
-                                  const displayName = mat === "Other" && formData.supplierDetails?.materialsOther ? `Other (${formData.supplierDetails.materialsOther})` : mat;
+                                {(() => {
+                                  const capacityRows: { key: string; label: string }[] = [];
+                                  const mats = formData.supplierDetails?.materialsSupplied || [];
+                                  const otherItems = supplierMaterialsOtherList
+                                    .map((s) => s.trim())
+                                    .filter(Boolean);
 
-                                  return (
-                                    <div
-                                      key={mat}
-                                      className="p-3 bg-white border border-slate-200 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
-                                    >
-                                      <span className="font-semibold text-blue-950 sm:w-1/3">
-                                        {displayName}
-                                      </span>
-                                      <div className="flex items-center gap-2 sm:w-2/3">
-                                        <input
-                                          type="text"
-                                          value={cap.quantity !== null && cap.quantity !== undefined ? cap.quantity : ""}
-                                          onChange={(e) => handleSupplierCapacityChange(mat, "quantity", e.target.value)}
-                                          placeholder="Quantity (e.g. 50,000)"
-                                          className="w-1/2 p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
-                                        />
-                                        <input
-                                          type="text"
-                                          value={cap.unit || ""}
-                                          onChange={(e) => handleSupplierCapacityChange(mat, "unit", e.target.value)}
-                                          placeholder="Unit (e.g. MT / cu.m / year)"
-                                          className="w-1/2 p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
-                                        />
+                                  mats.forEach((mat) => {
+                                    if (mat !== "Other") {
+                                      capacityRows.push({ key: mat, label: mat });
+                                    } else if (otherItems.length === 0) {
+                                      capacityRows.push({ key: "Other", label: "Other" });
+                                    } else {
+                                      otherItems.forEach((item) => {
+                                        capacityRows.push({
+                                          key: `Other (${item})`,
+                                          label: `Other (${item})`,
+                                        });
+                                      });
+                                    }
+                                  });
+
+                                  return capacityRows.map((row) => {
+                                    const cap =
+                                      formData.supplierDetails?.supplyCapacities?.[row.key] ||
+                                      (row.key.startsWith("Other (") && otherItems.length === 1
+                                        ? formData.supplierDetails?.supplyCapacities?.["Other"]
+                                        : undefined) || {
+                                        quantity: "",
+                                        unit: "MT per year",
+                                      };
+
+                                    return (
+                                      <div
+                                        key={row.key}
+                                        className="p-3 bg-white border border-slate-200 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
+                                      >
+                                        <span className="font-semibold text-blue-950 sm:w-1/3">
+                                          {row.label}
+                                        </span>
+                                        <div className="flex items-center gap-2 sm:w-2/3">
+                                          <input
+                                            type="text"
+                                            value={cap.quantity !== null && cap.quantity !== undefined ? cap.quantity : ""}
+                                            onChange={(e) => handleSupplierCapacityChange(row.key, "quantity", e.target.value)}
+                                            placeholder="Quantity (e.g. 50,000)"
+                                            className="w-1/2 p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono"
+                                          />
+                                          <input
+                                            type="text"
+                                            value={cap.unit || ""}
+                                            onChange={(e) => handleSupplierCapacityChange(row.key, "unit", e.target.value)}
+                                            placeholder="Unit (e.g. MT / cu.m / year)"
+                                            className="w-1/2 p-2 bg-slate-50 border border-slate-300 rounded text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
+                                          />
+                                        </div>
                                       </div>
-                                    </div>
-                                  );
-                                })}
+                                    );
+                                  });
+                                })()}
                               </div>
                             </div>
                           )}
@@ -6225,17 +6285,46 @@ function RegisterForm() {
                     <div className="pt-2 border-t border-slate-100 space-y-2">
                       <span className="text-slate-500 font-medium text-[11px] block">Supplied Materials &amp; Annual Capacity:</span>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {formData.supplierDetails.materialsSupplied.map((mat) => {
-                          const cap = formData.supplierDetails?.supplyCapacities?.[mat];
-                          return (
-                            <div key={mat} className="p-2.5 rounded-lg bg-purple-50/70 border border-purple-200 flex items-center justify-between">
-                              <span className="font-bold text-slate-900 text-xs">{mat}</span>
+                        {(() => {
+                          const reviewItems: { name: string; cap?: { quantity?: string | number | null; unit?: string } }[] = [];
+                          const mats = formData.supplierDetails.materialsSupplied || [];
+                          const otherItems = supplierMaterialsOtherList
+                            .map((s) => s.trim())
+                            .filter(Boolean);
+
+                          mats.forEach((mat) => {
+                            if (mat !== "Other") {
+                              reviewItems.push({
+                                name: mat,
+                                cap: formData.supplierDetails?.supplyCapacities?.[mat],
+                              });
+                            } else if (otherItems.length === 0) {
+                              reviewItems.push({
+                                name: "Other",
+                                cap: formData.supplierDetails?.supplyCapacities?.["Other"],
+                              });
+                            } else {
+                              otherItems.forEach((item) => {
+                                const key = `Other (${item})`;
+                                reviewItems.push({
+                                  name: key,
+                                  cap:
+                                    formData.supplierDetails?.supplyCapacities?.[key] ||
+                                    (otherItems.length === 1 ? formData.supplierDetails?.supplyCapacities?.["Other"] : undefined),
+                                });
+                              });
+                            }
+                          });
+
+                          return reviewItems.map((item, idx) => (
+                            <div key={idx} className="p-2.5 rounded-lg bg-purple-50/70 border border-purple-200 flex items-center justify-between">
+                              <span className="font-bold text-slate-900 text-xs">{item.name}</span>
                               <span className="font-bold text-purple-950 font-mono text-xs">
-                                {cap?.quantity ? `${cap.quantity} ${cap.unit}` : "Capacity not specified"}
+                                {item.cap?.quantity ? `${item.cap.quantity} ${item.cap.unit || "MT per year"}` : "Capacity not specified"}
                               </span>
                             </div>
-                          );
-                        })}
+                          ));
+                        })()}
                       </div>
                     </div>
                   )}
