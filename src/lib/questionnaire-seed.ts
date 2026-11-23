@@ -677,7 +677,7 @@ export function getBaselineOfficialSections(): IFormSection[] {
           code: "Q25D",
           number: qNum++,
           text: "Production rate within to consider 12 months with last 10 years",
-          helpText: "Peak production rate achieved within any consecutive 12 months during the last 10 years for Asp (SQM), Concrete (Cum), and ABC (Cum).",
+          helpText: "Peak production rate achieved within any consecutive 12 months during the last 10 years for Asphalt Concrete (SQM), Concrete (Cum), and ABC (Cum).",
           fieldType: "complex_table",
           displayOrder: 5,
           isRequired: false,

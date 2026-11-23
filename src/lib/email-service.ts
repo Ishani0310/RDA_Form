@@ -288,7 +288,7 @@ CONTRACTOR QUALIFICATIONS & TECHNICAL SPECIALTY:
         const hasRates = q.peakProductionRates.asp !== null || q.peakProductionRates.concrete !== null || q.peakProductionRates.abc !== null;
         if (hasRates) {
           textDetails += `• Peak Production Rate (12 months within last 10 years):\n`;
-          textDetails += `    - Asp: ${q.peakProductionRates.asp !== null && q.peakProductionRates.asp !== undefined ? `${formatNumber(q.peakProductionRates.asp)} SQM` : "—"}\n`;
+          textDetails += `    - Asphalt Concrete (Binder / Wearing Course): ${q.peakProductionRates.asp !== null && q.peakProductionRates.asp !== undefined ? `${formatNumber(q.peakProductionRates.asp)} SQM` : "—"}\n`;
           textDetails += `    - Concrete: ${q.peakProductionRates.concrete !== null && q.peakProductionRates.concrete !== undefined ? `${formatNumber(q.peakProductionRates.concrete)} Cum` : "—"}\n`;
           textDetails += `    - ABC: ${q.peakProductionRates.abc !== null && q.peakProductionRates.abc !== undefined ? `${formatNumber(q.peakProductionRates.abc)} Cum` : "—"}\n`;
         }
@@ -682,7 +682,7 @@ Inclusive Connectivity and Development Project (ICDP)
               </thead>
               <tbody>
                 <tr style="border-top: 1px solid #e2e8f0;">
-                  <td style="padding: 6px 10px; font-weight: 600;">Asp (Asphalt Concrete)</td>
+                  <td style="padding: 6px 10px; font-weight: 600;">Asphalt Concrete (Binder / Wearing Course)</td>
                   <td style="padding: 6px 10px; color: #64748b;">SQM</td>
                   <td style="padding: 6px 10px; text-align: right; font-family: monospace; font-weight: 700;">${q.peakProductionRates.asp !== null && q.peakProductionRates.asp !== undefined ? formatNumber(q.peakProductionRates.asp) : "—"}</td>
                 </tr>

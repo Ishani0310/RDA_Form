@@ -4530,11 +4530,11 @@ function RegisterForm() {
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-200 bg-white font-medium">
-                                  {/* Row 1: Asp */}
+                                  {/* Row 1: Asphalt Concrete (Binder / Wearing Course) */}
                                   <tr className="hover:bg-slate-50/60 transition-colors">
                                     <td className="p-3">
-                                      <span className="font-bold text-slate-900 block">Asp</span>
-                                      <span className="text-[10px] text-slate-500">Asphalt Concrete</span>
+                                      <span className="font-bold text-slate-900 block">Asphalt Concrete</span>
+                                      <span className="text-[10px] text-slate-500">Binder / Wearing Course</span>
                                     </td>
                                     <td className="p-3">
                                       <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-900 font-mono font-bold text-[11px] border border-blue-200">
@@ -6137,7 +6137,7 @@ function RegisterForm() {
                         </span>
                         <div className="grid grid-cols-3 gap-2 text-center text-xs">
                           <div className="p-1.5 bg-slate-50 rounded border border-slate-200">
-                            <span className="text-[10px] text-slate-500 block font-semibold">Asp (SQM)</span>
+                            <span className="text-[10px] text-slate-500 block font-semibold">Asphalt Concrete (SQM)</span>
                             <span className="font-bold text-slate-900 font-mono">
                               {formData.peakProductionRates?.asp !== null && formData.peakProductionRates?.asp !== undefined
                                 ? Number(formData.peakProductionRates.asp).toLocaleString()
