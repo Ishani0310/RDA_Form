@@ -561,6 +561,21 @@ export function normalizeQuestionnaireData(
       abc: parseNumOrNull((raw.peakProductionRates as Record<string, any>)?.abc),
     },
     similarWorks,
+    forecastedCapacity2027:
+      raw.forecastedCapacity2027 !== undefined && raw.forecastedCapacity2027 !== null
+        ? String(raw.forecastedCapacity2027).trim()
+        : "",
+    forecastedRuralRoadKmPerYear:
+      raw.forecastedRuralRoadKmPerYear !== undefined && raw.forecastedRuralRoadKmPerYear !== null
+        ? String(raw.forecastedRuralRoadKmPerYear).trim()
+        : "",
+    forecastedNationalProvincialKmPerYear:
+      raw.forecastedNationalProvincialKmPerYear !== undefined && raw.forecastedNationalProvincialKmPerYear !== null
+        ? String(raw.forecastedNationalProvincialKmPerYear).trim()
+        : "",
+    preferableDistricts: Array.isArray(raw.preferableDistricts)
+      ? raw.preferableDistricts.map((d: any) => String(d).trim()).filter(Boolean)
+      : [],
     historicalLitigationRecords: Array.isArray(raw.historicalLitigationRecords)
       ? (raw.historicalLitigationRecords as any[]).map((r) => ({
           litigationType: (r?.litigationType as any) || "",

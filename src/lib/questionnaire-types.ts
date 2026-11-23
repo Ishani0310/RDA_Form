@@ -45,6 +45,8 @@ export const PROVINCE_DISTRICT_MAP: Record<SriLankaProvince, string[]> = {
   "Sabaragamuwa Province": ["Ratnapura", "Kegalle"],
 };
 
+export const ALL_SRI_LANKA_DISTRICTS: string[] = Object.values(PROVINCE_DISTRICT_MAP).flat();
+
 // -----------------------------------------------------------------------------
 // SUPPLIER TYPES
 // -----------------------------------------------------------------------------
@@ -263,8 +265,12 @@ export interface OfficialQuestionnaireData {
   rdaIcdpProjectDetails?: string;
   peakProductionRates?: PeakProductionRates;
 
-  // SECTION 10: Similar Work Experience (Contractors)
+  // SECTION 10: Part A - Similar Work Experience & Part B - Contractor Forecasted Capacity (Contractors)
   similarWorks?: SimilarWorkContract[];
+  forecastedCapacity2027?: string; // Annual Capacity forecasted for YEAR 2027 (Rough Estimate)
+  forecastedRuralRoadKmPerYear?: string; // Rural Road construction forecasted (Km/Year)
+  forecastedNationalProvincialKmPerYear?: string; // National/ Provincial construction forecasted (Km/Year)
+  preferableDistricts?: string[]; // Preferable districts (multiple selectable)
   historicalLitigationRecords?: HistoricalLitigationRecord[];
   historicalLitigationType?: HistoricalLitigationOption;
   historicalContractIdentification?: string;

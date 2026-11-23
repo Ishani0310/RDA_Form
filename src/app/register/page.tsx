@@ -72,6 +72,7 @@ import {
   SUPPLIER_MATERIALS,
   SRI_LANKA_PROVINCES,
   PROVINCE_DISTRICT_MAP,
+  ALL_SRI_LANKA_DISTRICTS,
   SriLankaProvince,
 } from "@/lib/questionnaire-types";
 
@@ -164,6 +165,10 @@ function createInitialFormData(): OfficialQuestionnaireData {
     rdaIcdpProjectDetails: "",
     peakProductionRates: createEmptyPeakProductionRates(),
     similarWorks: createEmptySimilarWorks(),
+    forecastedCapacity2027: "",
+    forecastedRuralRoadKmPerYear: "",
+    forecastedNationalProvincialKmPerYear: "",
+    preferableDistricts: [],
     historicalLitigationRecords: [createEmptyHistoricalLitigationRecord()],
     historicalLitigationType: "",
     historicalContractIdentification: "",
@@ -423,6 +428,7 @@ function RegisterForm() {
   const [specialtyOtherList, setSpecialtyOtherList] = useState<string[]>([""]);
   const [supplierMaterialsOtherList, setSupplierMaterialsOtherList] = useState<string[]>([""]);
   const [cidaGradeOtherList, setCidaGradeOtherList] = useState<string[]>([""]);
+  const [selectedDistrictToAdd, setSelectedDistrictToAdd] = useState<string>("");
 
   // Unique ICTAD Registration Number State
   const [regNumberError, setRegNumberError] = useState<string | null>(null);
@@ -1302,6 +1308,7 @@ function RegisterForm() {
     setSpecialtyOtherList([""]);
     setSupplierMaterialsOtherList([""]);
     setCidaGradeOtherList([""]);
+    setSelectedDistrictToAdd("");
     setCurrentDraftToken("");
     setCurrentReference("");
     setAutoSaveStatus("idle");
@@ -1834,6 +1841,37 @@ function RegisterForm() {
     setFormData({ ...formData, similarWorks: reindexed });
   };
 
+  // Handlers for Section 10 Part B: Preferable Districts
+  const handleAddPreferableDistrict = () => {
+    if (!selectedDistrictToAdd) return;
+    const current = formData.preferableDistricts || [];
+    if (!current.includes(selectedDistrictToAdd)) {
+      setFormData((prev) => ({
+        ...prev,
+        preferableDistricts: [...(prev.preferableDistricts || []), selectedDistrictToAdd],
+      }));
+    }
+    setSelectedDistrictToAdd("");
+  };
+
+  const handleRemovePreferableDistrict = (districtToRemove: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      preferableDistricts: (prev.preferableDistricts || []).filter((d) => d !== districtToRemove),
+    }));
+  };
+
+  const handleAddAllDistrictsInProvince = (districtsToAdd: string[]) => {
+    setFormData((prev) => {
+      const current = prev.preferableDistricts || [];
+      const merged = Array.from(new Set([...current, ...districtsToAdd]));
+      return {
+        ...prev,
+        preferableDistricts: merged,
+      };
+    });
+  };
+
   const handleLitigationRecordChange = (
     index: number,
     field: keyof HistoricalLitigationRecord,
@@ -2064,6 +2102,7 @@ function RegisterForm() {
                 setSpecialtyOtherList([""]);
                 setSupplierMaterialsOtherList([""]);
                 setCidaGradeOtherList([""]);
+    setSelectedDistrictToAdd("");
                 setFormData({
                   organizationName: "",
                   contactNumber: "",
@@ -4378,16 +4417,32 @@ function RegisterForm() {
                         </div>
                       </div>
 
-                      {/* SECTION 10: SIMILAR WORK EXPERIENCE */}
-                      <div id="section-10-container" className="space-y-4 pt-4 border-t border-slate-100">
+                      {/* SECTION 10: SIMILAR WORK EXPERIENCE & CONTRACTOR FORECASTED CAPACITY */}
+                      <div id="section-10-container" className="space-y-6 pt-4 border-t border-slate-100">
                         <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                           <div className="flex items-center gap-2">
                             <FileText className="w-4 h-4 text-blue-900" />
                             <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
-                              Section 10: Similar Work Experience
+                              Section 10: Similar Work Experience &amp; Contractor Capacity
                             </h2>
                           </div>
                         </div>
+
+                        {/* PART A: SIMILAR WORK EXPERIENCE */}
+                        <div id="section-10-part-a" className="space-y-4">
+                          <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50/80 to-slate-50 border border-blue-200/80 rounded-xl">
+                            <div className="flex items-center gap-2">
+                              <span className="px-2 py-0.5 bg-blue-900 text-white rounded text-[10px] font-black tracking-wide">
+                                PART A
+                              </span>
+                              <h3 className="text-xs font-bold text-blue-950 uppercase tracking-wide">
+                                Similar Work Experience (Highest Value Contracts)
+                              </h3>
+                            </div>
+                            <span className="text-[10px] font-semibold text-blue-800 bg-white px-2.5 py-0.5 rounded-full border border-blue-200 shadow-xs">
+                              Mandatory
+                            </span>
+                          </div>
 
                         {fieldErrors["similarWorks.descending"] && (
                           <div id="error-similarWorks-descending" role="alert" className="p-3 bg-rose-50 border-2 border-rose-500 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-rose-900 font-semibold animate-fadeIn">
@@ -4714,8 +4769,209 @@ function RegisterForm() {
                               Enter contracts in descending order (highest value first)
                             </span>
                           </div>
+                        </div>
 
-                          {/* HISTORICAL CONTRACT NON-PERFORMANCE, PENDING LITIGATION AND LITIGATION HISTORY */}
+                        {/* PART B: CONTRACTOR FORECASTED CAPACITY */}
+                        <div id="section-10-part-b" className="space-y-4 pt-6 border-t border-slate-200/80">
+                          <div className="flex items-center justify-between p-3 bg-gradient-to-r from-emerald-50/80 to-slate-50 border border-emerald-200/80 rounded-xl">
+                            <div className="flex items-center gap-2">
+                              <span className="px-2 py-0.5 bg-emerald-800 text-white rounded text-[10px] font-black tracking-wide">
+                                PART B
+                              </span>
+                              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
+                                Contractor Forecasted Capacity
+                              </h3>
+                            </div>
+                            <span className="text-[10px] font-semibold text-emerald-800 bg-white px-2.5 py-0.5 rounded-full border border-emerald-200 shadow-xs">
+                              Not Mandatory / Optional
+                            </span>
+                          </div>
+
+                          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 flex items-start gap-2.5">
+                            <HelpCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                            <div className="leading-relaxed space-y-0.5">
+                              <p className="font-semibold text-slate-900">
+                                Anticipated 2027 Construction Capacity &amp; Regional Operational Preferences:
+                              </p>
+                              <p className="text-slate-600 text-[11px]">
+                                This section gathers prospective capacity forecasts to assist RDA in future project allocations. Filling this part is <strong>optional</strong>.
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Forecasted Inputs Grid */}
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {/* 1. Annual Capacity Forecasted for Year 2027 */}
+                            <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-xs space-y-2 hover:border-slate-300 transition-colors">
+                              <label htmlFor="input-forecastedCapacity2027" className="block text-xs font-bold text-slate-900 leading-snug">
+                                1. Annual Capacity Forecasted for YEAR 2027
+                                <span className="block text-[11px] font-normal text-slate-500 mt-0.5">(Rough Estimate)</span>
+                              </label>
+                              <div className="relative">
+                                <span className="absolute left-3 top-2 text-xs font-bold text-slate-400 select-none">
+                                  LKR
+                                </span>
+                                <input
+                                  id="input-forecastedCapacity2027"
+                                  type="text"
+                                  value={formData.forecastedCapacity2027 || ""}
+                                  onChange={(e) => setFormData({ ...formData, forecastedCapacity2027: e.target.value })}
+                                  placeholder="e.g. 250 Million or 250,000,000"
+                                  className="w-full pl-12 pr-3 py-2 text-xs rounded-lg border border-slate-300 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-800 text-slate-900 focus:outline-none transition-all font-medium"
+                                />
+                              </div>
+                              <p className="text-[10px] text-slate-500">Rough estimated turnover / annual volume in LKR.</p>
+                            </div>
+
+                            {/* 2. Rural Road Construction Forecasted */}
+                            <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-xs space-y-2 hover:border-slate-300 transition-colors">
+                              <label htmlFor="input-forecastedRuralRoadKmPerYear" className="block text-xs font-bold text-slate-900 leading-snug">
+                                2. Rural Road Construction Forecasted
+                                <span className="block text-[11px] font-normal text-slate-500 mt-0.5">(Rough Length Estimate)</span>
+                              </label>
+                              <div className="relative">
+                                <input
+                                  id="input-forecastedRuralRoadKmPerYear"
+                                  type="text"
+                                  value={formData.forecastedRuralRoadKmPerYear || ""}
+                                  onChange={(e) => setFormData({ ...formData, forecastedRuralRoadKmPerYear: e.target.value })}
+                                  placeholder="e.g. 25"
+                                  className="w-full pl-3 pr-20 py-2 text-xs rounded-lg border border-slate-300 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-800 text-slate-900 focus:outline-none transition-all font-medium"
+                                />
+                                <span className="absolute right-2 top-1.5 px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-[10px] font-bold border border-slate-200 select-none">
+                                  Km / Year
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-slate-500">Anticipated rural road capability in Km/Year.</p>
+                            </div>
+
+                            {/* 3. National / Provincial Construction Forecasted */}
+                            <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-xs space-y-2 hover:border-slate-300 transition-colors">
+                              <label htmlFor="input-forecastedNationalProvincialKmPerYear" className="block text-xs font-bold text-slate-900 leading-snug">
+                                3. National / Provincial Construction Forecasted
+                                <span className="block text-[11px] font-normal text-slate-500 mt-0.5">(Rough Length Estimate)</span>
+                              </label>
+                              <div className="relative">
+                                <input
+                                  id="input-forecastedNationalProvincialKmPerYear"
+                                  type="text"
+                                  value={formData.forecastedNationalProvincialKmPerYear || ""}
+                                  onChange={(e) => setFormData({ ...formData, forecastedNationalProvincialKmPerYear: e.target.value })}
+                                  placeholder="e.g. 15"
+                                  className="w-full pl-3 pr-20 py-2 text-xs rounded-lg border border-slate-300 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-800 text-slate-900 focus:outline-none transition-all font-medium"
+                                />
+                                <span className="absolute right-2 top-1.5 px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-[10px] font-bold border border-slate-200 select-none">
+                                  Km / Year
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-slate-500">Anticipated highways &amp; provincial roads in Km/Year.</p>
+                            </div>
+                          </div>
+
+                          {/* 4. Preferable Districts */}
+                          <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-xs space-y-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100">
+                              <div>
+                                <label className="block text-xs font-bold text-slate-900">
+                                  4. Preferable Districts
+                                </label>
+                                <span className="text-[11px] text-slate-500">
+                                  Add all districts where your organization prefers to work. You can add more districts as desired.
+                                </span>
+                              </div>
+                              {(formData.preferableDistricts || []).length > 0 && (
+                                <span className="text-xs font-bold text-blue-900 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200 self-start sm:self-auto">
+                                  {(formData.preferableDistricts || []).length} District{(formData.preferableDistricts || []).length === 1 ? "" : "s"} Added
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Dropdown & Add Button */}
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                              <select
+                                id="select-preferable-district"
+                                value={selectedDistrictToAdd}
+                                onChange={(e) => setSelectedDistrictToAdd(e.target.value)}
+                                className="flex-1 p-2 text-xs rounded-lg border border-slate-300 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-800 text-slate-900 focus:outline-none transition-all font-medium"
+                              >
+                                <option value="">— Select a District to Add —</option>
+                                {ALL_SRI_LANKA_DISTRICTS.map((dist) => {
+                                  const isSelected = (formData.preferableDistricts || []).includes(dist);
+                                  return (
+                                    <option key={dist} value={dist} disabled={isSelected}>
+                                      {dist} {isSelected ? "✓ (Added)" : ""}
+                                    </option>
+                                  );
+                                })}
+                              </select>
+                              <button
+                                type="button"
+                                onClick={handleAddPreferableDistrict}
+                                disabled={!selectedDistrictToAdd || (formData.preferableDistricts || []).includes(selectedDistrictToAdd)}
+                                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-xs transition-all"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                                <span>+ Add District</span>
+                              </button>
+                            </div>
+
+                            {/* Selected Districts Badges */}
+                            {(formData.preferableDistricts || []).length > 0 ? (
+                              <div className="space-y-1.5 pt-1">
+                                <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+                                  Added Preferable Districts:
+                                </span>
+                                <div className="flex flex-wrap gap-2">
+                                  {(formData.preferableDistricts || []).map((dist) => (
+                                    <span
+                                      key={dist}
+                                      className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-950 border border-blue-200 rounded-lg text-xs font-bold shadow-2xs group hover:border-rose-300 hover:bg-rose-50/50 transition-colors"
+                                    >
+                                      <span>{dist}</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRemovePreferableDistrict(dist)}
+                                        className="text-slate-400 hover:text-rose-600 p-0.5 rounded-full transition-colors"
+                                        title={`Remove ${dist}`}
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                    </span>
+                                  ))}
+                                  <button
+                                    type="button"
+                                    onClick={() => setFormData({ ...formData, preferableDistricts: [] })}
+                                    className="text-[11px] text-slate-400 hover:text-rose-600 underline font-semibold px-2 py-1 transition-colors self-center"
+                                  >
+                                    Clear all
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="p-3 bg-slate-50/70 border border-dashed border-slate-200 rounded-lg text-[11px] text-slate-500 italic text-center">
+                                No preferable districts added yet. Choose a district from the dropdown above and click &quot;+ Add District&quot;.
+                              </div>
+                            )}
+
+                            {/* Quick Select by Province */}
+                            <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center gap-1.5 text-[11px]">
+                              <span className="text-slate-500 font-semibold mr-1">Quick Add:</span>
+                              {Object.entries(PROVINCE_DISTRICT_MAP).map(([prov, dists]) => (
+                                <button
+                                  key={prov}
+                                  type="button"
+                                  onClick={() => handleAddAllDistrictsInProvince(dists)}
+                                  className="px-2 py-0.5 bg-slate-100 hover:bg-blue-50 hover:text-blue-900 border border-slate-200 rounded text-[10px] font-semibold text-slate-700 transition-colors"
+                                  title={`Add all districts in ${prov} (${dists.join(", ")})`}
+                                >
+                                  + {prov.replace(" Province", "")}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* HISTORICAL CONTRACT NON-PERFORMANCE, PENDING LITIGATION AND LITIGATION HISTORY */}
                           <div id="section-historical-litigation" className="pt-6 mt-6 border-t border-slate-200/80 space-y-4">
                             <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
                               <Scale className="w-4 h-4 text-blue-900" />
@@ -5682,11 +5938,20 @@ function RegisterForm() {
                     )}
                   </div>
 
-                  {/* Section 10: Similar Work Experience */}
+                  {/* Section 10: Work Experience & Contractor Forecasted Capacity */}
                   <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3">
                     <div className="flex items-center gap-2 pb-2 border-b border-slate-100 font-bold text-blue-950 uppercase tracking-wide text-[11px]">
                       <FileText className="w-3.5 h-3.5 text-blue-900" />
-                      <span>Section 10: Similar Work Experience (Highest Value Contracts)</span>
+                      <span>Section 10: Similar Work Experience &amp; Capacity Declaration</span>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <span className="px-2 py-0.5 bg-blue-900 text-white rounded text-[10px] font-black tracking-wide">
+                        PART A
+                      </span>
+                      <span className="text-slate-700 font-bold text-[11px] uppercase tracking-wider">
+                        Similar Work Experience (Highest Value Contracts)
+                      </span>
                     </div>
 
                     <div className="overflow-x-auto rounded-lg border border-slate-200">
@@ -5722,6 +5987,52 @@ function RegisterForm() {
                           ))}
                         </tbody>
                       </table>
+                    </div>
+
+                    {/* Part B: Contractor Forecasted Capacity */}
+                    <div className="mt-4 pt-3 border-t border-slate-100 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 bg-emerald-800 text-white rounded text-[10px] font-black tracking-wide">
+                          PART B
+                        </span>
+                        <span className="text-slate-700 font-bold text-[11px] uppercase tracking-wider">
+                          Contractor Forecasted Capacity
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                        <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+                          <span className="text-[10px] text-slate-500 block">Forecasted 2027 Capacity</span>
+                          <span className="font-bold text-slate-900">
+                            {formData.forecastedCapacity2027 ? `LKR ${formData.forecastedCapacity2027}` : "— (Not Specified)"}
+                          </span>
+                        </div>
+                        <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+                          <span className="text-[10px] text-slate-500 block">Rural Road Forecast</span>
+                          <span className="font-bold text-slate-900">
+                            {formData.forecastedRuralRoadKmPerYear ? `${formData.forecastedRuralRoadKmPerYear} Km/Year` : "— (Not Specified)"}
+                          </span>
+                        </div>
+                        <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+                          <span className="text-[10px] text-slate-500 block">National / Provincial Forecast</span>
+                          <span className="font-bold text-slate-900">
+                            {formData.forecastedNationalProvincialKmPerYear ? `${formData.forecastedNationalProvincialKmPerYear} Km/Year` : "— (Not Specified)"}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200 text-xs">
+                        <span className="text-[10px] text-slate-500 block mb-1">Preferable Districts</span>
+                        {(formData.preferableDistricts || []).length > 0 ? (
+                          <div className="flex flex-wrap gap-1.5">
+                            {formData.preferableDistricts?.map((d) => (
+                              <span key={d} className="px-2.5 py-0.5 bg-blue-100 text-blue-900 rounded-md text-[11px] font-bold border border-blue-200">
+                                {d}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-slate-400 italic">None Selected</span>
+                        )}
+                      </div>
                     </div>
 
                     {/* Historical Litigation & Non-Performance */}
