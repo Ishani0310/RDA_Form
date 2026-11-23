@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { MapPin, Navigation, ExternalLink, Loader2, Info } from "lucide-react";
+import { MapPin, Navigation, ExternalLink, Loader2, Info, Search, Check, Sparkles } from "lucide-react";
 
 interface LocationMapPickerProps {
   latitude: string | number | null | undefined;
@@ -23,6 +23,12 @@ export function LocationMapPicker({
   const [mapLoaded, setMapLoaded] = useState(false);
   const [geoLoading, setGeoLoading] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
+
+  // Search by city / town / address state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<Array<{ display_name: string; lat: string; lon: string }>>([]);
+  const [showResultsDropdown, setShowResultsDropdown] = useState(false);
 
   // Parse current coordinates
   const currentLat = latitude !== null && latitude !== undefined && String(latitude).trim() !== "" ? parseFloat(String(latitude)) : null;
@@ -207,6 +213,54 @@ export function LocationMapPicker({
     );
   };
 
+  // Search by city / town / address using OpenStreetMap Nominatim
+  const handleSearchLocation = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!searchQuery.trim() || disabled) return;
+
+    setSearching(true);
+    setGeoError(null);
+
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+          searchQuery.trim()
+        )}&countrycodes=lk&limit=5`,
+        { headers: { "Accept-Language": "en" } }
+      );
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        setSearchResults(data);
+        setShowResultsDropdown(true);
+
+        // If only 1 result, auto-select
+        if (data.length === 1) {
+          handleSelectSearchResult(data[0]);
+        }
+      } else {
+        setGeoError(`No locations found for "${searchQuery}". Please try searching for the nearest town or district.`);
+        setSearchResults([]);
+        setShowResultsDropdown(false);
+      }
+    } catch (err) {
+      console.error("Geocoding search error:", err);
+      setGeoError("Failed to search location. Please click directly on the map to place your pin.");
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleSelectSearchResult = (item: { display_name: string; lat: string; lon: string }) => {
+    const lat = parseFloat(parseFloat(item.lat).toFixed(6));
+    const lng = parseFloat(parseFloat(item.lon).toFixed(6));
+    onChange(String(lat), String(lng));
+    setShowResultsDropdown(false);
+
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.flyTo([lat, lng], 15, { animate: true });
+    }
+  };
+
   const handleManualCoordChange = (field: "lat" | "lng", val: string) => {
     if (disabled) return;
     const clean = val.trim();
@@ -266,6 +320,54 @@ export function LocationMapPicker({
           <span>{geoError}</span>
         </div>
       )}
+
+      {/* Search Bar for Company Location */}
+      <div className="relative">
+        <form onSubmit={handleSearchLocation} className="flex gap-1.5">
+          <div className="relative flex-1">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              disabled={disabled}
+              placeholder="Search company city, town or area (e.g. Kelaniya, Kurunegala, Ratnapura)..."
+              className="w-full pl-8 pr-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800 shadow-xs"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={disabled || searching || !searchQuery.trim()}
+            className="px-3.5 py-2 text-xs font-semibold text-white bg-slate-800 hover:bg-slate-700 active:bg-slate-900 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-xs transition-all shrink-0 flex items-center gap-1.5"
+          >
+            {searching ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>Searching...</span>
+              </>
+            ) : (
+              <span>Find on Map</span>
+            )}
+          </button>
+        </form>
+
+        {/* Search Results Dropdown */}
+        {showResultsDropdown && searchResults.length > 0 && (
+          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto divide-y divide-slate-100 animate-fadeIn">
+            {searchResults.map((item, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => handleSelectSearchResult(item)}
+                className="w-full p-2.5 text-left text-xs text-slate-700 hover:bg-blue-50 hover:text-blue-900 flex items-start gap-2 transition-colors"
+              >
+                <MapPin className="w-3.5 h-3.5 text-blue-900 shrink-0 mt-0.5" />
+                <span className="line-clamp-2">{item.display_name}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Interactive Map Box */}
       <div className="relative w-full h-56 sm:h-64 rounded-lg overflow-hidden border border-slate-300 bg-slate-100 shadow-inner z-0">
