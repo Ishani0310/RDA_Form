@@ -3289,7 +3289,7 @@ function RegisterForm() {
                                   Annual Supply Capacity &amp; Rates *
                                 </span>
                                 <span className="text-[11px] text-slate-500">
-                                  Specify annual production or supply capacity with its unit (e.g. MT per year), and enter the unit rate with selected unit (cu.m or cube).
+                                  Specify annual production or supply capacity with its unit (e.g. MT per year), and enter the unit rate with its selected unit.
                                 </span>
                               </div>
 
@@ -3297,7 +3297,7 @@ function RegisterForm() {
                               <div className="hidden sm:grid sm:grid-cols-12 gap-3 px-3 py-1 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                                 <div className="sm:col-span-3">Material</div>
                                 <div className="sm:col-span-5">Annual Capacity (Quantity &amp; Unit)</div>
-                                <div className="sm:col-span-4">Rate &amp; Unit (cu.m / cube)</div>
+                                <div className="sm:col-span-4">Rate &amp; Unit</div>
                               </div>
 
                               <div className="space-y-2.5">
