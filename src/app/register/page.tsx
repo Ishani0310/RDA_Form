@@ -3294,9 +3294,9 @@ function RegisterForm() {
                               </div>
 
                               {/* Desktop Header */}
-                              <div className="hidden sm:grid sm:grid-cols-12 gap-3 px-3 py-1 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                                <div className="sm:col-span-3">Material</div>
-                                <div className="sm:col-span-5">Annual Capacity (Quantity &amp; Unit)</div>
+                              <div className="hidden sm:grid sm:grid-cols-12 gap-2.5 px-3 py-1 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                <div className="sm:col-span-2">Material</div>
+                                <div className="sm:col-span-6">Annual Capacity (Quantity &amp; Unit)</div>
                                 <div className="sm:col-span-4">Rate &amp; Unit</div>
                               </div>
 
@@ -3339,16 +3339,16 @@ function RegisterForm() {
                                     return (
                                       <div
                                         key={row.key}
-                                        className="p-3 bg-white border border-slate-200 rounded-lg space-y-2.5 sm:space-y-0 sm:grid sm:grid-cols-12 sm:gap-3 sm:items-center"
+                                        className="p-3 bg-white border border-slate-200 rounded-lg space-y-2.5 sm:space-y-0 sm:grid sm:grid-cols-12 sm:gap-2.5 sm:items-center"
                                       >
-                                        <div className="sm:col-span-3">
+                                        <div className="sm:col-span-2">
                                           <span className="font-semibold text-blue-950 text-xs sm:text-sm block">
                                             {row.label}
                                           </span>
                                         </div>
 
                                         {/* 1. Annual Capacity: Quantity + Unit (like early!) */}
-                                        <div className="sm:col-span-5">
+                                        <div className="sm:col-span-6">
                                           <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1 sm:hidden">
                                             Annual Capacity (Quantity &amp; Unit)
                                           </label>

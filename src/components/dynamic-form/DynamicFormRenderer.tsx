@@ -1067,8 +1067,8 @@ function renderSupplierMaterialsList(
                     key={row.key}
                     className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 p-2.5 bg-white rounded-lg border border-slate-200 text-xs"
                   >
-                    <span className="font-semibold text-slate-800 sm:w-1/4">{row.label}</span>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:w-3/4">
+                    <span className="font-semibold text-slate-800 sm:w-2/12">{row.label}</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:w-10/12">
                       {/* 1. Quantity & Unit (like early!) */}
                       <div className="flex items-center gap-1.5">
                         <input
