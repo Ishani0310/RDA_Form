@@ -1111,11 +1111,11 @@ function renderSupplierMaterialsList(
                             disabled={disabled}
                             className="w-full p-1.5 border border-slate-300 rounded text-slate-900 font-medium text-xs bg-white"
                           >
-                            <option value="cu.m">/ cu.m</option>
-                            <option value="cube">/ cube</option>
-                            <option value="MT">/ MT</option>
-                            <option value="Liters">/ Liter</option>
-                            <option value="Nos">/ Nos</option>
+                            <option value="cu.m">cu.m</option>
+                            <option value="cube">cube</option>
+                            <option value="MT">MT</option>
+                            <option value="Liters">Liter</option>
+                            <option value="Nos">Nos</option>
                           </select>
                         </div>
                       </div>

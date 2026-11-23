@@ -3394,11 +3394,11 @@ function RegisterForm() {
                                                 onChange={(e) => handleSupplierCapacityChange(row.key, "rateUnit", e.target.value)}
                                                 className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-xs text-slate-900 font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800"
                                               >
-                                                <option value="cu.m">/ cu.m</option>
-                                                <option value="cube">/ cube</option>
-                                                <option value="MT">/ MT</option>
-                                                <option value="Liters">/ Liter</option>
-                                                <option value="Nos">/ Nos</option>
+                                                <option value="cu.m">cu.m</option>
+                                                <option value="cube">cube</option>
+                                                <option value="MT">MT</option>
+                                                <option value="Liters">Liter</option>
+                                                <option value="Nos">Nos</option>
                                               </select>
                                             </div>
                                           </div>
