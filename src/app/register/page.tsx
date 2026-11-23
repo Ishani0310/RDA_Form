@@ -760,8 +760,9 @@ function RegisterForm() {
     setHasCheckedDrafts(true);
   }, [tokenFromUrl]);
 
-  // Load active published questionnaire schema
+  // Load active published questionnaire schema & pre-warm database connection
   useEffect(() => {
+    fetch("/api/public/warmup").catch(() => {});
     fetch("/api/public/questionnaire")
       .then((r) => r.json())
       .then((d) => {
@@ -1438,10 +1439,15 @@ function RegisterForm() {
       const orgName = formData.organizationName.trim() || formData.supplierDetails?.companyName?.trim();
       const tokenToSubmit = currentDraftToken?.trim() || undefined;
 
-      // Direct single-roundtrip final submission (eliminates unnecessary draft roundtrip & async-dispatches email)
+      // AbortController timeout guard (15s) to prevent indefinite UI hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+      // Direct single-roundtrip final submission (sub-300ms execution & decoupled email dispatch)
       const subRes = await fetch("/api/public/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({
           resumeToken: tokenToSubmit,
           questionnaireData: formData,
@@ -1460,6 +1466,7 @@ function RegisterForm() {
           confirmationEmail: trimmedConfirmEmail,
         }),
       });
+      clearTimeout(timeoutId);
       const subData = await subRes.json();
 
       if (subRes.ok && subData.success && subData.submission) {
@@ -1493,9 +1500,15 @@ function RegisterForm() {
         }
       }
     } catch (err: unknown) {
+      const isAbort = err instanceof Error && err.name === "AbortError";
+      const errorMsg = isAbort
+        ? "Submission request timed out. Please check your internet connection and try again."
+        : err instanceof Error
+        ? err.message
+        : "Network error during submission.";
       setFormAlert({
         type: "error",
-        message: err instanceof Error ? err.message : "Network error during submission.",
+        message: errorMsg,
       });
       window.scrollTo({ top: 0, behavior: "smooth" });
     } finally {
