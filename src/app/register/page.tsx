@@ -472,6 +472,46 @@ function RegisterForm() {
     }
   };
 
+  // Unique Official Email Address State & Check
+  const [emailDuplicateError, setEmailDuplicateError] = useState<string | null>(null);
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const [emailAvailable, setEmailAvailable] = useState(false);
+
+  const checkEmailUniqueness = async (emailToTest?: string) => {
+    const trimmed = (emailToTest !== undefined ? emailToTest : formData.email)?.trim().toLowerCase();
+    if (!trimmed || !isValidEmailAddress(trimmed)) {
+      setEmailDuplicateError(null);
+      setEmailAvailable(false);
+      setIsCheckingEmail(false);
+      return;
+    }
+
+    setIsCheckingEmail(true);
+
+    try {
+      const url = `/api/public/check-email?email=${encodeURIComponent(trimmed)}&token=${encodeURIComponent(currentDraftToken || "")}`;
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (!data.available) {
+        setEmailDuplicateError(data.message || `This email address is already registered.`);
+        setEmailAvailable(false);
+        setFieldErrors((prev) => ({
+          ...prev,
+          email: data.message || "This email address is already registered with an existing submission.",
+        }));
+      } else {
+        setEmailDuplicateError(null);
+        setEmailAvailable(true);
+        clearFieldError("email");
+      }
+    } catch {
+      // Ignore background check failure
+    } finally {
+      setIsCheckingEmail(false);
+    }
+  };
+
   const renderParticipantField = (
     partNum: 1 | 2,
     field: "fullName" | "mobileNumber" | "email" | "designation",
@@ -1309,6 +1349,9 @@ function RegisterForm() {
     setSupplierMaterialsOtherList([""]);
     setCidaGradeOtherList([""]);
     setSelectedDistrictToAdd("");
+    setEmailDuplicateError(null);
+    setEmailAvailable(false);
+    setIsCheckingEmail(false);
     setCurrentDraftToken("");
     setCurrentReference("");
     setAutoSaveStatus("idle");
@@ -1330,6 +1373,11 @@ function RegisterForm() {
     // 1. Core authoritative schema validation
     const valResult = validateQuestionnaireSubmission(formData);
     const errors: Record<string, string> = { ...valResult.errors };
+
+    // Unique Email Address check
+    if (emailDuplicateError) {
+      errors.email = emailDuplicateError;
+    }
 
     // 2. Unique ICTAD Registration Number check for contractors
     if (formData.participantCategory === "Contractor") {
@@ -1418,6 +1466,29 @@ function RegisterForm() {
         emailInput.scrollIntoView({ behavior: "smooth", block: "center" });
       }
       return;
+    }
+
+    // Verify confirmation email uniqueness against central registry
+    try {
+      const emailCheckRes = await fetch(
+        `/api/public/check-email?email=${encodeURIComponent(trimmedConfirmEmail.toLowerCase())}&token=${encodeURIComponent(currentDraftToken || "")}`
+      );
+      const emailCheckData = await emailCheckRes.json();
+      if (!emailCheckData.available) {
+        setConfirmationEmailError(
+          emailCheckData.message ||
+            "This email address has already been used for an official submission. Each organization may only submit once per email address."
+        );
+        setLoading(false);
+        const emailInput = document.getElementById("input-confirmation-email");
+        if (emailInput) {
+          emailInput.focus();
+          emailInput.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+        return;
+      }
+    } catch {
+      // Continue if network check fails
     }
 
     // Declaration consent check
@@ -1852,6 +1923,9 @@ function RegisterForm() {
       }));
     }
     setSelectedDistrictToAdd("");
+    setEmailDuplicateError(null);
+    setEmailAvailable(false);
+    setIsCheckingEmail(false);
   };
 
   const handleRemovePreferableDistrict = (districtToRemove: string) => {
@@ -2103,6 +2177,9 @@ function RegisterForm() {
                 setSupplierMaterialsOtherList([""]);
                 setCidaGradeOtherList([""]);
     setSelectedDistrictToAdd("");
+    setEmailDuplicateError(null);
+    setEmailAvailable(false);
+    setIsCheckingEmail(false);
                 setFormData({
                   organizationName: "",
                   contactNumber: "",
@@ -2713,9 +2790,23 @@ function RegisterForm() {
                     </div>
 
                     <div>
-                      <label htmlFor="input-email" className="block font-semibold text-slate-700 mb-1">
-                        Email address *
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label htmlFor="input-email" className="block font-semibold text-slate-700">
+                          Email address *
+                        </label>
+                        {isCheckingEmail && (
+                          <span className="text-[10px] text-blue-700 font-medium flex items-center gap-1">
+                            <RefreshCw className="w-3 h-3 animate-spin text-blue-700" />
+                            Checking email...
+                          </span>
+                        )}
+                        {!isCheckingEmail && emailAvailable && formData.email?.trim() && !emailDuplicateError && !fieldErrors.email && (
+                          <span className="text-[10px] text-emerald-700 font-bold flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            Email available
+                          </span>
+                        )}
+                      </div>
                       <input
                         id="input-email"
                         type="email"
@@ -2723,20 +2814,23 @@ function RegisterForm() {
                         value={formData.email}
                         onChange={(e) => {
                           setFormData({ ...formData, email: e.target.value });
+                          if (emailDuplicateError) setEmailDuplicateError(null);
                           if (fieldErrors.email) clearFieldError("email");
+                          setEmailAvailable(false);
                         }}
+                        onBlur={() => checkEmailUniqueness(formData.email || "")}
                         placeholder="e.g. info@company.lk"
-                        aria-invalid={Boolean(fieldErrors.email)}
-                        aria-describedby={fieldErrors.email ? "error-email" : undefined}
-                        className={`w-full p-2.5 rounded-lg text-slate-900 focus:outline-none font-mono transition-all ${fieldErrors.email
+                        aria-invalid={Boolean(emailDuplicateError || fieldErrors.email)}
+                        aria-describedby={emailDuplicateError || fieldErrors.email ? "error-email" : undefined}
+                        className={`w-full p-2.5 rounded-lg text-slate-900 focus:outline-none font-mono transition-all ${emailDuplicateError || fieldErrors.email
                           ? "bg-rose-50/30 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
                           : "bg-slate-50 border border-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-800"
                           }`}
                       />
-                      {fieldErrors.email && (
+                      {(emailDuplicateError || fieldErrors.email) && (
                         <div id="error-email" role="alert" className="flex items-start gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
                           <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
-                          <span>{fieldErrors.email}</span>
+                          <span>{emailDuplicateError || fieldErrors.email}</span>
                         </div>
                       )}
                     </div>

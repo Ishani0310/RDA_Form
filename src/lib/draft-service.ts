@@ -242,6 +242,25 @@ export async function saveOrUpdateDraft(
   const effectiveBusinessName = businessName || "New Registration Draft";
   const effectiveRegNo = (rawReg || `DFT-${Date.now().toString().slice(-6)}`).toUpperCase();
 
+  // Enforce one submission per email address
+  const candidateEmail = ((payload as any).email || qData.email || payload.contactOfficer?.email || "").trim().toLowerCase();
+  if (candidateEmail) {
+    const existingSubmittedByEmail = await Submission.findOne({
+      status: { $in: ["Submitted", "Under_Review", "Verified"] },
+      $or: [
+        { "questionnaireData.email": candidateEmail },
+        { "questionnaireData.participant1.email": candidateEmail },
+        { "questionnaireData._emailSentTo": candidateEmail },
+      ],
+    }).select("submissionReference").lean();
+
+    if (existingSubmittedByEmail) {
+      throw new Error(
+        `The email address "${candidateEmail}" has already been used for an official submission (${(existingSubmittedByEmail as any).submissionReference}). Each organization may only submit once per email address.`
+      );
+    }
+  }
+
   // Check if this CIDA registration number already has an active verified profile
   const existingVerified = await Contractor.findOne({
     registrationNumber: effectiveRegNo,
@@ -551,6 +570,32 @@ export async function submitFinalDeclaration(
   if (rawQ.participant1?.email) contractor.contactOfficer.email = rawQ.participant1.email.trim().toLowerCase();
   else if (rawQ.email) contractor.contactOfficer.email = rawQ.email.trim().toLowerCase();
 
+  // Enforce one submission per email address
+  const targetEmailToCheck = (
+    rawQ.email ||
+    contractor.contactOfficer?.email ||
+    rawQ.participant1?.email ||
+    ""
+  ).trim().toLowerCase();
+
+  if (targetEmailToCheck) {
+    const duplicateEmailSub = await Submission.findOne({
+      _id: { $ne: submission._id },
+      status: { $in: ["Submitted", "Under_Review", "Verified"] },
+      $or: [
+        { "questionnaireData.email": targetEmailToCheck },
+        { "questionnaireData.participant1.email": targetEmailToCheck },
+        { "questionnaireData._emailSentTo": targetEmailToCheck },
+      ],
+    }).select("submissionReference").lean();
+
+    if (duplicateEmailSub) {
+      throw new Error(
+        `The email address "${targetEmailToCheck}" has already been used for an official registration (${(duplicateEmailSub as any).submissionReference}). Each organization may only submit once per email address.`
+      );
+    }
+  }
+
   const submittedAt = new Date();
 
   // Transition submission, contractor and draft token
@@ -687,17 +732,41 @@ export async function submitDirectDeclaration(
     email: payload.contactOfficer?.email?.trim().toLowerCase() || normalizedQ.participant1?.email?.trim().toLowerCase() || normalizedQ.email?.trim().toLowerCase() || "",
   };
 
-  // Run in parallel: 1. Generate reference, 2. Get questionnaire schema, 3. Check duplicate contractor reg if Contractor
-  const [permanentRef, activePublished, duplicateCheck] = await Promise.all([
+  // Run in parallel: 1. Generate reference, 2. Get questionnaire schema, 3. Check duplicate contractor reg if Contractor, 4. Check duplicate email
+  const candidateEmail = (
+    normalizedQ.email ||
+    rawQ.email ||
+    contactOfficer.email ||
+    normalizedQ.participant1?.email ||
+    ""
+  ).trim().toLowerCase();
+
+  const [permanentRef, activePublished, duplicateCheck, duplicateEmailCheck] = await Promise.all([
     generatePermanentRegistrationReference(new Date().getFullYear()),
     getCachedPublishedQuestionnaire(targetFormCode),
     normalizedQ.participantCategory === "Contractor" && registrationNumber && !registrationNumber.startsWith("REG-")
       ? Contractor.findOne({ registrationNumber, status: { $in: ["Verified", "Pending_Review"] } }).select("_id").lean()
       : Promise.resolve(null),
+    candidateEmail
+      ? Submission.findOne({
+          status: { $in: ["Submitted", "Under_Review", "Verified"] },
+          $or: [
+            { "questionnaireData.email": candidateEmail },
+            { "questionnaireData.participant1.email": candidateEmail },
+            { "questionnaireData._emailSentTo": candidateEmail },
+          ],
+        }).select("submissionReference").lean()
+      : Promise.resolve(null),
   ]);
 
   if (duplicateCheck) {
     throw new Error(`ICTAD registration number ${registrationNumber} is already registered in the system. Each contractor must enter a unique registration number.`);
+  }
+
+  if (duplicateEmailCheck) {
+    throw new Error(
+      `The email address "${candidateEmail}" has already been used for an official registration (${(duplicateEmailCheck as any).submissionReference}). Each organization may only submit once per email address.`
+    );
   }
 
   const submittedAt = new Date();
