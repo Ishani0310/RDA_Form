@@ -32,6 +32,7 @@ import {
   ArrowLeft,
   Printer,
   ShieldCheck,
+  Scale,
   Eye,
   ArrowUpDown,
   AlertCircle,
@@ -158,6 +159,11 @@ function createInitialFormData(): OfficialQuestionnaireData {
     rdaIcdpExperienceType: "",
     rdaIcdpProjectDetails: "",
     similarWorks: createEmptySimilarWorks(),
+    historicalLitigationType: "",
+    historicalContractIdentification: "",
+    historicalEmployerName: "",
+    historicalReason: "",
+    historicalMatterDispute: "",
     mattersForDiscussion: "",
     mattersForDiscussionList: [""],
   };
@@ -259,6 +265,11 @@ const QUESTIONNAIRE_FIELD_ORDER = [
   "similarWorks.2.contractType",
   "similarWorks.2.contractAmount",
   "similarWorks.descending",
+  "historicalLitigationType",
+  "historicalContractIdentification",
+  "historicalEmployerName",
+  "historicalReason",
+  "historicalMatterDispute",
 ];
 
 const getDomIdForField = (fieldKey: string): string => {
@@ -304,6 +315,11 @@ function mapServerErrorMessageToField(message: string): { key: string; message: 
   if (/rda.*icdp|icdp.*rda|worked in the past/i.test(clean)) return { key: "hasRdaOrIcdpExperience", message: clean };
   if (/contract 1/i.test(clean) || /similar work/i.test(clean)) return { key: "similarWorks.0.contractName", message: clean };
   if (/descending order/i.test(clean) || /cannot exceed/i.test(clean)) return { key: "similarWorks.descending", message: clean };
+  if (/contract identification/i.test(clean)) return { key: "historicalContractIdentification", message: clean };
+  if (/name of employer|employer/i.test(clean)) return { key: "historicalEmployerName", message: clean };
+  if (/reason for (non|pending|past|litigation)/i.test(clean)) return { key: "historicalReason", message: clean };
+  if (/matter (in )?dispute/i.test(clean)) return { key: "historicalMatterDispute", message: clean };
+  if (/non[- ]performing|pending litigation|litigation history/i.test(clean)) return { key: "historicalLitigationType", message: clean };
 
   return null;
 }
@@ -1046,6 +1062,11 @@ function RegisterForm() {
             Array.isArray(q.similarWorks) && q.similarWorks.length > 0
               ? q.similarWorks
               : createEmptySimilarWorks(),
+          historicalLitigationType: q.historicalLitigationType || "",
+          historicalContractIdentification: q.historicalContractIdentification || "",
+          historicalEmployerName: q.historicalEmployerName || "",
+          historicalReason: q.historicalReason || "",
+          historicalMatterDispute: q.historicalMatterDispute || "",
           mattersForDiscussion: q.mattersForDiscussion || "",
           mattersForDiscussionList:
             Array.isArray(q.mattersForDiscussionList) && q.mattersForDiscussionList.length > 0
@@ -1955,6 +1976,11 @@ function RegisterForm() {
                   rdaIcdpExperienceType: "",
                   rdaIcdpProjectDetails: "",
                   similarWorks: createEmptySimilarWorks(),
+                  historicalLitigationType: "",
+                  historicalContractIdentification: "",
+                  historicalEmployerName: "",
+                  historicalReason: "",
+                  historicalMatterDispute: "",
                   mattersForDiscussion: "",
                   mattersForDiscussionList: [""],
                 });
@@ -4444,6 +4470,375 @@ function RegisterForm() {
                               Enter contracts in descending order (highest value first)
                             </span>
                           </div>
+
+                          {/* HISTORICAL CONTRACT NON-PERFORMANCE, PENDING LITIGATION AND LITIGATION HISTORY */}
+                          <div id="section-historical-litigation" className="pt-6 mt-6 border-t border-slate-200/80 space-y-4">
+                            <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                              <Scale className="w-4 h-4 text-blue-900" />
+                              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
+                                Historical Contract Non-Performance, Pending Litigation and Litigation History
+                              </h3>
+                            </div>
+
+                            <div className="space-y-3 text-xs">
+                              <div>
+                                <label htmlFor="select-historicalLitigationType" className="block font-semibold text-slate-700 mb-1">
+                                  Historical Contract non performance, pending litigation and litigation history
+                                </label>
+                                <select
+                                  id="select-historicalLitigationType"
+                                  value={formData.historicalLitigationType || ""}
+                                  onChange={(e) => {
+                                    const val = e.target.value as any;
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      historicalLitigationType: val,
+                                      ...(val === "None" || val === "" ? {
+                                        historicalContractIdentification: "",
+                                        historicalEmployerName: "",
+                                        historicalReason: "",
+                                        historicalMatterDispute: "",
+                                      } : {}),
+                                    }));
+                                    if (fieldErrors.historicalLitigationType) clearFieldError("historicalLitigationType");
+                                    if (fieldErrors.historicalContractIdentification) clearFieldError("historicalContractIdentification");
+                                    if (fieldErrors.historicalEmployerName) clearFieldError("historicalEmployerName");
+                                    if (fieldErrors.historicalReason) clearFieldError("historicalReason");
+                                    if (fieldErrors.historicalMatterDispute) clearFieldError("historicalMatterDispute");
+                                  }}
+                                  className="w-full p-2.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-medium transition-all"
+                                >
+                                  <option value="">— Select Category (or None if Not Applicable) —</option>
+                                  <option value="None">None (No Non-Performance or Litigation History)</option>
+                                  <option value="Non performing contract">Non performing contract</option>
+                                  <option value="Pending litigation">Pending litigation</option>
+                                  <option value="Litigation history past">Litigation history past</option>
+                                </select>
+                              </div>
+
+                              {/* 1. NON-PERFORMING CONTRACT */}
+                              {formData.historicalLitigationType === "Non performing contract" && (
+                                <div className="p-4 bg-amber-50/60 border border-amber-200 rounded-xl space-y-3 animate-fadeIn">
+                                  <div className="flex items-center gap-1.5 text-amber-950 font-bold text-xs pb-1 border-b border-amber-200/60">
+                                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                                    <span>Non-Performing Contract Details</span>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                      <label htmlFor="input-hist-contractId" className="block font-semibold text-slate-700 mb-1">
+                                        Contract identification *
+                                      </label>
+                                      <input
+                                        id="input-hist-contractId"
+                                        type="text"
+                                        value={formData.historicalContractIdentification || ""}
+                                        onChange={(e) => {
+                                          setFormData((prev) => ({ ...prev, historicalContractIdentification: e.target.value }));
+                                          if (fieldErrors.historicalContractIdentification) clearFieldError("historicalContractIdentification");
+                                        }}
+                                        placeholder="Contract Name, Number, Year"
+                                        className={`w-full p-2 rounded text-slate-900 focus:outline-none transition-all ${
+                                          fieldErrors.historicalContractIdentification
+                                            ? "bg-rose-50 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                            : "bg-white border border-slate-300 focus:ring-2 focus:ring-blue-800"
+                                        }`}
+                                      />
+                                      {fieldErrors.historicalContractIdentification && (
+                                        <span className="text-[11px] font-semibold text-rose-600 block mt-1">
+                                          {fieldErrors.historicalContractIdentification}
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    <div>
+                                      <label htmlFor="input-hist-employer" className="block font-semibold text-slate-700 mb-1">
+                                        Name of employer *
+                                      </label>
+                                      <input
+                                        id="input-hist-employer"
+                                        type="text"
+                                        value={formData.historicalEmployerName || ""}
+                                        onChange={(e) => {
+                                          setFormData((prev) => ({ ...prev, historicalEmployerName: e.target.value }));
+                                          if (fieldErrors.historicalEmployerName) clearFieldError("historicalEmployerName");
+                                        }}
+                                        placeholder="Employer / Client Organization"
+                                        className={`w-full p-2 rounded text-slate-900 focus:outline-none transition-all ${
+                                          fieldErrors.historicalEmployerName
+                                            ? "bg-rose-50 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                            : "bg-white border border-slate-300 focus:ring-2 focus:ring-blue-800"
+                                        }`}
+                                      />
+                                      {fieldErrors.historicalEmployerName && (
+                                        <span className="text-[11px] font-semibold text-rose-600 block mt-1">
+                                          {fieldErrors.historicalEmployerName}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <div>
+                                    <label htmlFor="input-hist-reason" className="block font-semibold text-slate-700 mb-1">
+                                      Reason for non performance *
+                                    </label>
+                                    <textarea
+                                      id="input-hist-reason"
+                                      rows={2}
+                                      value={formData.historicalReason || ""}
+                                      onChange={(e) => {
+                                        setFormData((prev) => ({ ...prev, historicalReason: e.target.value }));
+                                        if (fieldErrors.historicalReason) clearFieldError("historicalReason");
+                                      }}
+                                      placeholder="Explain the principal reasons for non-performance..."
+                                      className={`w-full p-2 rounded text-slate-900 focus:outline-none transition-all ${
+                                        fieldErrors.historicalReason
+                                          ? "bg-rose-50 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                          : "bg-white border border-slate-300 focus:ring-2 focus:ring-blue-800"
+                                      }`}
+                                    />
+                                    {fieldErrors.historicalReason && (
+                                      <span className="text-[11px] font-semibold text-rose-600 block mt-1">
+                                        {fieldErrors.historicalReason}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* 2. PENDING LITIGATION */}
+                              {formData.historicalLitigationType === "Pending litigation" && (
+                                <div className="p-4 bg-amber-50/60 border border-amber-200 rounded-xl space-y-3 animate-fadeIn">
+                                  <div className="flex items-center gap-1.5 text-amber-950 font-bold text-xs pb-1 border-b border-amber-200/60">
+                                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                                    <span>Pending Litigation Details</span>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                      <label htmlFor="input-hist-contractId" className="block font-semibold text-slate-700 mb-1">
+                                        Contract identification *
+                                      </label>
+                                      <input
+                                        id="input-hist-contractId"
+                                        type="text"
+                                        value={formData.historicalContractIdentification || ""}
+                                        onChange={(e) => {
+                                          setFormData((prev) => ({ ...prev, historicalContractIdentification: e.target.value }));
+                                          if (fieldErrors.historicalContractIdentification) clearFieldError("historicalContractIdentification");
+                                        }}
+                                        placeholder="Contract Name, Number, Year"
+                                        className={`w-full p-2 rounded text-slate-900 focus:outline-none transition-all ${
+                                          fieldErrors.historicalContractIdentification
+                                            ? "bg-rose-50 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                            : "bg-white border border-slate-300 focus:ring-2 focus:ring-blue-800"
+                                        }`}
+                                      />
+                                      {fieldErrors.historicalContractIdentification && (
+                                        <span className="text-[11px] font-semibold text-rose-600 block mt-1">
+                                          {fieldErrors.historicalContractIdentification}
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    <div>
+                                      <label htmlFor="input-hist-employer" className="block font-semibold text-slate-700 mb-1">
+                                        Name of employer *
+                                      </label>
+                                      <input
+                                        id="input-hist-employer"
+                                        type="text"
+                                        value={formData.historicalEmployerName || ""}
+                                        onChange={(e) => {
+                                          setFormData((prev) => ({ ...prev, historicalEmployerName: e.target.value }));
+                                          if (fieldErrors.historicalEmployerName) clearFieldError("historicalEmployerName");
+                                        }}
+                                        placeholder="Employer / Client Organization"
+                                        className={`w-full p-2 rounded text-slate-900 focus:outline-none transition-all ${
+                                          fieldErrors.historicalEmployerName
+                                            ? "bg-rose-50 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                            : "bg-white border border-slate-300 focus:ring-2 focus:ring-blue-800"
+                                        }`}
+                                      />
+                                      {fieldErrors.historicalEmployerName && (
+                                        <span className="text-[11px] font-semibold text-rose-600 block mt-1">
+                                          {fieldErrors.historicalEmployerName}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <div>
+                                    <label htmlFor="input-hist-reason" className="block font-semibold text-slate-700 mb-1">
+                                      Reason for pending litigation *
+                                    </label>
+                                    <textarea
+                                      id="input-hist-reason"
+                                      rows={2}
+                                      value={formData.historicalReason || ""}
+                                      onChange={(e) => {
+                                        setFormData((prev) => ({ ...prev, historicalReason: e.target.value }));
+                                        if (fieldErrors.historicalReason) clearFieldError("historicalReason");
+                                      }}
+                                      placeholder="Explain the circumstances and background leading to pending litigation..."
+                                      className={`w-full p-2 rounded text-slate-900 focus:outline-none transition-all ${
+                                        fieldErrors.historicalReason
+                                          ? "bg-rose-50 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                          : "bg-white border border-slate-300 focus:ring-2 focus:ring-blue-800"
+                                      }`}
+                                    />
+                                    {fieldErrors.historicalReason && (
+                                      <span className="text-[11px] font-semibold text-rose-600 block mt-1">
+                                        {fieldErrors.historicalReason}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <div>
+                                    <label htmlFor="input-hist-matterDispute" className="block font-semibold text-slate-700 mb-1">
+                                      Matter dispute *
+                                    </label>
+                                    <input
+                                      id="input-hist-matterDispute"
+                                      type="text"
+                                      value={formData.historicalMatterDispute || ""}
+                                      onChange={(e) => {
+                                        setFormData((prev) => ({ ...prev, historicalMatterDispute: e.target.value }));
+                                        if (fieldErrors.historicalMatterDispute) clearFieldError("historicalMatterDispute");
+                                      }}
+                                      placeholder="Specify the matter in dispute (e.g. claim amount, delay damages, arbitration)..."
+                                      className={`w-full p-2 rounded text-slate-900 focus:outline-none transition-all ${
+                                        fieldErrors.historicalMatterDispute
+                                          ? "bg-rose-50 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                          : "bg-white border border-slate-300 focus:ring-2 focus:ring-blue-800"
+                                      }`}
+                                    />
+                                    {fieldErrors.historicalMatterDispute && (
+                                      <span className="text-[11px] font-semibold text-rose-600 block mt-1">
+                                        {fieldErrors.historicalMatterDispute}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* 3. LITIGATION HISTORY PAST */}
+                              {formData.historicalLitigationType === "Litigation history past" && (
+                                <div className="p-4 bg-amber-50/60 border border-amber-200 rounded-xl space-y-3 animate-fadeIn">
+                                  <div className="flex items-center gap-1.5 text-amber-950 font-bold text-xs pb-1 border-b border-amber-200/60">
+                                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                                    <span>Litigation History Past Details</span>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                      <label htmlFor="input-hist-contractId" className="block font-semibold text-slate-700 mb-1">
+                                        Contract identification *
+                                      </label>
+                                      <input
+                                        id="input-hist-contractId"
+                                        type="text"
+                                        value={formData.historicalContractIdentification || ""}
+                                        onChange={(e) => {
+                                          setFormData((prev) => ({ ...prev, historicalContractIdentification: e.target.value }));
+                                          if (fieldErrors.historicalContractIdentification) clearFieldError("historicalContractIdentification");
+                                        }}
+                                        placeholder="Contract Name, Number, Year"
+                                        className={`w-full p-2 rounded text-slate-900 focus:outline-none transition-all ${
+                                          fieldErrors.historicalContractIdentification
+                                            ? "bg-rose-50 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                            : "bg-white border border-slate-300 focus:ring-2 focus:ring-blue-800"
+                                        }`}
+                                      />
+                                      {fieldErrors.historicalContractIdentification && (
+                                        <span className="text-[11px] font-semibold text-rose-600 block mt-1">
+                                          {fieldErrors.historicalContractIdentification}
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    <div>
+                                      <label htmlFor="input-hist-employer" className="block font-semibold text-slate-700 mb-1">
+                                        Name of employer *
+                                      </label>
+                                      <input
+                                        id="input-hist-employer"
+                                        type="text"
+                                        value={formData.historicalEmployerName || ""}
+                                        onChange={(e) => {
+                                          setFormData((prev) => ({ ...prev, historicalEmployerName: e.target.value }));
+                                          if (fieldErrors.historicalEmployerName) clearFieldError("historicalEmployerName");
+                                        }}
+                                        placeholder="Employer / Client Organization"
+                                        className={`w-full p-2 rounded text-slate-900 focus:outline-none transition-all ${
+                                          fieldErrors.historicalEmployerName
+                                            ? "bg-rose-50 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                            : "bg-white border border-slate-300 focus:ring-2 focus:ring-blue-800"
+                                        }`}
+                                      />
+                                      {fieldErrors.historicalEmployerName && (
+                                        <span className="text-[11px] font-semibold text-rose-600 block mt-1">
+                                          {fieldErrors.historicalEmployerName}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <div>
+                                    <label htmlFor="input-hist-reason" className="block font-semibold text-slate-700 mb-1">
+                                      Reason for litigation history past *
+                                    </label>
+                                    <textarea
+                                      id="input-hist-reason"
+                                      rows={2}
+                                      value={formData.historicalReason || ""}
+                                      onChange={(e) => {
+                                        setFormData((prev) => ({ ...prev, historicalReason: e.target.value }));
+                                        if (fieldErrors.historicalReason) clearFieldError("historicalReason");
+                                      }}
+                                      placeholder="Explain the background, reason, and final outcome..."
+                                      className={`w-full p-2 rounded text-slate-900 focus:outline-none transition-all ${
+                                        fieldErrors.historicalReason
+                                          ? "bg-rose-50 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                          : "bg-white border border-slate-300 focus:ring-2 focus:ring-blue-800"
+                                      }`}
+                                    />
+                                    {fieldErrors.historicalReason && (
+                                      <span className="text-[11px] font-semibold text-rose-600 block mt-1">
+                                        {fieldErrors.historicalReason}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <div>
+                                    <label htmlFor="input-hist-matterDispute" className="block font-semibold text-slate-700 mb-1">
+                                      Matter dispute *
+                                    </label>
+                                    <input
+                                      id="input-hist-matterDispute"
+                                      type="text"
+                                      value={formData.historicalMatterDispute || ""}
+                                      onChange={(e) => {
+                                        setFormData((prev) => ({ ...prev, historicalMatterDispute: e.target.value }));
+                                        if (fieldErrors.historicalMatterDispute) clearFieldError("historicalMatterDispute");
+                                      }}
+                                      placeholder="Specify the matter in dispute and final judgment/settlement details..."
+                                      className={`w-full p-2 rounded text-slate-900 focus:outline-none transition-all ${
+                                        fieldErrors.historicalMatterDispute
+                                          ? "bg-rose-50 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                          : "bg-white border border-slate-300 focus:ring-2 focus:ring-blue-800"
+                                      }`}
+                                    />
+                                    {fieldErrors.historicalMatterDispute && (
+                                      <span className="text-[11px] font-semibold text-rose-600 block mt-1">
+                                        {fieldErrors.historicalMatterDispute}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </>
@@ -4998,6 +5393,46 @@ function RegisterForm() {
                           ))}
                         </tbody>
                       </table>
+                    </div>
+
+                    {/* Historical Litigation & Non-Performance */}
+                    <div className="mt-4 pt-3 border-t border-slate-100 space-y-2">
+                      <span className="text-slate-500 font-semibold text-[11px] block uppercase tracking-wider">
+                        Historical Contract Non-Performance &amp; Litigation:
+                      </span>
+                      <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200 text-xs">
+                        <span className="font-bold text-slate-800">
+                          {formData.historicalLitigationType || "None"}
+                        </span>
+                        {formData.historicalLitigationType && formData.historicalLitigationType !== "None" && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-200">
+                            <div>
+                              <span className="text-slate-500 font-medium text-[11px] block">Contract Identification:</span>
+                              <span className="font-semibold text-slate-900">{formData.historicalContractIdentification || "—"}</span>
+                            </div>
+                            <div>
+                              <span className="text-slate-500 font-medium text-[11px] block">Name of Employer:</span>
+                              <span className="font-semibold text-slate-900">{formData.historicalEmployerName || "—"}</span>
+                            </div>
+                            <div className="sm:col-span-2">
+                              <span className="text-slate-500 font-medium text-[11px] block">
+                                {formData.historicalLitigationType === "Non performing contract"
+                                  ? "Reason for Non-Performance:"
+                                  : formData.historicalLitigationType === "Pending litigation"
+                                  ? "Reason for Pending Litigation:"
+                                  : "Reason for Litigation History Past:"}
+                              </span>
+                              <span className="font-medium text-slate-900 whitespace-pre-wrap">{formData.historicalReason || "—"}</span>
+                            </div>
+                            {formData.historicalMatterDispute && (
+                              <div className="sm:col-span-2">
+                                <span className="text-slate-500 font-medium text-[11px] block">Matter Dispute:</span>
+                                <span className="font-medium text-slate-900 whitespace-pre-wrap">{formData.historicalMatterDispute}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </>

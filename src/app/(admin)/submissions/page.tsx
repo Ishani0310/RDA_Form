@@ -26,6 +26,7 @@ import {
   CheckCircle2,
   Printer,
   FileText,
+  Scale,
 } from "lucide-react";
 
 interface FormattedSubmission {
@@ -641,6 +642,38 @@ function generateSubmissionHtml(sub: FormattedSubmission): string {
             ${similarWorksRows}
           </tbody>
         </table>
+      </div>
+    </div>
+    ` : ""}
+
+    ${q.historicalLitigationType && q.historicalLitigationType !== "None" ? `
+    <div class="section-card">
+      <div class="section-head">Historical Contract Non-Performance &amp; Litigation</div>
+      <div class="section-body">
+        <div class="grid-2">
+          <div>
+            <div class="field-label">Category:</div>
+            <div class="field-value font-bold" style="color: #b91c1c;">${escapeHtml(q.historicalLitigationType)}</div>
+          </div>
+          <div>
+            <div class="field-label">Contract Identification:</div>
+            <div class="field-value">${escapeHtml(q.historicalContractIdentification || "—")}</div>
+          </div>
+          <div>
+            <div class="field-label">Name of Employer:</div>
+            <div class="field-value">${escapeHtml(q.historicalEmployerName || "—")}</div>
+          </div>
+          <div>
+            <div class="field-label">Reason:</div>
+            <div class="field-value">${escapeHtml(q.historicalReason || "—")}</div>
+          </div>
+          ${q.historicalMatterDispute ? `
+          <div style="grid-column: span 2;">
+            <div class="field-label">Matter in Dispute:</div>
+            <div class="field-value">${escapeHtml(q.historicalMatterDispute)}</div>
+          </div>
+          ` : ""}
+        </div>
       </div>
     </div>
     ` : ""}
@@ -1865,6 +1898,40 @@ function SubmissionsContent() {
                               </div>
                             );
                           })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Historical Litigation & Non-Performance */}
+                    {selectedSub.questionnaireData.historicalLitigationType && selectedSub.questionnaireData.historicalLitigationType !== "None" && (
+                      <div className="p-3.5 rounded-xl border border-red-200 bg-red-50/30 space-y-2">
+                        <span className="font-bold text-red-950 uppercase text-[11px] tracking-wide flex items-center gap-1.5">
+                          <Scale className="w-3.5 h-3.5 text-red-700" />
+                          Historical Contract Non-Performance &amp; Litigation
+                        </span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1">
+                          <div>
+                            <span className="text-slate-500 font-medium block">Category:</span>
+                            <span className="font-bold text-red-700">{selectedSub.questionnaireData.historicalLitigationType}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-500 font-medium block">Contract Identification:</span>
+                            <span className="font-semibold text-slate-900">{selectedSub.questionnaireData.historicalContractIdentification || "—"}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-500 font-medium block">Name of Employer:</span>
+                            <span className="font-semibold text-slate-900">{selectedSub.questionnaireData.historicalEmployerName || "—"}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-500 font-medium block">Reason:</span>
+                            <span className="font-medium text-slate-900 whitespace-pre-wrap">{selectedSub.questionnaireData.historicalReason || "—"}</span>
+                          </div>
+                          {selectedSub.questionnaireData.historicalMatterDispute && (
+                            <div className="sm:col-span-2">
+                              <span className="text-slate-500 font-medium block">Matter in Dispute:</span>
+                              <span className="font-medium text-slate-900 whitespace-pre-wrap">{selectedSub.questionnaireData.historicalMatterDispute}</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}

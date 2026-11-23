@@ -332,6 +332,46 @@ export function validateQuestionnaireSubmission(
     }
   }
 
+  // Section 10: Historical Contract Non-Performance & Litigation
+  const histType = data.historicalLitigationType;
+  if (histType === "Non performing contract") {
+    if (!data.historicalContractIdentification?.trim()) {
+      errors.historicalContractIdentification = "Please provide the contract identification for non-performing contract.";
+    }
+    if (!data.historicalEmployerName?.trim()) {
+      errors.historicalEmployerName = "Please provide the name of the employer.";
+    }
+    if (!data.historicalReason?.trim()) {
+      errors.historicalReason = "Please provide the reason for non-performance.";
+    }
+  } else if (histType === "Pending litigation") {
+    if (!data.historicalContractIdentification?.trim()) {
+      errors.historicalContractIdentification = "Please provide the contract identification for pending litigation.";
+    }
+    if (!data.historicalEmployerName?.trim()) {
+      errors.historicalEmployerName = "Please provide the name of the employer.";
+    }
+    if (!data.historicalReason?.trim()) {
+      errors.historicalReason = "Please provide the reason for pending litigation.";
+    }
+    if (!data.historicalMatterDispute?.trim()) {
+      errors.historicalMatterDispute = "Please provide the matter in dispute.";
+    }
+  } else if (histType === "Litigation history past") {
+    if (!data.historicalContractIdentification?.trim()) {
+      errors.historicalContractIdentification = "Please provide the contract identification for past litigation history.";
+    }
+    if (!data.historicalEmployerName?.trim()) {
+      errors.historicalEmployerName = "Please provide the name of the employer.";
+    }
+    if (!data.historicalReason?.trim()) {
+      errors.historicalReason = "Please provide the reason for past litigation history.";
+    }
+    if (!data.historicalMatterDispute?.trim()) {
+      errors.historicalMatterDispute = "Please provide the matter in dispute.";
+    }
+  }
+
   return {
     isValid: Object.keys(errors).length === 0,
     errors,
@@ -489,6 +529,11 @@ export function normalizeQuestionnaireData(
     rdaIcdpExperienceType: (raw.rdaIcdpExperienceType as any) || "",
     rdaIcdpProjectDetails: String(raw.rdaIcdpProjectDetails || "").trim(),
     similarWorks,
+    historicalLitigationType: (raw.historicalLitigationType as any) || "",
+    historicalContractIdentification: String(raw.historicalContractIdentification || "").trim(),
+    historicalEmployerName: String(raw.historicalEmployerName || "").trim(),
+    historicalReason: String(raw.historicalReason || "").trim(),
+    historicalMatterDispute: String(raw.historicalMatterDispute || "").trim(),
     mattersForDiscussion: Array.isArray(raw.mattersForDiscussionList) && (raw.mattersForDiscussionList as any[]).length > 0
       ? (raw.mattersForDiscussionList as any[]).map((m) => String(m || "").trim()).filter(Boolean).map((m, i) => `${i + 1}. ${m}`).join("\n\n")
       : String(raw.mattersForDiscussion || "").trim(),

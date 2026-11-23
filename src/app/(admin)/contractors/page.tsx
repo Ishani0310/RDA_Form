@@ -25,6 +25,7 @@ import {
   FileText,
   Briefcase,
   Printer,
+  Scale,
 } from "lucide-react";
 
 interface ContractorItem {
@@ -558,6 +559,38 @@ export default function ContractorsPage() {
             `).join("")}
           </tbody>
         </table>
+      </div>
+    </div>
+    ` : ""}
+
+    ${q.historicalLitigationType && q.historicalLitigationType !== "None" ? `
+    <div class="section-card">
+      <div class="section-head">Historical Contract Non-Performance &amp; Litigation</div>
+      <div class="section-body">
+        <div class="grid-2">
+          <div>
+            <div class="field-label">Category</div>
+            <div class="field-value font-bold" style="color: #b91c1c;">${escapeHtml(q.historicalLitigationType)}</div>
+          </div>
+          <div>
+            <div class="field-label">Contract Identification</div>
+            <div class="field-value">${escapeHtml(q.historicalContractIdentification || "—")}</div>
+          </div>
+          <div>
+            <div class="field-label">Name of Employer</div>
+            <div class="field-value">${escapeHtml(q.historicalEmployerName || "—")}</div>
+          </div>
+          <div>
+            <div class="field-label">Reason</div>
+            <div class="field-value">${escapeHtml(q.historicalReason || "—")}</div>
+          </div>
+          ${q.historicalMatterDispute ? `
+          <div style="grid-column: span 2;">
+            <div class="field-label">Matter in Dispute</div>
+            <div class="field-value">${escapeHtml(q.historicalMatterDispute)}</div>
+          </div>
+          ` : ""}
+        </div>
       </div>
     </div>
     ` : ""}
@@ -1459,6 +1492,40 @@ export default function ContractorsPage() {
                           </div>
                         </div>
                       ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* HISTORICAL LITIGATION */}
+                {isContractor && q.historicalLitigationType && q.historicalLitigationType !== "None" && (
+                  <div className="p-4 rounded-xl border border-red-200 bg-red-50/30 space-y-3">
+                    <h4 className="text-xs font-bold text-red-950 uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b border-red-200/60">
+                      <Scale className="w-3.5 h-3.5 text-red-700" />
+                      <span>Historical Contract Non-Performance &amp; Litigation</span>
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <span className="text-slate-500 font-medium block">Category:</span>
+                        <span className="font-bold text-red-700">{q.historicalLitigationType}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 font-medium block">Contract Identification:</span>
+                        <span className="font-semibold text-slate-900">{q.historicalContractIdentification || "—"}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 font-medium block">Name of Employer:</span>
+                        <span className="font-semibold text-slate-900">{q.historicalEmployerName || "—"}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 font-medium block">Reason:</span>
+                        <span className="font-medium text-slate-900 whitespace-pre-wrap">{q.historicalReason || "—"}</span>
+                      </div>
+                      {q.historicalMatterDispute && (
+                        <div className="sm:col-span-2">
+                          <span className="text-slate-500 font-medium block">Matter in Dispute:</span>
+                          <span className="font-medium text-slate-900 whitespace-pre-wrap">{q.historicalMatterDispute}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

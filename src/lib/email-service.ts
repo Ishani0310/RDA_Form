@@ -336,6 +336,21 @@ PRIOR SIMILAR WORK EXPERIENCE:
         }
       }
 
+      // Historical Contract Non-performance & Litigation
+      if (q.historicalLitigationType && q.historicalLitigationType !== "None") {
+        textDetails += `\n-------------------------------------------------------
+HISTORICAL CONTRACT NON-PERFORMANCE & LITIGATION:
+-------------------------------------------------------
+• Category: ${q.historicalLitigationType}
+• Contract Identification: ${q.historicalContractIdentification || "—"}
+• Name of Employer: ${q.historicalEmployerName || "—"}
+• Reason: ${q.historicalReason || "—"}
+`;
+        if (q.historicalMatterDispute) {
+          textDetails += `• Matter in Dispute: ${q.historicalMatterDispute}\n`;
+        }
+      }
+
       // Financials
       if (q.financialStatements) {
         const hasFinData = Object.values(q.financialStatements).some((y: any) => y && (y.totalRevenue !== null || y.totalAssets !== null));
@@ -695,6 +710,54 @@ Inclusive Connectivity and Development Project (ICDP)
           </div>
         `;
       }
+    }
+
+    // Historical Contract Non-performance & Litigation
+    if (q.historicalLitigationType && q.historicalLitigationType !== "None") {
+      htmlSections += `
+        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; margin-bottom: 20px;">
+          <h3 style="margin: 0 0 12px 0; font-size: 13px; font-weight: 800; color: #0b1f3a; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">
+            Historical Contract Non-Performance &amp; Litigation History
+          </h3>
+          <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+            <tbody>
+              <tr style="border-bottom: 1px solid #edf2f7;">
+                <td style="padding: 6px 0; color: #64748b; font-weight: 600; width: 42%;">Category:</td>
+                <td style="padding: 6px 0; font-weight: 700; color: #b91c1c;">${escapeHtml(q.historicalLitigationType)}</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #edf2f7;">
+                <td style="padding: 6px 0; color: #64748b; font-weight: 600;">Contract Identification:</td>
+                <td style="padding: 6px 0; color: #0f172a; font-weight: 600;">${escapeHtml(q.historicalContractIdentification || "—")}</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #edf2f7;">
+                <td style="padding: 6px 0; color: #64748b; font-weight: 600;">Name of Employer:</td>
+                <td style="padding: 6px 0; color: #0f172a;">${escapeHtml(q.historicalEmployerName || "—")}</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #edf2f7;">
+                <td style="padding: 6px 0; color: #64748b; font-weight: 600;">
+                  ${
+                    q.historicalLitigationType === "Non performing contract"
+                      ? "Reason for Non-Performance:"
+                      : q.historicalLitigationType === "Pending litigation"
+                      ? "Reason for Pending Litigation:"
+                      : "Reason for Litigation History Past:"
+                  }
+                </td>
+                <td style="padding: 6px 0; color: #0f172a; white-space: pre-wrap;">${escapeHtml(q.historicalReason || "—")}</td>
+              </tr>
+              ${
+                q.historicalMatterDispute
+                  ? `
+              <tr>
+                <td style="padding: 6px 0; color: #64748b; font-weight: 600;">Matter in Dispute:</td>
+                <td style="padding: 6px 0; color: #0f172a; white-space: pre-wrap;">${escapeHtml(q.historicalMatterDispute)}</td>
+              </tr>`
+                  : ""
+              }
+            </tbody>
+          </table>
+        </div>
+      `;
     }
 
     // Financial Schedule

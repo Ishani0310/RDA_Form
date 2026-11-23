@@ -225,6 +225,16 @@ export interface OfficialQuestionnaireData {
 
   // SECTION 10: Similar Work Experience (Contractors)
   similarWorks?: SimilarWorkContract[];
+  historicalLitigationType?:
+    | "None"
+    | "Non performing contract"
+    | "Pending litigation"
+    | "Litigation history past"
+    | "";
+  historicalContractIdentification?: string;
+  historicalEmployerName?: string;
+  historicalReason?: string;
+  historicalMatterDispute?: string;
 
   // SECTION 11: Matters for Discussion (All Attendees)
   mattersForDiscussion?: string;
