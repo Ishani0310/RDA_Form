@@ -150,128 +150,116 @@ export async function saveOrUpdateDraft(
     const tokenHash = hashResumeToken(existingToken);
     const draftTokenDoc = await DraftToken.findOne({ tokenHash });
 
-    if (!draftTokenDoc) {
-      throw new Error("Invalid or unrecognized resume token. Please verify your token link.");
-    }
+    // If token exists, is not revoked, and has not expired, update existing record
+    if (draftTokenDoc && !draftTokenDoc.isRevoked && new Date() <= draftTokenDoc.expiresAt) {
+      // Fetch associated contractor and submission concurrently
+      const [contractor, submission] = await Promise.all([
+        Contractor.findById(draftTokenDoc.contractor),
+        Submission.findById(draftTokenDoc.submission),
+      ]);
 
-    if (draftTokenDoc.isRevoked) {
-      throw new Error("This draft has already been officially submitted and locked. Duplicate modification is prohibited.");
-    }
-
-    if (new Date() > draftTokenDoc.expiresAt) {
-      throw new Error("This draft session has expired (30-day limit). Please start a new registration.");
-    }
-
-    // Fetch associated contractor and submission concurrently
-    const [contractor, submission] = await Promise.all([
-      Contractor.findById(draftTokenDoc.contractor),
-      Submission.findById(draftTokenDoc.submission),
-    ]);
-
-    if (contractor) {
-      if (businessName) contractor.businessName = businessName;
-      if (rawReg && rawReg.toUpperCase() !== contractor.registrationNumber) {
-        const otherWithReg = await Contractor.findOne({
-          registrationNumber: rawReg.toUpperCase(),
-          _id: { $ne: contractor._id },
-        });
-        if (otherWithReg) {
-          throw new Error(`Registration number ${rawReg.toUpperCase()} is already registered in the system.`);
+      if (contractor && submission) {
+        if (businessName) contractor.businessName = businessName;
+        if (rawReg && rawReg.toUpperCase() !== contractor.registrationNumber) {
+          const otherWithReg = await Contractor.findOne({
+            registrationNumber: rawReg.toUpperCase(),
+            _id: { $ne: contractor._id },
+          });
+          if (otherWithReg) {
+            throw new Error(`Registration number ${rawReg.toUpperCase()} is already registered in the system.`);
+          }
+          contractor.registrationNumber = rawReg.toUpperCase();
         }
-        contractor.registrationNumber = rawReg.toUpperCase();
-      }
-      if (payload.businessRegistrationNumber) contractor.businessRegistrationNumber = payload.businessRegistrationNumber.trim();
-      if (payload.cidaGrade || qData.cidaGrade) contractor.cidaGrade = (payload.cidaGrade || qData.cidaGrade) as any;
-      if (payload.primarySpeciality) contractor.primarySpeciality = payload.primarySpeciality.trim();
-      if (province) contractor.province = province as any;
-      if (district) contractor.district = district;
-      else if (payload.district) contractor.district = payload.district.trim();
-      if (payload.contactOfficer || qData.contactNumber || qData.email) {
-        contractor.contactOfficer = {
-          name: payload.contactOfficer?.name?.trim() || qData.participant1?.fullName?.trim() || contractor.contactOfficer?.name || "Authorized Representative",
-          designation: payload.contactOfficer?.designation?.trim() || qData.participant1?.designation?.trim() || contractor.contactOfficer?.designation || "Authorized Officer",
-          phone: payload.contactOfficer?.phone?.trim() || qData.contactNumber?.trim() || contractor.contactOfficer?.phone || "",
-          email: payload.contactOfficer?.email?.trim().toLowerCase() || qData.email?.trim().toLowerCase() || contractor.contactOfficer?.email || "",
+        if (payload.businessRegistrationNumber) contractor.businessRegistrationNumber = payload.businessRegistrationNumber.trim();
+        if (payload.cidaGrade || qData.cidaGrade) contractor.cidaGrade = (payload.cidaGrade || qData.cidaGrade) as any;
+        if (payload.primarySpeciality) contractor.primarySpeciality = payload.primarySpeciality.trim();
+        if (province) contractor.province = province as any;
+        if (district) contractor.district = district;
+        else if (payload.district) contractor.district = payload.district.trim();
+        if (payload.contactOfficer || qData.contactNumber || qData.email) {
+          contractor.contactOfficer = {
+            name: payload.contactOfficer?.name?.trim() || qData.participant1?.fullName?.trim() || contractor.contactOfficer?.name || "Authorized Representative",
+            designation: payload.contactOfficer?.designation?.trim() || qData.participant1?.designation?.trim() || contractor.contactOfficer?.designation || "Authorized Officer",
+            phone: payload.contactOfficer?.phone?.trim() || qData.contactNumber?.trim() || contractor.contactOfficer?.phone || "",
+            email: payload.contactOfficer?.email?.trim().toLowerCase() || qData.email?.trim().toLowerCase() || contractor.contactOfficer?.email || "",
+          };
+        }
+
+        if (province) submission.provincialOffice = province;
+        if (payload.questionnaireData) {
+          submission.questionnaireData = normalizeQuestionnaireData(payload.questionnaireData) as unknown as Record<string, unknown>;
+        }
+        if (submission.status !== "Submitted") {
+          submission.status = "Draft";
+        }
+
+        // Check if candidate email already belongs to an official submission
+        const candidateEmail = (
+          (payload as any).email ||
+          qData.email ||
+          payload.contactOfficer?.email ||
+          contractor.contactOfficer?.email ||
+          ""
+        ).trim().toLowerCase();
+
+        if (candidateEmail && candidateEmail !== "contact@rda.gov.lk" && candidateEmail !== "contact@contractor.lk") {
+          const existingSubmittedByEmail = await Submission.findOne({
+            _id: { $ne: submission._id },
+            status: { $in: ["Submitted", "Under_Review", "Verified"] },
+            $or: [
+              { "questionnaireData.email": candidateEmail },
+              { "questionnaireData.participant1.email": candidateEmail },
+              { "questionnaireData._emailSentTo": candidateEmail },
+            ],
+          }).select("submissionReference").lean();
+
+          if (existingSubmittedByEmail) {
+            // Clean up this draft immediately so it does not linger in the database or admin account
+            await Promise.all([
+              Submission.deleteOne({ _id: submission._id }),
+              contractor.status === "Draft" ? Contractor.deleteOne({ _id: contractor._id }) : Promise.resolve(),
+              DraftToken.deleteOne({ _id: draftTokenDoc._id }),
+            ]).catch(() => {});
+
+            throw new Error(
+              `The email address "${candidateEmail}" has already been used for an official submission (${(existingSubmittedByEmail as any).submissionReference}). Each organization may only submit once per email address.`
+            );
+          }
+        }
+
+        // Update draft access timestamp
+        draftTokenDoc.lastAccessedAt = new Date();
+
+        // Persist all 3 documents concurrently for instant response
+        await Promise.all([
+          contractor.save(),
+          submission.save(),
+          draftTokenDoc.save(),
+        ]);
+
+        return {
+          token: existingToken,
+          submissionReference: submission.submissionReference || "RDA-ICDP-DRAFT",
+          expiresAt: draftTokenDoc.expiresAt.toISOString(),
+          isNew: false,
+          contractor: {
+            id: contractor._id.toString(),
+            registrationNumber: contractor.registrationNumber,
+            businessName: contractor.businessName,
+            cidaGrade: contractor.cidaGrade,
+            province: contractor.province,
+            contactOfficer: contractor.contactOfficer,
+          },
+          submission: {
+            id: submission._id.toString(),
+            reference: submission.submissionReference,
+            status: submission.status,
+          },
         };
       }
     }
-
-    if (submission) {
-      if (province) submission.provincialOffice = province;
-      if (payload.questionnaireData) {
-        submission.questionnaireData = normalizeQuestionnaireData(payload.questionnaireData) as unknown as Record<string, unknown>;
-      }
-      // Status remains Draft on progress saves; only final submission transitions to Submitted
-      if (submission.status !== "Submitted") {
-        submission.status = "Draft";
-      }
-    }
-
-    // Check if candidate email already belongs to an official submission
-    const candidateEmail = (
-      (payload as any).email ||
-      qData.email ||
-      payload.contactOfficer?.email ||
-      contractor?.contactOfficer?.email ||
-      ""
-    ).trim().toLowerCase();
-
-    if (candidateEmail && candidateEmail !== "contact@rda.gov.lk" && candidateEmail !== "contact@contractor.lk") {
-      const existingSubmittedByEmail = await Submission.findOne({
-        _id: { $ne: submission?._id },
-        status: { $in: ["Submitted", "Under_Review", "Verified"] },
-        $or: [
-          { "questionnaireData.email": candidateEmail },
-          { "questionnaireData.participant1.email": candidateEmail },
-          { "questionnaireData._emailSentTo": candidateEmail },
-        ],
-      }).select("submissionReference").lean();
-
-      if (existingSubmittedByEmail) {
-        // Clean up this draft immediately so it does not linger in the database or admin account
-        if (submission) {
-          await Promise.all([
-            Submission.deleteOne({ _id: submission._id }),
-            contractor && contractor.status === "Draft" ? Contractor.deleteOne({ _id: contractor._id }) : Promise.resolve(),
-            DraftToken.deleteOne({ _id: draftTokenDoc._id }),
-          ]).catch(() => {});
-        }
-
-        throw new Error(
-          `The email address "${candidateEmail}" has already been used for an official submission (${(existingSubmittedByEmail as any).submissionReference}). Each organization may only submit once per email address.`
-        );
-      }
-    }
-
-    // Update draft access timestamp
-    draftTokenDoc.lastAccessedAt = new Date();
-
-    // Persist all 3 documents concurrently for instant response
-    await Promise.all([
-      contractor ? contractor.save() : Promise.resolve(),
-      submission ? submission.save() : Promise.resolve(),
-      draftTokenDoc.save(),
-    ]);
-
-    return {
-      token: existingToken,
-      submissionReference: submission?.submissionReference || "RDA-ICDP-DRAFT",
-      expiresAt: draftTokenDoc.expiresAt.toISOString(),
-      isNew: false,
-      contractor: contractor ? {
-        id: contractor._id.toString(),
-        registrationNumber: contractor.registrationNumber,
-        businessName: contractor.businessName,
-        cidaGrade: contractor.cidaGrade,
-        province: contractor.province,
-        contactOfficer: contractor.contactOfficer,
-      } : undefined,
-      submission: submission ? {
-        id: submission._id.toString(),
-        reference: submission.submissionReference,
-        status: submission.status,
-      } : undefined,
-    };
+    // If the token was not found, revoked, expired, or documents were purged,
+    // seamlessly fall through to initialize a fresh valid draft session so the user never encounters errors!
   }
 
   // Creating a new draft session

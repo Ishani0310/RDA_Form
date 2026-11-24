@@ -1308,6 +1308,16 @@ function RegisterForm() {
           if (currentDraftToken) removeBrowserDraft(currentDraftToken);
           setCurrentDraftToken("");
           setCurrentReference("");
+          setSavedDraftsList(getBrowserSavedDrafts());
+        } else if (data.message && (data.message.includes("resume token") || data.message.includes("unrecognized") || data.message.includes("not found"))) {
+          // Token is stale or unrecognized; purge from local storage and restart cleanly
+          if (currentDraftToken) removeBrowserDraft(currentDraftToken);
+          setCurrentDraftToken("");
+          setCurrentReference("");
+          setSavedDraftsList(getBrowserSavedDrafts());
+          setTimeout(() => {
+            performDraftSave(true);
+          }, 200);
         } else if (!isAutoSave) {
           setFormAlert({
             type: "error",
