@@ -102,6 +102,6 @@ export async function authenticateOfficer(
   }
 
   throw new Error(
-    "Invalid official credentials. In Development Demo Mode, use one of the listed RDA officer demo accounts with password 'RdaDemo@2026'."
+    "Invalid official credentials. In Development Demo Mode, use the RDA Super Admin demo account (superadmin@rda.gov.lk) with password 'RdaDemo@2026'."
   );
 }

@@ -40,42 +40,6 @@ export const DEV_DEMO_OFFICERS: DemoOfficerCredential[] = [
     rdaStaffId: "RDA/HQ/DIR/014",
     passwordDescription: "RdaDemo@2026",
   },
-  {
-    email: "director.wp@rda.gov.lk",
-    role: "PROVINCIAL_DIRECTOR",
-    fullName: "Eng. M. Wickramaratne",
-    designation: "Provincial Director (Western)",
-    assignedProvince: "Western Province",
-    rdaStaffId: "RDA/WP/DIR/003",
-    passwordDescription: "RdaDemo@2026",
-  },
-  {
-    email: "engineer.kandy@rda.gov.lk",
-    role: "EXECUTIVE_ENGINEER",
-    fullName: "Eng. S. Ekanayake",
-    designation: "Executive Engineer (Highway Works)",
-    assignedProvince: "Central Province",
-    rdaStaffId: "RDA/CP/ENG/022",
-    passwordDescription: "RdaDemo@2026",
-  },
-  {
-    email: "inspector.galle@rda.gov.lk",
-    role: "INSPECTION_OFFICER",
-    fullName: "Mr. R. Mendis",
-    designation: "Site Inspection & Quality Officer",
-    assignedProvince: "Southern Province",
-    rdaStaffId: "RDA/SP/INS/105",
-    passwordDescription: "RdaDemo@2026",
-  },
-  {
-    email: "auditor@rda.gov.lk",
-    role: "AUDITOR",
-    fullName: "Mrs. N. Gunasekara",
-    designation: "Chief Internal Auditor",
-    assignedProvince: "All Provinces (National HQ)",
-    rdaStaffId: "RDA/HQ/AUD/008",
-    passwordDescription: "RdaDemo@2026",
-  },
 ];
 
 export const DEMO_PASSWORD = "RdaDemo@2026";
