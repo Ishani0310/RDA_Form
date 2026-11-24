@@ -1735,6 +1735,109 @@ function renderSimilarWorksContracts(
 }
 
 /**
+ * Built-in Matters for Discussion (One by One) matching /register 100%
+ */
+function renderMattersForDiscussion(
+  value: any,
+  onChange: (val: any) => void,
+  disabled: boolean,
+  allValues?: Record<string, any>,
+  onGlobalChange?: (fieldId: string, val: any) => void
+) {
+  let list: string[] = [];
+  if (Array.isArray(allValues?.["mattersForDiscussionList"])) {
+    list = allValues["mattersForDiscussionList"];
+  } else if (Array.isArray(value)) {
+    list = value;
+  } else if (typeof value === "string" && value.trim()) {
+    list = value.split("\n\n").map((s) => s.replace(/^\d+\.\s*/, "").trim()).filter(Boolean);
+  }
+  if (list.length === 0) list = [""];
+
+  const handleUpdate = (idx: number, text: string) => {
+    if (disabled) return;
+    const next = [...list];
+    next[idx] = text;
+    const combined = next.map((m) => m.trim()).filter(Boolean).map((m, i) => `${i + 1}. ${m}`).join("\n\n");
+    onChange(combined);
+    if (onGlobalChange) {
+      onGlobalChange("mattersForDiscussionList", next);
+      onGlobalChange("mattersForDiscussion", combined);
+    }
+  };
+
+  const handleAdd = () => {
+    if (disabled) return;
+    const next = [...list, ""];
+    if (onGlobalChange) {
+      onGlobalChange("mattersForDiscussionList", next);
+    }
+  };
+
+  const handleRemove = (idx: number) => {
+    if (disabled) return;
+    const next = list.filter((_, i) => i !== idx);
+    const finalNext = next.length > 0 ? next : [""];
+    const combined = finalNext.map((m) => m.trim()).filter(Boolean).map((m, i) => `${i + 1}. ${m}`).join("\n\n");
+    onChange(combined);
+    if (onGlobalChange) {
+      onGlobalChange("mattersForDiscussionList", finalNext);
+      onGlobalChange("mattersForDiscussion", combined);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      {list.map((matter, idx) => (
+        <div
+          key={idx}
+          className="flex items-start gap-2.5 p-3 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-slate-50 transition-colors focus-within:bg-white focus-within:border-blue-700 focus-within:ring-2 focus-within:ring-blue-800/10 shadow-sm"
+        >
+          <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-blue-900 text-white font-bold text-xs shrink-0 shadow-sm mt-0.5">
+            #{idx + 1}
+          </div>
+          <div className="flex-1 space-y-1">
+            <label className="text-[11px] font-bold text-slate-700 block">
+              Matter / Suggestion #{idx + 1}
+            </label>
+            <textarea
+              rows={2}
+              value={matter}
+              onChange={(e) => handleUpdate(idx, e.target.value)}
+              disabled={disabled}
+              placeholder={`Enter matter or suggestion #${idx + 1}...`}
+              className="w-full p-2 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800 text-xs disabled:opacity-50"
+            />
+          </div>
+          {list.length > 1 && (
+            <button
+              type="button"
+              onClick={() => handleRemove(idx)}
+              disabled={disabled}
+              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors mt-6 disabled:opacity-50"
+              title="Remove this matter"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      ))}
+      <div>
+        <button
+          type="button"
+          onClick={handleAdd}
+          disabled={disabled}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-900 hover:text-blue-700 bg-white hover:bg-blue-50 border border-blue-200 rounded-lg shadow-sm transition-colors disabled:opacity-50"
+        >
+          <Plus className="w-3.5 h-3.5 text-blue-800" />
+          <span>Add another matter</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
  * Field Input Renderer for all Field Types matching /register 100%
  */
 function renderFieldInput(
@@ -1771,7 +1874,9 @@ function renderFieldInput(
   // 3. Built-in Supplier Materials
   if (
     question.fieldType === ("complex_supplier_materials" as any) ||
-    question.id === "supplierDetails.materialsSupplied"
+    question.id === "supplierDetails.materialsSupplied" ||
+    question.code === "Q13" ||
+    (question.text && question.text.toLowerCase().includes("material(s) you supply"))
   ) {
     return renderSupplierMaterialsList(value, onChange, disabled, allValues, onGlobalChange);
   }
@@ -1797,14 +1902,59 @@ function renderFieldInput(
     question.id === "peakProductionRates" ||
     question.code === "Q25D" ||
     question.fieldType === ("complex_peak_production_rates" as any) ||
-    (question.text && question.text.toLowerCase().includes("production rate within to consider 12 months"))
+    (question.text && question.text.toLowerCase().includes("production rate"))
   ) {
     return renderPeakProductionRatesTable(value, onChange, disabled);
   }
 
+  // 7. Built-in Matters for Discussion (One by One)
+  if (
+    question.id === "mattersForDiscussion" ||
+    question.code === "Q27" ||
+    (question.text && question.text.toLowerCase().includes("matters, concerns or suggestions"))
+  ) {
+    return renderMattersForDiscussion(value, onChange, disabled, allValues, onGlobalChange);
+  }
+
+  // 8. Built-in Location Address with interactive Map Picker
+  const isLocationAddress =
+    question.id === "supplierDetails.locationAddress" ||
+    question.code === "Q14" ||
+    question.id.toLowerCase().includes("locationaddress") ||
+    (question.text && question.text.toLowerCase().includes("location address"));
+
   const baseInputClasses = `w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 disabled:opacity-50 text-xs sm:text-sm ${
     error ? "border-rose-400 focus:ring-rose-500" : ""
   }`;
+
+  if (isLocationAddress) {
+    return (
+      <div className="space-y-3">
+        <textarea
+          id={`input-${question.id}`}
+          rows={3}
+          value={value ?? ""}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={question.placeholder || "Physical address of manufacturing plant, quarry, or central distribution warehouse..."}
+          disabled={disabled}
+          className={baseInputClasses}
+        />
+        <LocationMapPicker
+          latitude={allValues?.["supplierDetails.latitude"] ?? allValues?.["latitude"]}
+          longitude={allValues?.["supplierDetails.longitude"] ?? allValues?.["longitude"]}
+          disabled={disabled}
+          onChange={(lat, lng) => {
+            if (onGlobalChange) {
+              onGlobalChange("supplierDetails.latitude", lat);
+              onGlobalChange("supplierDetails.longitude", lng);
+              onGlobalChange("latitude", lat);
+              onGlobalChange("longitude", lng);
+            }
+          }}
+        />
+      </div>
+    );
+  }
 
   switch (question.fieldType) {
     case "short_text":
@@ -1821,39 +1971,16 @@ function renderFieldInput(
       );
 
     case "long_text": {
-      const isLocationAddress =
-        question.id === "supplierDetails.locationAddress" ||
-        question.code === "Q14" ||
-        question.id.toLowerCase().includes("locationaddress") ||
-        (question.text && question.text.toLowerCase().includes("location address"));
-
       return (
-        <div className="space-y-3">
-          <textarea
-            id={`input-${question.id}`}
-            rows={3}
-            value={value ?? ""}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder={question.placeholder || "Enter details..."}
-            disabled={disabled}
-            className={baseInputClasses}
-          />
-          {isLocationAddress && (
-            <LocationMapPicker
-              latitude={allValues?.["supplierDetails.latitude"] ?? allValues?.["latitude"]}
-              longitude={allValues?.["supplierDetails.longitude"] ?? allValues?.["longitude"]}
-              disabled={disabled}
-              onChange={(lat, lng) => {
-                if (onGlobalChange) {
-                  onGlobalChange("supplierDetails.latitude", lat);
-                  onGlobalChange("supplierDetails.longitude", lng);
-                  onGlobalChange("latitude", lat);
-                  onGlobalChange("longitude", lng);
-                }
-              }}
-            />
-          )}
-        </div>
+        <textarea
+          id={`input-${question.id}`}
+          rows={3}
+          value={value ?? ""}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={question.placeholder || "Enter details..."}
+          disabled={disabled}
+          className={baseInputClasses}
+        />
       );
     }
 

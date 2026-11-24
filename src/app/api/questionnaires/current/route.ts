@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentOfficerSession } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Questionnaire, computeQuestionnaireStats } from "@/models/Questionnaire";
-import { seedDefaultQuestionnaire, DEFAULT_QUESTIONNAIRE_CODE } from "@/lib/questionnaire-seed";
+import { seedDefaultQuestionnaire, getBaselineOfficialSections, DEFAULT_QUESTIONNAIRE_CODE } from "@/lib/questionnaire-seed";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 /**
  * GET /api/questionnaires/current
@@ -10,6 +13,7 @@ import { seedDefaultQuestionnaire, DEFAULT_QUESTIONNAIRE_CODE } from "@/lib/ques
  * Supports query parameters:
  *  - ?form=<formId|slug>
  *  - ?code=<formId>
+ *  - ?sync=true (force refresh with latest baseline official schema)
  * Priority:
  * 1. Active working DRAFT for the requested form
  * 2. Active PUBLISHED questionnaire for the requested form
@@ -30,6 +34,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const requestedCode = (searchParams.get("form") || searchParams.get("code") || "").trim();
     const targetCode = requestedCode || DEFAULT_QUESTIONNAIRE_CODE;
+    const shouldSync = searchParams.get("sync") === "true";
 
     // First check for active draft
     let draft = await Questionnaire.findOne({
@@ -61,6 +66,27 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Auto-align baseline questionnaire if any recent questions are missing or if sync requested
+    if (targetCode === DEFAULT_QUESTIONNAIRE_CODE && !workingQuestionnaire.isLocked) {
+      const baselineSections = getBaselineOfficialSections();
+      const hasQ14 = workingQuestionnaire.sections?.some((s: any) =>
+        s.questions?.some((q: any) => q.code === "Q14" || q.id === "supplierDetails.locationAddress")
+      );
+      const hasQ25D = workingQuestionnaire.sections?.some((s: any) =>
+        s.questions?.some((q: any) => q.code === "Q25D" || q.id === "peakProductionRates")
+      );
+      const needsSync = !hasQ14 || !hasQ25D || shouldSync;
+
+      if (needsSync) {
+        workingQuestionnaire.sections = baselineSections;
+        workingQuestionnaire.stats = computeQuestionnaireStats(baselineSections);
+        await Questionnaire.updateOne(
+          { _id: workingQuestionnaire._id },
+          { $set: { sections: baselineSections, stats: workingQuestionnaire.stats } }
+        );
+      }
+    }
+
     // Determine role-based permissions
     const isSuperAdmin = session.role === "SUPER_ADMIN";
     const isDirector = session.role === "PROVINCIAL_DIRECTOR";
@@ -72,19 +98,26 @@ export async function GET(request: NextRequest) {
       effectiveStatus = "SCHEMA_LOCKED";
     }
 
-    return NextResponse.json({
-      success: true,
-      questionnaire: workingQuestionnaire,
-      hasDraft: Boolean(draft),
-      effectiveStatus,
-      permissions: {
-        canEdit: canManage && !workingQuestionnaire.isLocked,
-        canPublish: canManage && !workingQuestionnaire.isLocked,
-        canLock: isSuperAdmin,
-        canImport: canManage && !workingQuestionnaire.isLocked,
-        canExport: true,
+    return NextResponse.json(
+      {
+        success: true,
+        questionnaire: workingQuestionnaire,
+        hasDraft: Boolean(draft),
+        effectiveStatus,
+        permissions: {
+          canEdit: canManage && !workingQuestionnaire.isLocked,
+          canPublish: canManage && !workingQuestionnaire.isLocked,
+          canLock: isSuperAdmin,
+          canImport: canManage && !workingQuestionnaire.isLocked,
+          canExport: true,
+        },
       },
-    });
+      {
+        headers: {
+          "Cache-Control": "no-store, max-age=0, must-revalidate",
+        },
+      }
+    );
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to load current questionnaire.";
     return NextResponse.json({ success: false, message }, { status: 500 });

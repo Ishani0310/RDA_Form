@@ -168,11 +168,13 @@ export default function FormBuilderPage() {
   };
 
   // 2. Load Active Questionnaire for Workspace
-  const loadQuestionnaire = async (formCode?: string) => {
+  const loadQuestionnaire = async (formCode?: string, forceSync = false) => {
     const codeToLoad = formCode || selectedFormCode;
     setWorkspaceLoading(true);
     try {
-      const res = await fetch(`/api/questionnaires/current?code=${encodeURIComponent(codeToLoad)}`);
+      const res = await fetch(`/api/questionnaires/current?code=${encodeURIComponent(codeToLoad)}${forceSync ? "&sync=true" : ""}`, {
+        cache: "no-store",
+      });
       const data = await res.json();
       if (data.success && data.questionnaire) {
         setQuestionnaire(data.questionnaire);
@@ -183,8 +185,16 @@ export default function FormBuilderPage() {
         setEffectiveStatus(data.effectiveStatus || data.questionnaire.status);
         setHasUnsavedChanges(false);
 
-        // Pre-populate simulated values with field defaults
-        const initialVals: Record<string, any> = {};
+        // Pre-populate simulated values with interactive defaults so sections can be inspected immediately
+        const initialVals: Record<string, any> = {
+          organizationName: "Sri Lanka Infrastructure Corp",
+          contactNumber: "+94 11 234 5678",
+          email: "info@slic.lk",
+          willParticipate: "Yes",
+          participantCategory: "Contractor",
+          hasOngoingContracts: "Yes",
+          "supplierDetails.materialsSupplied": ["Bitumen / Asphalt", "Aggregates"],
+        };
         fetchedSections.forEach((s: IFormSection) => {
           (s.questions || []).forEach((q: IFormQuestion) => {
             if (q.defaultValue !== undefined) {
@@ -205,6 +215,28 @@ export default function FormBuilderPage() {
       }
     } catch {
       showNotification("error", "Network error loading questionnaire.");
+    } finally {
+      setWorkspaceLoading(false);
+    }
+  };
+
+  // Synchronize with latest baseline registration form
+  const handleSyncBaseline = async () => {
+    setWorkspaceLoading(true);
+    try {
+      const res = await fetch("/api/questionnaires/sync-baseline", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await res.json();
+      if (data.success) {
+        showNotification("success", "Form builder schema successfully synchronized with the latest official registration form!");
+        await loadQuestionnaire(selectedFormCode, true);
+      } else {
+        showNotification("error", data.message || "Failed to sync baseline form.");
+      }
+    } catch {
+      showNotification("error", "Error connecting to server to sync baseline.");
     } finally {
       setWorkspaceLoading(false);
     }
@@ -995,6 +1027,20 @@ export default function FormBuilderPage() {
                   <span>Version History</span>
                 </button>
 
+                {/* Sync with Official Baseline Schema */}
+                {permissions.canEdit && (
+                  <button
+                    type="button"
+                    onClick={handleSyncBaseline}
+                    disabled={questionnaire?.isLocked || workspaceLoading}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-900 bg-blue-50 border border-blue-200 hover:bg-blue-100 rounded-lg shadow-2xs transition-all disabled:opacity-50"
+                    title="Synchronize Form Builder with the latest official registration form schema"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 text-blue-800 ${workspaceLoading ? "animate-spin" : ""}`} />
+                    <span>Sync Latest Form</span>
+                  </button>
+                )}
+
                 {/* Export Schema JSON */}
                 {permissions.canExport && (
                   <button
@@ -1118,6 +1164,20 @@ export default function FormBuilderPage() {
                   <History className="w-3.5 h-3.5 text-slate-500" />
                   <span>Version History</span>
                 </button>
+
+                {/* Sync with Official Baseline Schema */}
+                {permissions.canEdit && (
+                  <button
+                    type="button"
+                    onClick={handleSyncBaseline}
+                    disabled={questionnaire?.isLocked || workspaceLoading}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-900 bg-blue-50 border border-blue-200 hover:bg-blue-100 rounded-lg shadow-2xs transition-all disabled:opacity-50"
+                    title="Synchronize Form Builder with the latest official registration form schema"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 text-blue-800 ${workspaceLoading ? "animate-spin" : ""}`} />
+                    <span>Sync Latest Form</span>
+                  </button>
+                )}
 
                 {/* Schema Validator Button */}
                 <button
