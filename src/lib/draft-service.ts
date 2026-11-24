@@ -601,6 +601,7 @@ export async function submitFinalDeclaration(
   // Transition submission, contractor and draft token
   submission.status = "Submitted";
   submission.submittedAt = submittedAt;
+  submission.isViewed = false;
   contractor.status = "Pending_Review";
   draftTokenDoc.isRevoked = true;
   draftTokenDoc.revokedAt = submittedAt;
@@ -802,6 +803,7 @@ export async function submitDirectDeclaration(
       questionnaireData: normalizedQ as unknown as Record<string, unknown>,
       attachments: [],
       isDemoRecord: false,
+      isViewed: false,
     }),
   ]);
 

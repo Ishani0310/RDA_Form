@@ -6,6 +6,7 @@ import {
   Inbox,
   ArrowRight,
   Eye,
+  EyeOff,
   CheckCircle2,
   UserX,
   Briefcase,
@@ -28,6 +29,9 @@ export interface RecentRegistrationItem {
   submissionDate: string;
   provincialOffice?: string;
   status: string;
+  isViewed?: boolean;
+  viewedAt?: string | null;
+  viewedByName?: string | null;
 }
 
 interface RecentRegistrationsProps {
@@ -130,16 +134,31 @@ export const RecentRegistrations: React.FC<RecentRegistrationsProps> = ({
                 <th className="px-4 py-2.5">Registration Category</th>
                 <th className="px-4 py-2.5">Contact Number</th>
                 <th className="px-4 py-2.5">Submission Date</th>
+                <th className="px-4 py-2.5">Review Status</th>
                 <th className="px-4 py-2.5">Registration Status</th>
                 <th className="px-4 py-2.5 text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {registrations.map((reg) => (
-                <tr key={reg.id} className="hover:bg-slate-50/60 transition-colors">
+                <tr
+                  key={reg.id}
+                  className={`transition-colors ${
+                    reg.isViewed
+                      ? "hover:bg-slate-50/60"
+                      : "bg-amber-50/25 hover:bg-amber-50/50 border-l-2 border-l-amber-500"
+                  }`}
+                >
                   {/* Column 1: Organization / Company Name */}
                   <td className="px-4 py-3">
-                    <p className="font-bold text-slate-900">{reg.organizationName}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-bold text-slate-900">{reg.organizationName}</p>
+                      {!reg.isViewed && (
+                        <span className="inline-flex items-center px-1.5 py-0.2 text-[9px] font-extrabold uppercase rounded bg-amber-500 text-white tracking-wide">
+                          NEW
+                        </span>
+                      )}
+                    </div>
                     <p className="text-[10px] text-slate-400 font-mono mt-0.5">{reg.ref}</p>
                   </td>
 
@@ -164,7 +183,23 @@ export const RecentRegistrations: React.FC<RecentRegistrationsProps> = ({
                     </div>
                   </td>
 
-                  {/* Column 5: Registration Status */}
+                  {/* Column 5: Review Status (Unseen vs Seen) */}
+                  <td className="px-4 py-3">
+                    {reg.isViewed ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                        <Eye className="w-3 h-3 text-emerald-600" />
+                        Seen / Checked
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-ping" />
+                        <EyeOff className="w-3 h-3 text-amber-700" />
+                        Unseen (Not Checked)
+                      </span>
+                    )}
+                  </td>
+
+                  {/* Column 6: Registration Status */}
                   <td className="px-4 py-3">
                     {reg.workshopAttendance === "No" ? (
                       <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500">

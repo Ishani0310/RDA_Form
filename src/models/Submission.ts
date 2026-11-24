@@ -12,6 +12,10 @@ export interface ISubmission extends Document {
     | "Verified"
     | "Action_Required"
     | "Rejected";
+  isViewed: boolean;
+  viewedAt?: Date;
+  viewedBy?: mongoose.Types.ObjectId;
+  viewedByName?: string;
   reviewedBy?: mongoose.Types.ObjectId;
   reviewNotes?: string;
   reviewedAt?: Date;
@@ -75,6 +79,22 @@ const SubmissionSchema = new Schema<ISubmission>(
       ],
       default: "Submitted",
       index: true,
+    },
+    isViewed: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    viewedAt: {
+      type: Date,
+    },
+    viewedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
+    viewedByName: {
+      type: String,
+      trim: true,
     },
     reviewedBy: {
       type: Schema.Types.ObjectId,

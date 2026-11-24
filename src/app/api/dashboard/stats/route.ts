@@ -310,7 +310,15 @@ export async function GET(request: NextRequest) {
         createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : new Date().toISOString(),
         provincialOffice: doc.provincialOffice,
         status: doc.status,
+        isViewed: Boolean(doc.isViewed),
+        viewedAt: doc.viewedAt ? new Date(doc.viewedAt).toLocaleDateString("en-GB") : null,
+        viewedByName: doc.viewedByName || null,
       };
+    });
+
+    const totalUnseenRegistrations = await Submission.countDocuments({
+      ...submittedBaseMatch,
+      $or: [{ isViewed: false }, { isViewed: { $exists: false } }],
     });
 
     return NextResponse.json({
@@ -324,6 +332,7 @@ export async function GET(request: NextRequest) {
         totalNonAttendees,
         totalSubmittedRegistrations,
         totalDraftRegistrations: activeDraftTokensCount,
+        totalUnseenRegistrations,
       },
       categoryBreakdown,
       statusOverview,

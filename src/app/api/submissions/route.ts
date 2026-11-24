@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
     const province = (searchParams.get("province") || "").trim();
     const category = (searchParams.get("category") || "").trim();
     const attendance = (searchParams.get("attendance") || "").trim();
+    const viewStatus = (searchParams.get("viewStatus") || "").trim().toLowerCase();
     const ref = (searchParams.get("ref") || "").trim();
     const formFilter = (searchParams.get("formId") || searchParams.get("form") || "").trim();
 
@@ -67,6 +68,13 @@ export async function GET(request: NextRequest) {
     // Workshop Attendance filter (Yes, No)
     if (attendance && attendance !== "All Attendance") {
       query["questionnaireData.willParticipate"] = attendance;
+    }
+
+    // Review / Viewed Status filter (unseen, seen)
+    if (viewStatus === "unseen") {
+      query.$or = [{ isViewed: false }, { isViewed: { $exists: false } }];
+    } else if (viewStatus === "seen") {
+      query.isViewed = true;
     }
 
     // Status filter
@@ -120,8 +128,10 @@ export async function GET(request: NextRequest) {
 
     const baseQueryNoStatus = { ...query };
     delete baseQueryNoStatus.status;
+    delete baseQueryNoStatus.isViewed;
+    delete baseQueryNoStatus.$or;
 
-    const [totalCount, submittedCount, draftCount] = await Promise.all([
+    const [totalCount, submittedCount, draftCount, unseenCount, seenCount] = await Promise.all([
       Submission.countDocuments(query),
       Submission.countDocuments({
         ...baseQueryNoStatus,
@@ -130,6 +140,16 @@ export async function GET(request: NextRequest) {
       Submission.countDocuments({
         ...baseQueryNoStatus,
         status: "Draft",
+      }),
+      Submission.countDocuments({
+        ...baseQueryNoStatus,
+        status: { $in: ["Submitted", "Under_Review", "Verified", "Action_Required", "Rejected"] },
+        $or: [{ isViewed: false }, { isViewed: { $exists: false } }],
+      }),
+      Submission.countDocuments({
+        ...baseQueryNoStatus,
+        status: { $in: ["Submitted", "Under_Review", "Verified", "Action_Required", "Rejected"] },
+        isViewed: true,
       }),
     ]);
 
@@ -164,6 +184,9 @@ export async function GET(request: NextRequest) {
         submissionType: s.submissionType || "Annual_Capacity_Declaration",
         provincialOffice: s.provincialOffice,
         status: s.status,
+        isViewed: Boolean(s.isViewed),
+        viewedAt: s.viewedAt ? new Date(s.viewedAt).toLocaleDateString("en-GB") : null,
+        viewedByName: s.viewedByName || null,
         schemaVersion: s.schemaVersion,
         formId: s.formId || "RDA-ICDP-CONTRACTOR-Q",
         formSlug: s.formSlug || "contractor",
@@ -185,6 +208,8 @@ export async function GET(request: NextRequest) {
         all: totalCount,
         submitted: submittedCount,
         draft: draftCount,
+        unseen: unseenCount,
+        seen: seenCount,
       },
       pagination: {
         page,
@@ -197,6 +222,74 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to query contractor submissions.";
+    return NextResponse.json({ success: false, message }, { status: 500 });
+  }
+}
+
+/**
+ * PATCH /api/submissions
+ * Updates submission review/view status (e.g. mark as seen / unseen / checked).
+ * Accessible to authenticated RDA officers.
+ */
+export async function PATCH(request: NextRequest) {
+  try {
+    const session = await getCurrentOfficerSession();
+
+    if (!session) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized. Official RDA officer authentication required." },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json().catch(() => ({}));
+    const { id, ref, isViewed } = body;
+
+    if (!id && !ref) {
+      return NextResponse.json(
+        { success: false, message: "Submission ID or Reference is required." },
+        { status: 400 }
+      );
+    }
+
+    await connectToDatabase();
+
+    const query: Record<string, unknown> = id ? { _id: id } : { submissionReference: ref };
+    const submission = await Submission.findOne(query);
+
+    if (!submission) {
+      return NextResponse.json(
+        { success: false, message: "Submission record not found." },
+        { status: 404 }
+      );
+    }
+
+    if (typeof isViewed === "boolean") {
+      submission.isViewed = isViewed;
+      if (isViewed) {
+        submission.viewedAt = new Date();
+        submission.viewedByName = session.fullName || "RDA Officer";
+      } else {
+        submission.viewedAt = undefined;
+        submission.viewedByName = undefined;
+      }
+    }
+
+    await submission.save();
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        id: submission._id.toString(),
+        ref: submission.submissionReference,
+        isViewed: submission.isViewed,
+        viewedAt: submission.viewedAt ? new Date(submission.viewedAt).toLocaleDateString("en-GB") : null,
+        viewedByName: submission.viewedByName || null,
+      },
+      message: submission.isViewed ? "Submission marked as seen." : "Submission marked as unseen.",
+    });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Failed to update submission view status.";
     return NextResponse.json({ success: false, message }, { status: 500 });
   }
 }
