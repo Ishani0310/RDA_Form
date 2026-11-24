@@ -207,6 +207,42 @@ export async function saveOrUpdateDraft(
       }
     }
 
+    // Check if candidate email already belongs to an official submission
+    const candidateEmail = (
+      (payload as any).email ||
+      qData.email ||
+      payload.contactOfficer?.email ||
+      contractor?.contactOfficer?.email ||
+      ""
+    ).trim().toLowerCase();
+
+    if (candidateEmail && candidateEmail !== "contact@rda.gov.lk" && candidateEmail !== "contact@contractor.lk") {
+      const existingSubmittedByEmail = await Submission.findOne({
+        _id: { $ne: submission?._id },
+        status: { $in: ["Submitted", "Under_Review", "Verified"] },
+        $or: [
+          { "questionnaireData.email": candidateEmail },
+          { "questionnaireData.participant1.email": candidateEmail },
+          { "questionnaireData._emailSentTo": candidateEmail },
+        ],
+      }).select("submissionReference").lean();
+
+      if (existingSubmittedByEmail) {
+        // Clean up this draft immediately so it does not linger in the database or admin account
+        if (submission) {
+          await Promise.all([
+            Submission.deleteOne({ _id: submission._id }),
+            contractor && contractor.status === "Draft" ? Contractor.deleteOne({ _id: contractor._id }) : Promise.resolve(),
+            DraftToken.deleteOne({ _id: draftTokenDoc._id }),
+          ]).catch(() => {});
+        }
+
+        throw new Error(
+          `The email address "${candidateEmail}" has already been used for an official submission (${(existingSubmittedByEmail as any).submissionReference}). Each organization may only submit once per email address.`
+        );
+      }
+    }
+
     // Update draft access timestamp
     draftTokenDoc.lastAccessedAt = new Date();
 
@@ -590,6 +626,13 @@ export async function submitFinalDeclaration(
     }).select("submissionReference").lean();
 
     if (duplicateEmailSub) {
+      // Clean up this draft immediately so it does not duplicate in admin account
+      await Promise.all([
+        Submission.deleteOne({ _id: submission._id }),
+        contractor && contractor.status === "Draft" ? Contractor.deleteOne({ _id: contractor._id }) : Promise.resolve(),
+        DraftToken.deleteOne({ _id: draftTokenDoc._id }),
+      ]).catch(() => {});
+
       throw new Error(
         `The email address "${targetEmailToCheck}" has already been used for an official registration (${(duplicateEmailSub as any).submissionReference}). Each organization may only submit once per email address.`
       );
@@ -612,6 +655,28 @@ export async function submitFinalDeclaration(
     contractor.save(),
     draftTokenDoc.save(),
   ]);
+
+  // Clean up any remaining draft submissions with this same email to prevent duplicates in admin account
+  if (targetEmailToCheck && targetEmailToCheck !== "contact@rda.gov.lk") {
+    const staleDrafts = await Submission.find({
+      status: "Draft",
+      _id: { $ne: submission._id },
+      $or: [
+        { "questionnaireData.email": targetEmailToCheck },
+        { "questionnaireData.participant1.email": targetEmailToCheck },
+      ],
+    }).select("_id contractor").lean();
+
+    if (staleDrafts.length > 0) {
+      const draftIds = staleDrafts.map((d) => d._id);
+      const draftContractorIds = staleDrafts.map((d) => d.contractor).filter(Boolean);
+      await Promise.all([
+        Submission.deleteMany({ _id: { $in: draftIds } }),
+        DraftToken.deleteMany({ submission: { $in: draftIds } }),
+        Contractor.deleteMany({ _id: { $in: draftContractorIds }, status: "Draft" }),
+      ]).catch(() => {});
+    }
+  }
 
   const officialSubmissionRef = submission.submissionReference;
 
@@ -806,6 +871,27 @@ export async function submitDirectDeclaration(
       isViewed: false,
     }),
   ]);
+
+  // Clean up any remaining draft submissions with this same email to prevent duplicates in admin account
+  if (candidateEmail && candidateEmail !== "contact@rda.gov.lk") {
+    const staleDrafts = await Submission.find({
+      status: "Draft",
+      $or: [
+        { "questionnaireData.email": candidateEmail },
+        { "questionnaireData.participant1.email": candidateEmail },
+      ],
+    }).select("_id contractor").lean();
+
+    if (staleDrafts.length > 0) {
+      const draftIds = staleDrafts.map((d) => d._id);
+      const draftContractorIds = staleDrafts.map((d) => d.contractor).filter(Boolean);
+      await Promise.all([
+        Submission.deleteMany({ _id: { $in: draftIds } }),
+        DraftToken.deleteMany({ submission: { $in: draftIds } }),
+        Contractor.deleteMany({ _id: { $in: draftContractorIds }, status: "Draft" }),
+      ]).catch(() => {});
+    }
+  }
 
   // Non-blocking audit log record
   recordActivityLog({

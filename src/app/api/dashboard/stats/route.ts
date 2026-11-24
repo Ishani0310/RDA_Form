@@ -213,6 +213,31 @@ export async function GET(request: NextRequest) {
     const totalWorkshopParticipants =
       participantsAggregation.length > 0 ? participantsAggregation[0].totalParticipants : 0;
 
+    // Clean up any stale duplicate drafts whose email already has an official submission
+    const completedSubmissions = await Submission.find(submittedBaseMatch)
+      .select("questionnaireData.email questionnaireData.participant1.email")
+      .lean();
+
+    const submittedEmails = new Set<string>();
+    for (const sub of completedSubmissions) {
+      const q = (sub as any).questionnaireData || {};
+      const e1 = q.email?.trim().toLowerCase();
+      const e2 = q.participant1?.email?.trim().toLowerCase();
+      if (e1 && e1 !== "contact@rda.gov.lk") submittedEmails.add(e1);
+      if (e2 && e2 !== "contact@rda.gov.lk") submittedEmails.add(e2);
+    }
+
+    if (submittedEmails.size > 0) {
+      const emailList = Array.from(submittedEmails);
+      await Submission.deleteMany({
+        status: "Draft",
+        $or: [
+          { "questionnaireData.email": { $in: emailList } },
+          { "questionnaireData.participant1.email": { $in: emailList } },
+        ],
+      }).catch(() => {});
+    }
+
     // -------------------------------------------------------------------------
     // CARD 8: Total Draft Registrations
     // Currently active, unsubmitted draft registrations (status === "Draft").

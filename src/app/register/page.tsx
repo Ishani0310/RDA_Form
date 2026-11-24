@@ -1249,8 +1249,8 @@ function RegisterForm() {
         district: formData.supplierDetails?.district?.trim() || undefined,
         contactOfficer: {
           name: formData.participant1?.fullName?.trim() || "Authorized Representative",
-          phone: formData.participant1?.mobileNumber?.trim() || formData.contactNumber?.trim() || "+94 11 000 0000",
-          email: formData.participant1?.email?.trim() || formData.email?.trim() || "contact@rda.gov.lk",
+          phone: formData.participant1?.mobileNumber?.trim() || formData.contactNumber?.trim() || "",
+          email: formData.participant1?.email?.trim() || formData.email?.trim() || "",
         },
       };
 
@@ -1300,7 +1300,15 @@ function RegisterForm() {
         return true;
       } else {
         setAutoSaveStatus("error");
-        if (!isAutoSave) {
+        if (data.message && data.message.includes("already been used")) {
+          setFormAlert({
+            type: "error",
+            message: data.message,
+          });
+          if (currentDraftToken) removeBrowserDraft(currentDraftToken);
+          setCurrentDraftToken("");
+          setCurrentReference("");
+        } else if (!isAutoSave) {
           setFormAlert({
             type: "error",
             message: data.message || "Failed to save draft progress.",
@@ -1563,8 +1571,8 @@ function RegisterForm() {
           district: formData.supplierDetails?.district?.trim() || undefined,
           contactOfficer: {
             name: formData.participant1?.fullName?.trim() || "Authorized Representative",
-            phone: formData.participant1?.mobileNumber?.trim() || formData.contactNumber?.trim() || "+94 11 000 0000",
-            email: formData.participant1?.email?.trim() || formData.email?.trim() || "contact@rda.gov.lk",
+            phone: formData.participant1?.mobileNumber?.trim() || formData.contactNumber?.trim() || "",
+            email: formData.participant1?.email?.trim() || formData.email?.trim() || "",
           },
           confirmationEmail: trimmedConfirmEmail,
         }),
@@ -1587,6 +1595,13 @@ function RegisterForm() {
         window.scrollTo({ top: 0, behavior: "smooth" });
       } else {
         const errorMsg = subData.message || "Submission rejected. Please check all required fields.";
+        if (errorMsg.includes("already been used")) {
+          if (tokenToSubmit) removeBrowserDraft(tokenToSubmit);
+          if (currentReference) removeBrowserDraft(currentReference);
+          setCurrentDraftToken("");
+          setCurrentReference("");
+          setSavedDraftsList(getBrowserSavedDrafts());
+        }
         const mapped = mapServerErrorMessageToField(errorMsg);
         if (mapped) {
           setShowReviewModal(false);

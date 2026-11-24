@@ -41,6 +41,33 @@ export async function GET(request: NextRequest) {
 
     await connectToDatabase();
 
+    // Prevent duplicate draft records: Clean up any stale drafts whose email already has an official submission
+    const completedSubmissions = await Submission.find({
+      status: { $in: ["Submitted", "Under_Review", "Verified", "Action_Required", "Rejected"] },
+    })
+      .select("questionnaireData.email questionnaireData.participant1.email")
+      .lean();
+
+    const submittedEmails = new Set<string>();
+    for (const sub of completedSubmissions) {
+      const q = (sub as any).questionnaireData || {};
+      const e1 = q.email?.trim().toLowerCase();
+      const e2 = q.participant1?.email?.trim().toLowerCase();
+      if (e1 && e1 !== "contact@rda.gov.lk") submittedEmails.add(e1);
+      if (e2 && e2 !== "contact@rda.gov.lk") submittedEmails.add(e2);
+    }
+
+    if (submittedEmails.size > 0) {
+      const emailList = Array.from(submittedEmails);
+      await Submission.deleteMany({
+        status: "Draft",
+        $or: [
+          { "questionnaireData.email": { $in: emailList } },
+          { "questionnaireData.participant1.email": { $in: emailList } },
+        ],
+      }).catch(() => {});
+    }
+
     const query: Record<string, unknown> = {};
 
     // Specific Form Filter
