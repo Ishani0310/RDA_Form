@@ -45,6 +45,7 @@ import {
   PROVINCE_DISTRICT_MAP,
   SriLankaProvince,
 } from "@/lib/questionnaire-types";
+import { LocationMapPicker } from "@/components/LocationMapPicker";
 
 interface DynamicFormRendererProps {
   questionnaire: IQuestionnaireData | { sections: IFormSection[]; title?: string; version?: string };
@@ -970,12 +971,31 @@ function renderSupplierMaterialsList(
   const handleToggle = (mat: string) => {
     if (disabled) return;
     let next: string[];
+    const nextCapacities = { ...capacities };
     if (selectedMaterials.includes(mat)) {
       next = selectedMaterials.filter((m) => m !== mat);
+      if (mat === "Other") {
+        Object.keys(nextCapacities).forEach((k) => {
+          if (k === "Other" || k.startsWith("Other (") || k.startsWith("Other:")) {
+            delete nextCapacities[k];
+          }
+        });
+        if (onGlobalChange) {
+          onGlobalChange("supplierDetails.materialsOther", "");
+        }
+      } else {
+        delete nextCapacities[mat];
+      }
     } else {
       next = [...selectedMaterials, mat];
+      if (mat !== "Other") {
+        nextCapacities[mat] = nextCapacities[mat] || { quantity: "", unit: "MT per year", rate: "", rateUnit: "cu.m" };
+      }
     }
     onChange(next);
+    if (onGlobalChange) {
+      onGlobalChange("supplierDetails.supplyCapacities", nextCapacities);
+    }
   };
 
   const handleCapacityChange = (mat: string, field: "quantity" | "unit" | "rate" | "rateUnit", val: string) => {
@@ -1027,11 +1047,24 @@ function renderSupplierMaterialsList(
       )}
 
       {selectedMaterials.length > 0 && (
-        <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
-          <span className="text-[11px] font-bold text-blue-900 uppercase block">
-            Annual Supply / Production Capacity &amp; Rates for Selected Materials
-          </span>
-          <div className="space-y-2">
+        <div className="space-y-3 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+          <div>
+            <span className="font-bold text-slate-900 uppercase text-[11px] block">
+              Annual Supply Capacity &amp; Rates *
+            </span>
+            <span className="text-[11px] text-slate-500">
+              Specify annual production or supply capacity with its unit (e.g. MT per year), and enter the unit rate with its selected unit.
+            </span>
+          </div>
+
+          {/* Desktop Header */}
+          <div className="hidden sm:grid sm:grid-cols-12 gap-2.5 px-3 py-1 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+            <div className="sm:col-span-2">Material</div>
+            <div className="sm:col-span-6">Annual Capacity (Quantity &amp; Unit)</div>
+            <div className="sm:col-span-4">Rate &amp; Unit</div>
+          </div>
+
+          <div className="space-y-2.5">
             {(() => {
               const rows: { key: string; label: string }[] = [];
               const rawOther = allValues?.["supplierDetails.materialsOther"] || "";
@@ -1053,11 +1086,12 @@ function renderSupplierMaterialsList(
               });
 
               return rows.map((row) => {
+                const defaultUnit = "MT per year";
                 const cap =
                   capacities[row.key] ||
                   (row.key.startsWith("Other (") && others.length === 1 ? capacities["Other"] : undefined) || {
                     quantity: "",
-                    unit: "MT per year",
+                    unit: defaultUnit,
                     rate: "",
                     rateUnit: "cu.m",
                   };
@@ -1065,43 +1099,56 @@ function renderSupplierMaterialsList(
                 return (
                   <div
                     key={row.key}
-                    className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 p-2.5 bg-white rounded-lg border border-slate-200 text-xs"
+                    className="p-3 bg-white border border-slate-200 rounded-lg space-y-2.5 sm:space-y-0 sm:grid sm:grid-cols-12 sm:gap-2.5 sm:items-center"
                   >
-                    <span className="font-semibold text-slate-800 sm:w-2/12">{row.label}</span>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:w-10/12">
-                      {/* 1. Quantity & Unit (like early!) */}
+                    <div className="sm:col-span-2">
+                      <span className="font-semibold text-blue-950 text-xs sm:text-sm block">
+                        {row.label}
+                      </span>
+                    </div>
+
+                    {/* 1. Annual Capacity: Quantity + Unit */}
+                    <div className="sm:col-span-6">
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1 sm:hidden">
+                        Annual Capacity (Quantity &amp; Unit)
+                      </label>
                       <div className="flex items-center gap-1.5">
                         <input
                           type="text"
-                          placeholder="Quantity (e.g. 50,000)"
-                          value={cap.quantity || ""}
+                          value={cap.quantity !== null && cap.quantity !== undefined ? cap.quantity : ""}
                           onChange={(e) => handleCapacityChange(row.key, "quantity", e.target.value)}
+                          placeholder="Quantity (e.g. 50,000)"
                           disabled={disabled}
-                          className="w-1/2 p-1.5 border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-800 font-mono text-xs"
+                          className="w-1/2 p-2 bg-slate-50 border border-slate-300 rounded text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono disabled:opacity-50"
                         />
                         <input
                           type="text"
-                          placeholder="Unit (e.g. MT per year)"
                           value={cap.unit || ""}
                           onChange={(e) => handleCapacityChange(row.key, "unit", e.target.value)}
+                          placeholder="Unit (e.g. MT per year)"
                           disabled={disabled}
-                          className="w-1/2 p-1.5 border border-slate-300 rounded text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-800 text-xs"
+                          className="w-1/2 p-2 bg-slate-50 border border-slate-300 rounded text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 disabled:opacity-50"
                         />
                       </div>
+                    </div>
 
-                      {/* 2. Rate & cu.m / cube selector */}
+                    {/* 2. Rate & Unit */}
+                    <div className="sm:col-span-4">
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1 sm:hidden">
+                        Rate &amp; Unit
+                      </label>
                       <div className="flex items-center gap-1.5">
                         <div className="flex items-center w-3/5">
-                          <span className="px-2 py-1.5 bg-slate-100 border border-r-0 border-slate-300 rounded-l text-[10px] font-bold text-slate-600 select-none">
+                          <span className="px-2 py-2 bg-slate-100 border border-r-0 border-slate-300 rounded-l text-[10px] font-bold text-slate-600 select-none">
                             LKR
                           </span>
                           <input
                             type="text"
-                            placeholder="Rate (e.g. 4,500)"
-                            value={cap.rate || ""}
+                            value={cap.rate !== null && cap.rate !== undefined ? cap.rate : ""}
                             onChange={(e) => handleCapacityChange(row.key, "rate", e.target.value)}
+                            placeholder="Rate (e.g. 4,500)"
                             disabled={disabled}
-                            className="w-full p-1.5 border border-slate-300 rounded-r text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-800 font-mono text-xs"
+                            className="w-full p-2 bg-slate-50 border border-slate-300 rounded-r text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono disabled:opacity-50"
                           />
                         </div>
                         <div className="w-2/5">
@@ -1109,7 +1156,7 @@ function renderSupplierMaterialsList(
                             value={cap.rateUnit || "cu.m"}
                             onChange={(e) => handleCapacityChange(row.key, "rateUnit", e.target.value)}
                             disabled={disabled}
-                            className="w-full p-1.5 border border-slate-300 rounded text-slate-900 font-medium text-xs bg-white"
+                            className="w-full p-2 bg-slate-50 border border-slate-300 rounded text-xs text-slate-900 font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 disabled:opacity-50"
                           >
                             <option value="cu.m">cu.m</option>
                             <option value="cube">cube</option>
@@ -1127,6 +1174,121 @@ function renderSupplierMaterialsList(
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Built-in Peak Production Rates Table Renderer matching /register 100%
+ */
+function renderPeakProductionRatesTable(
+  value: any,
+  onChange: (val: any) => void,
+  disabled: boolean
+) {
+  const rates = value || { asp: null, concrete: null, abc: null };
+
+  const handleRateChange = (field: "asp" | "concrete" | "abc", rawVal: string) => {
+    if (disabled) return;
+    const num = rawVal === "" ? null : Number(rawVal);
+    onChange({
+      ...rates,
+      [field]: isNaN(num as number) ? null : num,
+    });
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="overflow-x-auto rounded-xl border border-slate-200 shadow-sm bg-white">
+        <table className="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+              <th className="p-3 w-1/3">Name</th>
+              <th className="p-3 w-1/4">Unit</th>
+              <th className="p-3">Qty</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-200 bg-white font-medium">
+            {/* Row 1: Asphalt Concrete (Binder / Wearing Course) */}
+            <tr className="hover:bg-slate-50/60 transition-colors">
+              <td className="p-3">
+                <span className="font-bold text-slate-900 block">Asphalt Concrete</span>
+                <span className="text-[10px] text-slate-500">Binder / Wearing Course</span>
+              </td>
+              <td className="p-3">
+                <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-900 font-mono font-bold text-[11px] border border-blue-200">
+                  SQM
+                </span>
+              </td>
+              <td className="p-3">
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  id="input-peakProductionRates-asp"
+                  value={rates.asp !== null && rates.asp !== undefined ? rates.asp : ""}
+                  onChange={(e) => handleRateChange("asp", e.target.value)}
+                  placeholder="Enter Asp quantity (SQM)..."
+                  disabled={disabled}
+                  className="w-full p-2 rounded bg-slate-50 border border-slate-300 text-slate-900 font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 text-xs disabled:opacity-50"
+                />
+              </td>
+            </tr>
+
+            {/* Row 2: Concrete */}
+            <tr className="hover:bg-slate-50/60 transition-colors">
+              <td className="p-3">
+                <span className="font-bold text-slate-900 block">Concrete</span>
+                <span className="text-[10px] text-slate-500">Structural &amp; Pavement Concrete</span>
+              </td>
+              <td className="p-3">
+                <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-900 font-mono font-bold text-[11px] border border-emerald-200">
+                  Cum
+                </span>
+              </td>
+              <td className="p-3">
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  id="input-peakProductionRates-concrete"
+                  value={rates.concrete !== null && rates.concrete !== undefined ? rates.concrete : ""}
+                  onChange={(e) => handleRateChange("concrete", e.target.value)}
+                  placeholder="Enter Concrete quantity (Cum)..."
+                  disabled={disabled}
+                  className="w-full p-2 rounded bg-slate-50 border border-slate-300 text-slate-900 font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 text-xs disabled:opacity-50"
+                />
+              </td>
+            </tr>
+
+            {/* Row 3: ABC */}
+            <tr className="hover:bg-slate-50/60 transition-colors">
+              <td className="p-3">
+                <span className="font-bold text-slate-900 block">ABC</span>
+                <span className="text-[10px] text-slate-500">Aggregate Base Course</span>
+              </td>
+              <td className="p-3">
+                <span className="px-2 py-0.5 rounded bg-purple-50 text-purple-900 font-mono font-bold text-[11px] border border-purple-200">
+                  Cum
+                </span>
+              </td>
+              <td className="p-3">
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  id="input-peakProductionRates-abc"
+                  value={rates.abc !== null && rates.abc !== undefined ? rates.abc : ""}
+                  onChange={(e) => handleRateChange("abc", e.target.value)}
+                  placeholder="Enter ABC quantity (Cum)..."
+                  disabled={disabled}
+                  className="w-full p-2 rounded bg-slate-50 border border-slate-300 text-slate-900 font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 text-xs disabled:opacity-50"
+                />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -1630,6 +1792,16 @@ function renderFieldInput(
     return renderSimilarWorksContracts(value, onChange, disabled);
   }
 
+  // 6. Built-in Peak Production Rates
+  if (
+    question.id === "peakProductionRates" ||
+    question.code === "Q25D" ||
+    question.fieldType === ("complex_peak_production_rates" as any) ||
+    (question.text && question.text.toLowerCase().includes("production rate within to consider 12 months"))
+  ) {
+    return renderPeakProductionRatesTable(value, onChange, disabled);
+  }
+
   const baseInputClasses = `w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 disabled:opacity-50 text-xs sm:text-sm ${
     error ? "border-rose-400 focus:ring-rose-500" : ""
   }`;
@@ -1648,18 +1820,42 @@ function renderFieldInput(
         />
       );
 
-    case "long_text":
+    case "long_text": {
+      const isLocationAddress =
+        question.id === "supplierDetails.locationAddress" ||
+        question.code === "Q14" ||
+        question.id.toLowerCase().includes("locationaddress") ||
+        (question.text && question.text.toLowerCase().includes("location address"));
+
       return (
-        <textarea
-          id={`input-${question.id}`}
-          rows={3}
-          value={value ?? ""}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={question.placeholder || "Enter details..."}
-          disabled={disabled}
-          className={baseInputClasses}
-        />
+        <div className="space-y-3">
+          <textarea
+            id={`input-${question.id}`}
+            rows={3}
+            value={value ?? ""}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={question.placeholder || "Enter details..."}
+            disabled={disabled}
+            className={baseInputClasses}
+          />
+          {isLocationAddress && (
+            <LocationMapPicker
+              latitude={allValues?.["supplierDetails.latitude"] ?? allValues?.["latitude"]}
+              longitude={allValues?.["supplierDetails.longitude"] ?? allValues?.["longitude"]}
+              disabled={disabled}
+              onChange={(lat, lng) => {
+                if (onGlobalChange) {
+                  onGlobalChange("supplierDetails.latitude", lat);
+                  onGlobalChange("supplierDetails.longitude", lng);
+                  onGlobalChange("latitude", lat);
+                  onGlobalChange("longitude", lng);
+                }
+              }}
+            />
+          )}
+        </div>
       );
+    }
 
     case "integer":
       return (
