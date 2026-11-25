@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     const pageParam = parseInt(searchParams.get("page") || "1", 10);
     const limitParam = parseInt(searchParams.get("limit") || "10", 10);
     const page = Math.max(1, isNaN(pageParam) ? 1 : pageParam);
-    const limit = Math.min(100, Math.max(1, isNaN(limitParam) ? 10 : limitParam));
+    const limit = Math.min(5000, Math.max(1, isNaN(limitParam) ? 10 : limitParam));
     const skip = (page - 1) * limit;
 
     await connectToDatabase();

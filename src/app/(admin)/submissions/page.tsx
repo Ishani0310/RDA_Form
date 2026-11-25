@@ -949,6 +949,7 @@ function SubmissionsContent() {
   const [subToDelete, setSubToDelete] = useState<FormattedSubmission | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteAlert, setDeleteAlert] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Edit submission modal state
   const [subToEdit, setSubToEdit] = useState<FormattedSubmission | null>(null);
@@ -1490,79 +1491,312 @@ function SubmissionsContent() {
     URL.revokeObjectURL(url);
   };
 
-  const handleExportAllCsv = () => {
-    if (!submissions || submissions.length === 0) {
-      alert("No submission records available to export.");
-      return;
+  const handleExportAllCsv = async () => {
+    try {
+      setIsExporting(true);
+
+      // Build query to fetch all matching records (up to 5000) using current filters
+      const params = new URLSearchParams({
+        page: "1",
+        limit: "5000",
+      });
+      if (search.trim()) params.append("search", search.trim());
+      if (status !== "All Statuses") params.append("status", status);
+      if (province !== "All Provincial Offices") params.append("province", province);
+      if (category !== "All Categories") params.append("category", category);
+      if (attendance !== "All Attendance") params.append("attendance", attendance);
+      if (reviewFilter !== "all") params.append("viewStatus", reviewFilter);
+
+      let dataToExport = submissions;
+      try {
+        const res = await fetch(`/api/submissions?${params.toString()}`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+            dataToExport = json.data;
+          }
+        }
+      } catch {
+        // Fallback to local state if network fetch fails
+      }
+
+      if (!dataToExport || dataToExport.length === 0) {
+        alert("No submission records available to export.");
+        return;
+      }
+
+      const headers = [
+        // Filing & Administrative Identification
+        "Reference Number",
+        "Organization / Entity Name",
+        "Category",
+        "Filing Status",
+        "Review Status",
+        "Reviewed By",
+        "Created Date",
+        "Last Updated Date",
+        "Filing Submitted Date",
+
+        // Section 1: Basic Information
+        "Official Contact Number",
+        "Official Email Address",
+        "Workshop Attendance (07 Dec 2026)",
+
+        // Section 3: Nominated Representatives
+        "Participant 1: Full Name",
+        "Participant 1: Designation",
+        "Participant 1: Mobile Number",
+        "Participant 1: Email",
+        "Participant 2: Full Name",
+        "Participant 2: Designation",
+        "Participant 2: Mobile Number",
+        "Participant 2: Email",
+
+        // Section 4 (Contractor): Accreditation
+        "Contractor: ICTAD / CIDA Registration No",
+        "Contractor: CIDA Grading",
+        "Contractor: Areas of Specialty",
+        "Provincial Office",
+        "District",
+
+        // Section 4 (Supplier): Materials & Capacity
+        "Supplier: Company Name",
+        "Supplier: Materials Supplied",
+        "Supplier: Location Address",
+        "Supplier: Province",
+        "Supplier: District",
+        "Supplier: GPS Latitude",
+        "Supplier: GPS Longitude",
+        "Supplier: Supply Capacities",
+
+        // Section 5: Financial Capability (5-Year Statements)
+        "Financials 2024/25: Total Revenue (LKR)",
+        "Financials 2024/25: Profit Before Tax (LKR)",
+        "Financials 2024/25: Working Capital (LKR)",
+        "Financials 2024/25: Total Assets (LKR)",
+        "Financials 2024/25: Total Liabilities (LKR)",
+        "Financials 2024/25: Total Equity (LKR)",
+        "Financials 2023/24: Total Revenue (LKR)",
+        "Financials 2023/24: Profit Before Tax (LKR)",
+        "Financials 2022/23: Total Revenue (LKR)",
+        "Financials 2022/23: Profit Before Tax (LKR)",
+        "Financials 2021/22: Total Revenue (LKR)",
+        "Financials 2021/22: Profit Before Tax (LKR)",
+        "Financials 2020/21: Total Revenue (LKR)",
+        "Financials 2020/21: Profit Before Tax (LKR)",
+
+        // Section 6: Loan Commitments
+        "Loan Commitments: 2-Year Repayments Due 2026-2028 (LKR)",
+
+        // Section 7 & 8: Work Commitments & Ongoing Works
+        "Has Ongoing Contracts",
+        "Total Outstanding Works Value (LKR Million)",
+        "Ongoing Contract 1 (Name | Value | Due Date | Employer)",
+        "Ongoing Contract 2 (Name | Value | Due Date | Employer)",
+        "Ongoing Contract 3 (Name | Value | Due Date | Employer)",
+
+        // Section 9: Experience & Peak Production Rates
+        "General Construction Experience",
+        "Past RDA or ICDP Experience",
+        "RDA / ICDP Engagement Entity",
+        "RDA / ICDP Project Details",
+        "Peak Production: Asphalt Concrete (SQM/12mo)",
+        "Peak Production: Concrete (Cum/12mo)",
+        "Peak Production: Aggregate Base Course ABC (Cum/12mo)",
+
+        // Section 10: Similar Work Experience & Future Forecast
+        "Similar Contract 1 (Name | Value | Status | Type)",
+        "Similar Contract 2 (Name | Value | Status | Type)",
+        "Similar Contract 3 (Name | Value | Status | Type)",
+        "Forecasted Annual Turnover 2027 (LKR Million)",
+        "Forecasted Rural Road Length (Km/Year)",
+        "Forecasted National / Provincial Road Length (Km/Year)",
+        "Preferable Operating Districts",
+
+        // Section 10 Part C: Contract Non-Performance & Litigation
+        "Historical Litigation / Non-Performance Type",
+        "Litigation: Contract Identification",
+        "Litigation: Employer Name",
+        "Litigation: Reason for Dispute / Non-Performance",
+        "Litigation: Matter in Dispute",
+
+        // Section 11: Matters for Discussion
+        "Matters, Concerns & Suggestions for Discussion",
+      ];
+
+      const rows = dataToExport.map((s) => {
+        const q = s.questionnaireData || {};
+        const reg =
+          q.ictadRegistrationNumber ||
+          (s.regNo &&
+          !s.regNo.startsWith("DFT-") &&
+          !s.regNo.startsWith("REG-") &&
+          s.regNo !== "N/A" &&
+          s.regNo !== "Not Registered"
+            ? s.regNo
+            : "");
+        const prov =
+          q.supplierDetails?.province ||
+          (q.province && q.province !== "Western Province" ? q.province : "") ||
+          (q.participantCategory === "Supplier" ? s.provincialOffice : "") ||
+          s.provincialOffice ||
+          "";
+        const dist =
+          q.supplierDetails?.district ||
+          (q.district && q.district !== "Unassigned District" ? q.district : "") ||
+          "";
+
+        // Specialty
+        const specialty = Array.isArray(q.areasOfSpecialty)
+          ? q.areasOfSpecialty.join("; ")
+          : (q.areasOfSpecialty || "");
+
+        // Materials supplied
+        const materials = Array.isArray(q.supplierDetails?.materialsSupplied)
+          ? q.supplierDetails.materialsSupplied.join("; ")
+          : (q.supplierDetails?.materialsSupplied || "");
+
+        // Supply capacities
+        const capacities = q.supplierDetails?.supplyCapacities
+          ? Object.entries(q.supplierDetails.supplyCapacities)
+              .map(([mat, val]: any) => `${mat}: ${val?.quantity || ""} ${val?.unit || ""}`)
+              .join("; ")
+          : "";
+
+        // Preferable districts
+        const prefDistricts = Array.isArray(q.preferableDistricts)
+          ? q.preferableDistricts.join("; ")
+          : (q.preferableDistricts || "");
+
+        // Ongoing contracts format helper
+        const formatContract = (c: any) =>
+          c && c.contractName
+            ? `${c.contractName}${c.contractAmount ? ` | LKR ${Number(c.contractAmount).toLocaleString()}` : ""}${c.completionDate ? ` | Due: ${c.completionDate}` : ""}${c.employerName ? ` | Employer: ${c.employerName}` : ""}`
+            : "";
+
+        // Similar contracts format helper
+        const formatSimilar = (c: any) =>
+          c && c.contractName
+            ? `${c.contractName}${c.contractAmount ? ` | LKR ${Number(c.contractAmount).toLocaleString()}` : ""}${c.completionStatus ? ` | Status: ${c.completionStatus}` : ""}${c.contractType ? ` | Type: ${c.contractType}` : ""}`
+            : "";
+
+        // Peak production rates
+        const peakAsphalt = q.peakProductionRates?.asphaltConcrete ?? "";
+        const peakConcrete = q.peakProductionRates?.concrete ?? "";
+        const peakAbc = q.peakProductionRates?.abc ?? "";
+
+        // Financials (2020/21 - 2024/25)
+        const fin24 = q.financialStatements?.["2024/25"] || {};
+        const fin23 = q.financialStatements?.["2023/24"] || {};
+        const fin22 = q.financialStatements?.["2022/23"] || {};
+        const fin21 = q.financialStatements?.["2021/22"] || {};
+        const fin20 = q.financialStatements?.["2020/21"] || {};
+
+        return [
+          s.ref,
+          s.contractor,
+          q.participantCategory || "General",
+          s.status,
+          s.isViewed ? "Seen / Checked" : "Unseen",
+          s.viewedByName || "",
+          s.createdAt || "",
+          s.updatedAt || "",
+          s.submittedAt || "",
+
+          q.contactNumber || "",
+          q.email || "",
+          q.willParticipate || "",
+
+          q.participant1?.fullName || "",
+          q.participant1?.designation || "",
+          q.participant1?.mobileNumber || "",
+          q.participant1?.email || "",
+          q.participant2?.fullName || "",
+          q.participant2?.designation || "",
+          q.participant2?.mobileNumber || "",
+          q.participant2?.email || "",
+
+          reg,
+          q.cidaGrade || (s.grade && s.grade !== "Pending" && s.grade !== "N/A" ? s.grade : ""),
+          specialty,
+          prov,
+          dist,
+
+          q.supplierDetails?.companyName || "",
+          materials,
+          q.supplierDetails?.locationAddress || "",
+          q.supplierDetails?.province || "",
+          q.supplierDetails?.district || "",
+          q.supplierDetails?.latitude ?? "",
+          q.supplierDetails?.longitude ?? "",
+          capacities,
+
+          fin24.totalRevenue ?? "",
+          fin24.profitBeforeTax ?? "",
+          fin24.workingCapital ?? "",
+          fin24.totalAssets ?? "",
+          fin24.totalLiabilities ?? "",
+          fin24.totalEquity ?? "",
+
+          fin23.totalRevenue ?? "",
+          fin23.profitBeforeTax ?? "",
+          fin22.totalRevenue ?? "",
+          fin22.profitBeforeTax ?? "",
+          fin21.totalRevenue ?? "",
+          fin21.profitBeforeTax ?? "",
+          fin20.totalRevenue ?? "",
+          fin20.profitBeforeTax ?? "",
+
+          q.loanCommitments?.twoYearRepaymentsDue2026To2028 ?? "",
+
+          q.hasOngoingContracts || "",
+          q.totalOutstandingValueLkrMillion ?? "",
+          formatContract(q.ongoingContracts?.[0]),
+          formatContract(q.ongoingContracts?.[1]),
+          formatContract(q.ongoingContracts?.[2]),
+
+          q.generalExperience || "",
+          q.hasRdaOrIcdpExperience || "",
+          q.rdaIcdpExperienceType || "",
+          q.rdaIcdpProjectDetails || "",
+          peakAsphalt,
+          peakConcrete,
+          peakAbc,
+
+          formatSimilar(q.similarWorks?.[0]),
+          formatSimilar(q.similarWorks?.[1]),
+          formatSimilar(q.similarWorks?.[2]),
+          q.forecastedCapacity2027 ?? "",
+          q.forecastedRuralRoadKmPerYear ?? "",
+          q.forecastedNationalProvincialKmPerYear ?? "",
+          prefDistricts,
+
+          q.historicalLitigationType || "None",
+          q.historicalContractIdentification || "",
+          q.historicalEmployerName || "",
+          q.historicalReason || "",
+          q.historicalMatterDispute || "",
+
+          q.mattersForDiscussion || "",
+        ].map((val) => `"${String(val ?? "").replace(/"/g, '""')}"`);
+      });
+
+      const csvContent =
+        "\uFEFF" + [headers.join(","), ...rows.map((r) => r.join(","))].join("\r\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `RDA_Submissions_All_Fields_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err: unknown) {
+      alert("Failed to export submissions: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setIsExporting(false);
     }
-
-    const headers = [
-      "Reference Number",
-      "Organization Name",
-      "Category",
-      "Attendance (07 Dec 2026)",
-      "Registration / ICTAD No",
-      "CIDA Grade",
-      "Provincial Office",
-      "District",
-      "Contact Phone",
-      "Email",
-      "Participant 1 Name",
-      "Participant 1 Designation",
-      "Participant 1 Phone",
-      "Participant 2 Name",
-      "Participant 2 Designation",
-      "Status",
-      "Submitted Date",
-    ];
-
-    const rows = submissions.map((s) => {
-      const q = s.questionnaireData || {};
-      const reg =
-        q.ictadRegistrationNumber ||
-        (s.regNo &&
-        !s.regNo.startsWith("DFT-") &&
-        !s.regNo.startsWith("REG-") &&
-        s.regNo !== "N/A" &&
-        s.regNo !== "Not Registered"
-          ? s.regNo
-          : "");
-      const prov =
-        q.supplierDetails?.province ||
-        (q.province && q.province !== "Western Province" ? q.province : "") ||
-        (q.participantCategory === "Supplier" ? s.provincialOffice : "");
-      const dist = q.supplierDetails?.district || (q.district && q.district !== "Unassigned District" ? q.district : "");
-      return [
-        s.ref,
-        s.contractor,
-        q.participantCategory || "General",
-        q.willParticipate || "",
-        reg,
-        q.cidaGrade || (s.grade && s.grade !== "Pending" && s.grade !== "N/A" ? s.grade : ""),
-        prov,
-        dist,
-        q.contactNumber || "",
-        q.email || "",
-        q.participant1?.fullName || "",
-        q.participant1?.designation || "",
-        q.participant1?.mobileNumber || "",
-        q.participant2?.fullName || "",
-        q.participant2?.designation || "",
-        s.status,
-        s.submittedAt,
-      ].map((val) => `"${String(val ?? "").replace(/"/g, '""')}"`);
-    });
-
-    const csvContent = "\uFEFF" + [headers.join(","), ...rows.map((r) => r.join(","))].join("\r\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `RDA_Submissions_Export_${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
   };
 
   const getStatusBadge = (s: string) => {
@@ -1683,12 +1917,16 @@ function SubmissionsContent() {
           <button
             type="button"
             onClick={handleExportAllCsv}
-            disabled={loading || submissions.length === 0}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 shadow-sm transition-all disabled:opacity-60"
-            title="Export all filtered submissions to CSV"
+            disabled={loading || isExporting}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 shadow-sm transition-all disabled:opacity-60 cursor-pointer"
+            title="Export all submissions with all form fields to Excel (CSV)"
           >
-            <Download className="w-3.5 h-3.5 text-slate-500" />
-            <span>Export Submissions (CSV)</span>
+            {isExporting ? (
+              <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-900" />
+            ) : (
+              <Download className="w-3.5 h-3.5 text-slate-500" />
+            )}
+            <span>{isExporting ? "Exporting All Fields..." : "Export to Excel (CSV)"}</span>
           </button>
         </div>
       </div>
