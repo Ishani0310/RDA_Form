@@ -684,6 +684,42 @@ function generateSubmissionHtml(sub: FormattedSubmission): string {
     </div>
     ` : ""}
 
+    ${q.forecastedCapacity2027 || q.forecastedRuralRoadKmPerYear || q.forecastedNationalProvincialKmPerYear || (Array.isArray(q.preferableDistricts) && q.preferableDistricts.length > 0) ? `
+    <div class="section-card">
+      <div class="section-head">6. Annual Capacity Forecast (2027) &amp; Operational Preferences</div>
+      <div class="section-body">
+        <div class="grid-3">
+          ${q.forecastedCapacity2027 ? `
+          <div>
+            <div class="field-label">Forecasted 2027 Turnover:</div>
+            <div class="field-value" style="font-weight: bold; color: #065f46;">LKR ${Number(q.forecastedCapacity2027).toLocaleString()} Million</div>
+          </div>
+          ` : ""}
+          ${q.forecastedRuralRoadKmPerYear ? `
+          <div>
+            <div class="field-label">Rural Roads Capacity:</div>
+            <div class="field-value" style="font-weight: bold; color: #065f46;">${escapeHtml(q.forecastedRuralRoadKmPerYear)} Km/Year</div>
+          </div>
+          ` : ""}
+          ${q.forecastedNationalProvincialKmPerYear ? `
+          <div>
+            <div class="field-label">National / Provincial Roads:</div>
+            <div class="field-value" style="font-weight: bold; color: #065f46;">${escapeHtml(q.forecastedNationalProvincialKmPerYear)} Km/Year</div>
+          </div>
+          ` : ""}
+        </div>
+        ${Array.isArray(q.preferableDistricts) && q.preferableDistricts.length > 0 ? `
+        <div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid #e2e8f0;">
+          <div class="field-label">Preferable Operating Districts:</div>
+          <div style="margin-top: 2px;">
+            ${q.preferableDistricts.map((d: string) => `<span class="badge" style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;">📍 ${escapeHtml(d)}</span>`).join("")}
+          </div>
+        </div>
+        ` : ""}
+      </div>
+    </div>
+    ` : ""}
+
     ${(() => {
       const histRecords = Array.isArray(q.historicalLitigationRecords) && q.historicalLitigationRecords.length > 0
         ? q.historicalLitigationRecords.filter((r: any) => r && r.litigationType && r.litigationType !== "None")
@@ -1948,6 +1984,19 @@ function SubmissionsContent() {
                               {selectedSub.questionnaireData.supplierDetails.locationAddress}
                             </p>
                           )}
+                          {(selectedSub.questionnaireData.supplierDetails?.latitude || selectedSub.questionnaireData.supplierDetails?.longitude) && (
+                            <div className="mt-1 flex items-center gap-1.5 text-[11px] text-purple-900 font-mono">
+                              <span>📍 GPS: {selectedSub.questionnaireData.supplierDetails.latitude}, {selectedSub.questionnaireData.supplierDetails.longitude}</span>
+                              <a
+                                href={`https://www.google.com/maps?q=${selectedSub.questionnaireData.supplierDetails.latitude},${selectedSub.questionnaireData.supplierDetails.longitude}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 underline font-sans text-[10px] ml-1 hover:text-blue-800"
+                              >
+                                View on Map ↗
+                              </a>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -2218,6 +2267,63 @@ function SubmissionsContent() {
                       </div>
                     )}
 
+                    {/* Forecasted Annual Capacity & Preferable Districts (Section 10 Part B) */}
+                    {(selectedSub.questionnaireData.forecastedCapacity2027 ||
+                      selectedSub.questionnaireData.forecastedRuralRoadKmPerYear ||
+                      selectedSub.questionnaireData.forecastedNationalProvincialKmPerYear ||
+                      (Array.isArray(selectedSub.questionnaireData.preferableDistricts) &&
+                        selectedSub.questionnaireData.preferableDistricts.length > 0)) && (
+                      <div className="p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/40 space-y-2">
+                        <span className="font-bold text-emerald-950 uppercase text-[11px] tracking-wide block">
+                          Annual Capacity Forecast (2027) &amp; Operational Preferences
+                        </span>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                          {selectedSub.questionnaireData.forecastedCapacity2027 && (
+                            <div className="p-2.5 bg-white rounded-lg border border-emerald-200/80">
+                              <span className="text-[10px] text-slate-500 font-bold uppercase block">Forecasted 2027 Turnover</span>
+                              <span className="font-mono font-bold text-emerald-900 text-xs">
+                                LKR {Number(selectedSub.questionnaireData.forecastedCapacity2027).toLocaleString()} Million
+                              </span>
+                            </div>
+                          )}
+                          {selectedSub.questionnaireData.forecastedRuralRoadKmPerYear && (
+                            <div className="p-2.5 bg-white rounded-lg border border-emerald-200/80">
+                              <span className="text-[10px] text-slate-500 font-bold uppercase block">Rural Roads Capacity</span>
+                              <span className="font-mono font-bold text-emerald-900 text-xs">
+                                {selectedSub.questionnaireData.forecastedRuralRoadKmPerYear} Km/Year
+                              </span>
+                            </div>
+                          )}
+                          {selectedSub.questionnaireData.forecastedNationalProvincialKmPerYear && (
+                            <div className="p-2.5 bg-white rounded-lg border border-emerald-200/80">
+                              <span className="text-[10px] text-slate-500 font-bold uppercase block">National / Provincial Roads</span>
+                              <span className="font-mono font-bold text-emerald-900 text-xs">
+                                {selectedSub.questionnaireData.forecastedNationalProvincialKmPerYear} Km/Year
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        {Array.isArray(selectedSub.questionnaireData.preferableDistricts) &&
+                          selectedSub.questionnaireData.preferableDistricts.length > 0 && (
+                          <div className="pt-2 border-t border-emerald-200/60">
+                            <span className="text-slate-500 text-[10px] uppercase font-bold block mb-1">
+                              Preferable Operating Districts:
+                            </span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {selectedSub.questionnaireData.preferableDistricts.map((dist: string) => (
+                                <span
+                                  key={dist}
+                                  className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 text-[11px] font-semibold"
+                                >
+                                  📍 {dist}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* Historical Litigation & Non-Performance */}
                     {(() => {
                       const histRecords = Array.isArray(selectedSub.questionnaireData.historicalLitigationRecords) && selectedSub.questionnaireData.historicalLitigationRecords.length > 0
@@ -2345,14 +2451,27 @@ function SubmissionsContent() {
                 )}
 
                 {/* Matters for Discussion */}
-                {selectedSub.questionnaireData.mattersForDiscussion && (
+                {(selectedSub.questionnaireData.mattersForDiscussion ||
+                  (Array.isArray(selectedSub.questionnaireData.mattersForDiscussionList) &&
+                    selectedSub.questionnaireData.mattersForDiscussionList.some((s: string) => s && s.trim()))) && (
                   <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 space-y-1.5">
                     <span className="font-bold text-slate-900 uppercase text-[11px] tracking-wide">
                       Matters for Discussion (07 Dec 2026 Agenda)
                     </span>
-                    <p className="text-slate-700 italic bg-white p-3 rounded border border-slate-200/80 leading-relaxed">
-                      &ldquo;{selectedSub.questionnaireData.mattersForDiscussion}&rdquo;
-                    </p>
+                    {Array.isArray(selectedSub.questionnaireData.mattersForDiscussionList) &&
+                    selectedSub.questionnaireData.mattersForDiscussionList.filter((s: string) => s && s.trim()).length > 0 ? (
+                      <ol className="list-decimal list-inside space-y-1 text-slate-700 bg-white p-3 rounded border border-slate-200/80 leading-relaxed font-sans">
+                        {selectedSub.questionnaireData.mattersForDiscussionList
+                          .filter((s: string) => s && s.trim())
+                          .map((item: string, idx: number) => (
+                            <li key={idx} className="pl-1">{item}</li>
+                          ))}
+                      </ol>
+                    ) : (
+                      <p className="text-slate-700 italic bg-white p-3 rounded border border-slate-200/80 leading-relaxed">
+                        &ldquo;{selectedSub.questionnaireData.mattersForDiscussion}&rdquo;
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
