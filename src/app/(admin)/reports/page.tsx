@@ -21,6 +21,8 @@ import {
   Truck,
   Landmark,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   RotateCcw,
   FileText,
   Copy,
@@ -31,6 +33,14 @@ import {
   Mail,
   UserCheck,
   UserX,
+  SlidersHorizontal,
+  Plus,
+  Trash2,
+  Check,
+  AlertCircle,
+  Factory,
+  HardHat,
+  Scale,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -52,6 +62,13 @@ interface FormattedSubmission {
   reviewedBy?: string;
 }
 
+interface CustomRule {
+  id: string;
+  field: string;
+  operator: "contains" | "not_contains" | "equals" | "is_not_empty" | "is_empty";
+  value: string;
+}
+
 const PROVINCES = [
   "All 9 Provinces (National Level)",
   "Western Province",
@@ -63,6 +80,35 @@ const PROVINCES = [
   "North Central Province",
   "Uva Province",
   "Sabaragamuwa Province",
+];
+
+const DISTRICTS = [
+  "All Districts",
+  "Colombo",
+  "Gampaha",
+  "Kalutara",
+  "Kandy",
+  "Matale",
+  "Nuwara Eliya",
+  "Galle",
+  "Matara",
+  "Hambantota",
+  "Jaffna",
+  "Kilinochchi",
+  "Mannar",
+  "Vavuniya",
+  "Mullaitivu",
+  "Batticaloa",
+  "Ampara",
+  "Trincomalee",
+  "Kurunegala",
+  "Puttalam",
+  "Anuradhapura",
+  "Polonnaruwa",
+  "Badulla",
+  "Monaragala",
+  "Ratnapura",
+  "Kegalle",
 ];
 
 const CIDA_GRADES = [
@@ -99,8 +145,75 @@ const ATTENDANCE_OPTIONS = [
   { label: "Will Not Participate (Non-Attendee - No)", value: "No" },
 ];
 
+const SPECIALTIES = [
+  "All Specialties",
+  "Highway",
+  "Bridges",
+  "Soil Nailing & Stabilization",
+  "Other",
+];
+
+const EXPERIENCE_OPTIONS = [
+  "All Experience Levels",
+  "Less than 5 years",
+  "5 to 10 years",
+  "More than 10 and up to 20 years",
+  "More than 20 and up to 30 years",
+  "More than 30 years",
+];
+
+const SUPPLIER_MATERIALS = [
+  "All Materials",
+  "Bitumen & Asphalt",
+  "Aggregates & Quarry Products",
+  "Cement & Concrete",
+  "Steel & Rebar",
+  "Precast Concrete Units",
+  "Soil, Sand & Earth",
+  "Bitumen Emulsion",
+  "Geotextiles & Geosynthetics",
+];
+
+const LITIGATION_OPTIONS = [
+  "All Legal Records",
+  "Clean Record (None)",
+  "Has Non-Performing Contract",
+  "Has Pending Litigation",
+  "Has Past Litigation History",
+];
+
+const OUTSTANDING_VALUE_OPTIONS = [
+  { label: "Any Outstanding Works", value: "all" },
+  { label: "None / Zero Outstanding Works", value: "zero" },
+  { label: "Under LKR 50 Million", value: "<50" },
+  { label: "LKR 50M – 200 Million", value: "50-200" },
+  { label: "LKR 200M – 500 Million", value: "200-500" },
+  { label: "Over LKR 500 Million", value: ">500" },
+  { label: "Over LKR 1 Billion", value: ">1000" },
+];
+
+const CUSTOM_FILTER_FIELDS = [
+  { label: "Organization / Firm Name", key: "organizationName" },
+  { label: "ICTAD / CIDA Registration No", key: "ictadRegistrationNumber" },
+  { label: "Representative / Contact Person Name", key: "contactPerson" },
+  { label: "Designation / Position", key: "designation" },
+  { label: "Mobile / Phone Number", key: "phone" },
+  { label: "Official Email Address", key: "email" },
+  { label: "Operating District", key: "district" },
+  { label: "Preferable District", key: "preferableDistricts" },
+  { label: "Area of Specialty", key: "specialty" },
+  { label: "Supplier Company Name", key: "supplierCompany" },
+  { label: "Supplier Location Address", key: "supplierAddress" },
+  { label: "Supplier Materials Supplied", key: "supplierMaterials" },
+  { label: "RDA / ICDP Project Details", key: "rdaDetails" },
+  { label: "Ongoing Contract Name / Employer", key: "ongoingContractName" },
+  { label: "Similar Work Name", key: "similarWorkName" },
+  { label: "Discussion Matters / Concerns", key: "mattersForDiscussion" },
+  { label: "Litigation Dispute Details / Reason", key: "litigationDetails" },
+];
+
 export default function ReportsPage() {
-  // Filter States
+  // Primary Filter States
   const [attendance, setAttendance] = useState<string>("All Attendance");
   const [category, setCategory] = useState<string>("All Categories");
   const [province, setProvince] = useState<string>("All 9 Provinces (National Level)");
@@ -110,6 +223,24 @@ export default function ReportsPage() {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [search, setSearch] = useState<string>("");
+
+  // Secondary Detailed Field Filter States
+  const [district, setDistrict] = useState<string>("All Districts");
+  const [specialty, setSpecialty] = useState<string>("All Specialties");
+  const [experience, setExperience] = useState<string>("All Experience Levels");
+  const [rdaExp, setRdaExp] = useState<string>("all");
+  const [ongoingContracts, setOngoingContracts] = useState<string>("all");
+  const [outstandingValue, setOutstandingValue] = useState<string>("all");
+  const [hasAsphaltPlant, setHasAsphaltPlant] = useState<string>("all");
+  const [hasConcretePlant, setHasConcretePlant] = useState<string>("all");
+  const [hasAbcPlant, setHasAbcPlant] = useState<string>("all");
+  const [supplierMaterial, setSupplierMaterial] = useState<string>("All Materials");
+  const [litigation, setLitigation] = useState<string>("All Legal Records");
+  const [preferableDistrict, setPreferableDistrict] = useState<string>("All Preferred Districts");
+
+  // Dynamic Rule-Based Field Filters
+  const [customRules, setCustomRules] = useState<CustomRule[]>([]);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState<boolean>(false);
 
   // Data & Execution States
   const [submissions, setSubmissions] = useState<FormattedSubmission[]>([]);
@@ -148,7 +279,31 @@ export default function ReportsPage() {
     }
   };
 
-  // Fetch Submissions Data
+  // Add a dynamic rule
+  const handleAddCustomRule = () => {
+    setCustomRules((prev) => [
+      ...prev,
+      {
+        id: `rule_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        field: "organizationName",
+        operator: "contains",
+        value: "",
+      },
+    ]);
+    setShowAdvancedFilters(true);
+  };
+
+  const handleUpdateCustomRule = (id: string, updates: Partial<CustomRule>) => {
+    setCustomRules((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, ...updates } : r))
+    );
+  };
+
+  const handleRemoveCustomRule = (id: string) => {
+    setCustomRules((prev) => prev.filter((r) => r.id !== id));
+  };
+
+  // Fetch Submissions Data from Server
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
@@ -156,7 +311,7 @@ export default function ReportsPage() {
 
       const params = new URLSearchParams({
         page: "1",
-        limit: "5000", // Fetch up to 5000 for comprehensive analytics
+        limit: "5000", // Full dataset fetch for responsive in-memory multi-field filtering
       });
 
       if (attendance !== "All Attendance") params.append("attendance", attendance);
@@ -164,7 +319,6 @@ export default function ReportsPage() {
       if (province !== "All 9 Provinces (National Level)") params.append("province", province);
       if (cidaGrade !== "All Grades (CS1 to Specialist)") params.append("cidaGrade", cidaGrade);
       if (status !== "All Statuses") params.append("status", status);
-      if (search.trim()) params.append("search", search.trim());
       if (startDate) params.append("startDate", startDate);
       if (endDate) params.append("endDate", endDate);
 
@@ -184,7 +338,7 @@ export default function ReportsPage() {
     } finally {
       setLoading(false);
     }
-  }, [attendance, category, province, cidaGrade, status, search, startDate, endDate]);
+  }, [attendance, category, province, cidaGrade, status, startDate, endDate]);
 
   useEffect(() => {
     fetchData();
@@ -201,11 +355,294 @@ export default function ReportsPage() {
     setStartDate("");
     setEndDate("");
     setSearch("");
+    setDistrict("All Districts");
+    setSpecialty("All Specialties");
+    setExperience("All Experience Levels");
+    setRdaExp("all");
+    setOngoingContracts("all");
+    setOutstandingValue("all");
+    setHasAsphaltPlant("all");
+    setHasConcretePlant("all");
+    setHasAbcPlant("all");
+    setSupplierMaterial("All Materials");
+    setLitigation("All Legal Records");
+    setPreferableDistrict("All Preferred Districts");
+    setCustomRules([]);
   };
 
-  // Analytical Metrics Computations
+  // Compute Count of Active Advanced Filters
+  const activeAdvancedFilterCount = useMemo(() => {
+    let count = 0;
+    if (district !== "All Districts") count++;
+    if (specialty !== "All Specialties") count++;
+    if (experience !== "All Experience Levels") count++;
+    if (rdaExp !== "all") count++;
+    if (ongoingContracts !== "all") count++;
+    if (outstandingValue !== "all") count++;
+    if (hasAsphaltPlant !== "all") count++;
+    if (hasConcretePlant !== "all") count++;
+    if (hasAbcPlant !== "all") count++;
+    if (supplierMaterial !== "All Materials") count++;
+    if (litigation !== "All Legal Records") count++;
+    if (preferableDistrict !== "All Preferred Districts") count++;
+    count += customRules.length;
+    return count;
+  }, [
+    district,
+    specialty,
+    experience,
+    rdaExp,
+    ongoingContracts,
+    outstandingValue,
+    hasAsphaltPlant,
+    hasConcretePlant,
+    hasAbcPlant,
+    supplierMaterial,
+    litigation,
+    preferableDistrict,
+    customRules,
+  ]);
+
+  // Comprehensive Multi-Field Client-Side Filter Evaluation
+  const filteredSubmissions = useMemo(() => {
+    return submissions.filter((s) => {
+      const q = s.questionnaireData || {};
+
+      // 1. Attendance Filter
+      if (attendance !== "All Attendance") {
+        if (q.willParticipate !== attendance) return false;
+      }
+
+      // 2. Category Filter
+      if (category !== "All Categories") {
+        const cat = q.participantCategory || s.category;
+        if (cat !== category) return false;
+      }
+
+      // 3. Province Filter
+      if (province !== "All 9 Provinces (National Level)") {
+        const prov = s.provincialOffice || q.supplierDetails?.province;
+        if (prov !== province) return false;
+      }
+
+      // 4. CIDA Grade Filter
+      if (cidaGrade !== "All Grades (CS1 to Specialist)") {
+        const g = q.cidaGrade || s.grade;
+        if (g !== cidaGrade) return false;
+      }
+
+      // 5. Status Filter
+      if (status !== "All Statuses") {
+        if (status === "submitted" && s.status === "Draft") return false;
+        if (status === "draft" && s.status !== "Draft") return false;
+      }
+
+      // 6. District Filter
+      if (district !== "All Districts") {
+        const dist = q.district || q.supplierDetails?.district;
+        if (dist !== district) return false;
+      }
+
+      // 7. Area of Specialty Filter
+      if (specialty !== "All Specialties") {
+        const spec = q.specialty || "";
+        if (!spec.toLowerCase().includes(specialty.toLowerCase())) return false;
+      }
+
+      // 8. General Experience Filter
+      if (experience !== "All Experience Levels") {
+        if (q.generalExperience !== experience) return false;
+      }
+
+      // 9. Past RDA / ICDP Experience Filter
+      if (rdaExp !== "all") {
+        if (rdaExp === "yes" && q.hasRdaOrIcdpExperience !== "Yes") return false;
+        if (rdaExp === "no" && q.hasRdaOrIcdpExperience !== "No") return false;
+      }
+
+      // 10. Has Ongoing Contracts Filter
+      if (ongoingContracts !== "all") {
+        if (ongoingContracts === "yes" && q.hasOngoingContracts !== "Yes") return false;
+        if (ongoingContracts === "no" && q.hasOngoingContracts !== "No") return false;
+      }
+
+      // 11. Outstanding Works Value Filter
+      if (outstandingValue !== "all") {
+        const val = Number(q.totalOutstandingValueLkrMillion) || 0;
+        if (outstandingValue === "zero" && val > 0) return false;
+        if (outstandingValue === "<50" && (val === 0 || val >= 50)) return false;
+        if (outstandingValue === "50-200" && (val < 50 || val > 200)) return false;
+        if (outstandingValue === "200-500" && (val < 200 || val > 500)) return false;
+        if (outstandingValue === ">500" && val <= 500) return false;
+        if (outstandingValue === ">1000" && val <= 1000) return false;
+      }
+
+      // 12. Plant Availability Filters (Asphalt, Concrete, ABC)
+      if (hasAsphaltPlant !== "all") {
+        const asp = Number(q.peakProductionRates?.asphaltConcrete || q.peakProductionRates?.asp) || 0;
+        if (hasAsphaltPlant === "yes" && asp <= 0) return false;
+        if (hasAsphaltPlant === "no" && asp > 0) return false;
+      }
+      if (hasConcretePlant !== "all") {
+        const conc = Number(q.peakProductionRates?.concrete) || 0;
+        if (hasConcretePlant === "yes" && conc <= 0) return false;
+        if (hasConcretePlant === "no" && conc > 0) return false;
+      }
+      if (hasAbcPlant !== "all") {
+        const abc = Number(q.peakProductionRates?.abc) || 0;
+        if (hasAbcPlant === "yes" && abc <= 0) return false;
+        if (hasAbcPlant === "no" && abc > 0) return false;
+      }
+
+      // 13. Supplier Materials Supplied Filter
+      if (supplierMaterial !== "All Materials") {
+        const mats = Array.isArray(q.supplierDetails?.materialsSupplied)
+          ? q.supplierDetails.materialsSupplied
+          : [];
+        const matchesMat = mats.some((m: string) =>
+          m.toLowerCase().includes(supplierMaterial.toLowerCase())
+        );
+        if (!matchesMat) return false;
+      }
+
+      // 14. Historical Litigation Filter
+      if (litigation !== "All Legal Records") {
+        const litType = (q.historicalLitigationType || "None").trim().toLowerCase();
+        if (litigation === "Clean Record (None)" && litType !== "none" && litType !== "") return false;
+        if (litigation === "Has Non-Performing Contract" && !litType.includes("non performing")) return false;
+        if (litigation === "Has Pending Litigation" && !litType.includes("pending")) return false;
+        if (litigation === "Has Past Litigation History" && !litType.includes("past")) return false;
+      }
+
+      // 15. Preferable Operating District Filter
+      if (preferableDistrict !== "All Preferred Districts") {
+        const prefList = Array.isArray(q.preferableDistricts) ? q.preferableDistricts : [];
+        if (!prefList.includes(preferableDistrict)) return false;
+      }
+
+      // 16. Multi-Field Global Search
+      if (search.trim()) {
+        const term = search.toLowerCase();
+        const matchSearch =
+          s.ref?.toLowerCase().includes(term) ||
+          s.contractor?.toLowerCase().includes(term) ||
+          q.organizationName?.toLowerCase().includes(term) ||
+          q.ictadRegistrationNumber?.toLowerCase().includes(term) ||
+          q.contactNumber?.toLowerCase().includes(term) ||
+          q.email?.toLowerCase().includes(term) ||
+          q.participant1?.fullName?.toLowerCase().includes(term) ||
+          q.participant1?.mobileNumber?.toLowerCase().includes(term) ||
+          q.participant1?.email?.toLowerCase().includes(term) ||
+          q.supplierDetails?.companyName?.toLowerCase().includes(term) ||
+          q.mattersForDiscussion?.toLowerCase().includes(term);
+        if (!matchSearch) return false;
+      }
+
+      // 17. Custom Field Query Rules (User-defined field/operator pairs)
+      for (const rule of customRules) {
+        if (!rule.field || (!rule.value && rule.operator !== "is_not_empty" && rule.operator !== "is_empty")) {
+          continue;
+        }
+
+        let targetValue = "";
+        switch (rule.field) {
+          case "organizationName":
+            targetValue = q.organizationName || s.contractor || "";
+            break;
+          case "ictadRegistrationNumber":
+            targetValue = q.ictadRegistrationNumber || s.regNo || "";
+            break;
+          case "contactPerson":
+            targetValue = q.participant1?.fullName || "";
+            break;
+          case "designation":
+            targetValue = q.participant1?.designation || "";
+            break;
+          case "phone":
+            targetValue = q.participant1?.mobileNumber || q.contactNumber || "";
+            break;
+          case "email":
+            targetValue = q.participant1?.email || q.email || "";
+            break;
+          case "district":
+            targetValue = q.district || q.supplierDetails?.district || "";
+            break;
+          case "preferableDistricts":
+            targetValue = Array.isArray(q.preferableDistricts) ? q.preferableDistricts.join(", ") : "";
+            break;
+          case "specialty":
+            targetValue = q.specialty || "";
+            break;
+          case "supplierCompany":
+            targetValue = q.supplierDetails?.companyName || "";
+            break;
+          case "supplierAddress":
+            targetValue = q.supplierDetails?.locationAddress || "";
+            break;
+          case "supplierMaterials":
+            targetValue = Array.isArray(q.supplierDetails?.materialsSupplied)
+              ? q.supplierDetails.materialsSupplied.join(", ")
+              : "";
+            break;
+          case "rdaDetails":
+            targetValue = `${q.rdaIcdpExperienceType || ""} ${q.rdaIcdpProjectDetails || ""}`;
+            break;
+          case "ongoingContractName":
+            targetValue = (q.ongoingContracts || [])
+              .map((c: any) => `${c.contractName} ${c.employerName}`)
+              .join("; ");
+            break;
+          case "similarWorkName":
+            targetValue = (q.similarWorks || [])
+              .map((c: any) => `${c.contractName} ${c.contractType}`)
+              .join("; ");
+            break;
+          case "mattersForDiscussion":
+            targetValue = q.mattersForDiscussion || "";
+            break;
+          case "litigationDetails":
+            targetValue = `${q.historicalLitigationType || ""} ${q.historicalContractIdentification || ""} ${q.historicalEmployerName || ""} ${q.historicalReason || ""}`;
+            break;
+        }
+
+        const valLower = targetValue.toLowerCase();
+        const ruleValLower = rule.value.toLowerCase().trim();
+
+        if (rule.operator === "contains" && !valLower.includes(ruleValLower)) return false;
+        if (rule.operator === "not_contains" && valLower.includes(ruleValLower)) return false;
+        if (rule.operator === "equals" && valLower !== ruleValLower) return false;
+        if (rule.operator === "is_not_empty" && !valLower.trim()) return false;
+        if (rule.operator === "is_empty" && valLower.trim()) return false;
+      }
+
+      return true;
+    });
+  }, [
+    submissions,
+    attendance,
+    category,
+    province,
+    cidaGrade,
+    status,
+    district,
+    specialty,
+    experience,
+    rdaExp,
+    ongoingContracts,
+    outstandingValue,
+    hasAsphaltPlant,
+    hasConcretePlant,
+    hasAbcPlant,
+    supplierMaterial,
+    litigation,
+    preferableDistrict,
+    search,
+    customRules,
+  ]);
+
+  // Analytical Metrics Computations on Filtered Submissions
   const analytics = useMemo(() => {
-    const total = submissions.length;
+    const total = filteredSubmissions.length;
     let willAttendCount = 0;
     let willNotAttendCount = 0;
     let contractorsCount = 0;
@@ -215,7 +652,7 @@ export default function ReportsPage() {
     const provinceMap: Record<string, number> = {};
     const gradeMap: Record<string, number> = {};
 
-    submissions.forEach((s) => {
+    filteredSubmissions.forEach((s) => {
       const q = s.questionnaireData || {};
       const willAttend = q.willParticipate === "Yes";
       const willNotAttend = q.willParticipate === "No";
@@ -228,11 +665,9 @@ export default function ReportsPage() {
       else if (cat === "Supplier") suppliersCount++;
       else if (cat === "Government Officer") govOfficersCount++;
 
-      // Province stats
       const prov = s.provincialOffice || q.supplierDetails?.province || "Unspecified";
       provinceMap[prov] = (provinceMap[prov] || 0) + 1;
 
-      // Grade stats
       const g = q.cidaGrade || s.grade;
       if (g && g !== "Pending" && g !== "N/A") {
         gradeMap[g] = (gradeMap[g] || 0) + 1;
@@ -254,19 +689,19 @@ export default function ReportsPage() {
       provinceMap,
       gradeMap,
     };
-  }, [submissions]);
+  }, [filteredSubmissions]);
 
-  // CSV Report Generator
+  // CSV Report Generator with UTF-8 BOM
   const handleExportCSV = (overrideAttendance?: string, reportTitleOverride?: string) => {
     try {
       setIsExporting(true);
 
       const dataset = overrideAttendance
-        ? submissions.filter((s) => s.questionnaireData?.willParticipate === overrideAttendance)
-        : submissions;
+        ? filteredSubmissions.filter((s) => s.questionnaireData?.willParticipate === overrideAttendance)
+        : filteredSubmissions;
 
       if (!dataset || dataset.length === 0) {
-        alert("No records match the selected export criteria.");
+        alert("No records match the current filter criteria to export.");
         return;
       }
 
@@ -340,7 +775,7 @@ export default function ReportsPage() {
           q.cidaGrade || (s.grade !== "Pending" ? s.grade : ""),
           q.specialty || "",
           s.provincialOffice || q.supplierDetails?.province || "",
-          q.supplierDetails?.district || "",
+          q.supplierDetails?.district || q.district || "",
           q.supplierDetails?.companyName || "",
           Array.isArray(q.supplierDetails?.materialsSupplied)
             ? q.supplierDetails.materialsSupplied.join("; ")
@@ -386,11 +821,6 @@ export default function ReportsPage() {
     }
   };
 
-  // Print Official Report View
-  const handlePrintReport = () => {
-    window.print();
-  };
-
   return (
     <div className="space-y-6 pb-12 print:p-0 print:space-y-3">
       {/* Official Print Header (Only visible on print/PDF generation) */}
@@ -413,10 +843,10 @@ export default function ReportsPage() {
           </div>
         </div>
         <div className="mt-2.5 pt-2 border-t border-slate-300 text-[10px] flex items-center justify-between text-slate-600">
-          <span>Attendance Filter: <strong>{attendance}</strong></span>
+          <span>Attendance: <strong>{attendance}</strong></span>
           <span>Category: <strong>{category}</strong></span>
           <span>Province: <strong>{province}</strong></span>
-          <span>Total Records: <strong>{analytics.total}</strong></span>
+          <span>Matching Records: <strong>{analytics.total}</strong></span>
         </div>
       </div>
 
@@ -438,16 +868,16 @@ export default function ReportsPage() {
           <button
             type="button"
             onClick={() => handleExportCSV()}
-            disabled={isExporting || submissions.length === 0}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 disabled:opacity-50 rounded-xl shadow-sm transition-all"
+            disabled={isExporting || filteredSubmissions.length === 0}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 disabled:opacity-50 rounded-xl shadow-sm transition-all cursor-pointer"
           >
             {isExporting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
             <span>Export Report (Excel/CSV)</span>
           </button>
           <button
             type="button"
-            onClick={handlePrintReport}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-xl shadow-sm transition-all"
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-xl shadow-sm transition-all cursor-pointer"
           >
             <Printer className="w-3.5 h-3.5 text-slate-600" />
             <span>Print Report</span>
@@ -461,25 +891,25 @@ export default function ReportsPage() {
         <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
           <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
             <FileText className="w-3 h-3 text-blue-900" />
-            Total Filings
+            Matching Filings
           </span>
           <div className="mt-2 flex items-baseline justify-between">
             <span className="text-2xl sm:text-3xl font-black text-slate-900 font-mono">
               {analytics.total}
             </span>
-            <span className="text-[10px] text-slate-400 font-medium">Matching</span>
+            <span className="text-[10px] text-slate-400 font-medium">Filtered</span>
           </div>
         </div>
 
         {/* Will Participate */}
         <div
-          onClick={() => setAttendance("Yes")}
+          onClick={() => setAttendance(attendance === "Yes" ? "All Attendance" : "Yes")}
           className={`p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer ${
             attendance === "Yes"
               ? "bg-emerald-100/70 border-emerald-500 shadow-md ring-2 ring-emerald-500/20"
               : "bg-emerald-50/60 border-emerald-200 hover:border-emerald-400"
           }`}
-          title="Click to filter by attendees"
+          title="Click to toggle attendee filter"
         >
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-emerald-900 uppercase tracking-wider flex items-center gap-1">
@@ -500,13 +930,13 @@ export default function ReportsPage() {
 
         {/* Won't Participate */}
         <div
-          onClick={() => setAttendance("No")}
+          onClick={() => setAttendance(attendance === "No" ? "All Attendance" : "No")}
           className={`p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer ${
             attendance === "No"
               ? "bg-amber-100/70 border-amber-500 shadow-md ring-2 ring-amber-500/20"
               : "bg-amber-50/60 border-amber-200 hover:border-amber-400"
           }`}
-          title="Click to filter by non-attendees"
+          title="Click to toggle non-attendee filter"
         >
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-amber-900 uppercase tracking-wider flex items-center gap-1">
@@ -527,13 +957,13 @@ export default function ReportsPage() {
 
         {/* Contractors */}
         <div
-          onClick={() => setCategory("Contractor")}
+          onClick={() => setCategory(category === "Contractor" ? "All Categories" : "Contractor")}
           className={`p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer ${
             category === "Contractor"
               ? "bg-blue-100/70 border-blue-500 shadow-md ring-2 ring-blue-500/20"
               : "bg-white border-slate-200 hover:border-blue-300"
           }`}
-          title="Click to filter contractors"
+          title="Click to toggle contractors filter"
         >
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1">
@@ -554,13 +984,13 @@ export default function ReportsPage() {
 
         {/* Suppliers */}
         <div
-          onClick={() => setCategory("Supplier")}
+          onClick={() => setCategory(category === "Supplier" ? "All Categories" : "Supplier")}
           className={`p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer ${
             category === "Supplier"
               ? "bg-purple-100/70 border-purple-500 shadow-md ring-2 ring-purple-500/20"
               : "bg-white border-slate-200 hover:border-purple-300"
           }`}
-          title="Click to filter suppliers"
+          title="Click to toggle suppliers filter"
         >
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1">
@@ -581,13 +1011,13 @@ export default function ReportsPage() {
 
         {/* Public Officers */}
         <div
-          onClick={() => setCategory("Government Officer")}
+          onClick={() => setCategory(category === "Government Officer" ? "All Categories" : "Government Officer")}
           className={`p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer ${
             category === "Government Officer"
               ? "bg-emerald-100/70 border-emerald-500 shadow-md ring-2 ring-emerald-500/20"
               : "bg-white border-slate-200 hover:border-emerald-300"
           }`}
-          title="Click to filter public officers"
+          title="Click to toggle public officers filter"
         >
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1">
@@ -689,30 +1119,54 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      {/* Report Parameter Configuration (Interactive Filters) */}
+      {/* Filter Parameters Configuration Container */}
       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4 print:hidden">
-        <div className="flex items-center justify-between flex-wrap gap-2 pb-1 border-b border-slate-100">
-          <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+        {/* Top Header of Filters */}
+        <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-slate-100">
+          <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-blue-900" />
-            <span>Report Parameter Configuration &amp; Filters</span>
-          </h3>
+            <h3 className="text-sm font-bold text-slate-900">
+              Report Parameter Configuration
+            </h3>
+            <span className="text-xs font-mono font-bold bg-blue-50 text-blue-900 px-2 py-0.5 rounded-full border border-blue-200">
+              {analytics.total} of {submissions.length} Records
+            </span>
+          </div>
+
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={handleResetFilters}
-              className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-blue-900 transition-colors"
+              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
+                showAdvancedFilters || activeAdvancedFilterCount > 0
+                  ? "bg-blue-900 text-white border-blue-900 shadow-sm"
+                  : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-300"
+              }`}
             >
-              <RotateCcw className="w-3 h-3" />
-              <span>Reset Filters</span>
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              <span>Filter by Any Field</span>
+              {activeAdvancedFilterCount > 0 && (
+                <span className="w-5 h-5 rounded-full bg-amber-400 text-slate-950 font-black text-[10px] flex items-center justify-center">
+                  {activeAdvancedFilterCount}
+                </span>
+              )}
+              {showAdvancedFilters ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
             </button>
-            <span className="text-slate-300">&bull;</span>
-            <span className="text-xs font-bold text-blue-900">
-              {analytics.total} Records Found
-            </span>
+
+            <button
+              type="button"
+              onClick={handleResetFilters}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-blue-900 transition-colors p-1.5 cursor-pointer"
+              title="Reset all filters"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Reset</span>
+            </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 text-xs">
+        {/* Primary Row: Attendance, Category, Province, CIDA Grade */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
           {/* Workshop Attendance Filter */}
           <div>
             <label className="block text-slate-700 font-bold mb-1">
@@ -721,7 +1175,7 @@ export default function ReportsPage() {
             <select
               value={attendance}
               onChange={(e) => setAttendance(e.target.value)}
-              className={`w-full p-2.5 rounded-xl border text-xs font-medium focus:outline-none focus:ring-2 ${
+              className={`w-full p-2.5 rounded-xl border text-xs font-medium focus:outline-none focus:ring-2 cursor-pointer ${
                 attendance === "Yes"
                   ? "bg-emerald-50/70 border-emerald-400 text-emerald-950 font-bold focus:ring-emerald-500"
                   : attendance === "No"
@@ -745,7 +1199,7 @@ export default function ReportsPage() {
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-900"
+              className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-900 cursor-pointer"
             >
               {CATEGORIES.map((cat) => (
                 <option key={cat.value} value={cat.value}>
@@ -763,7 +1217,7 @@ export default function ReportsPage() {
             <select
               value={province}
               onChange={(e) => setProvince(e.target.value)}
-              className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-900"
+              className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-900 cursor-pointer"
             >
               {PROVINCES.map((p) => (
                 <option key={p} value={p}>
@@ -781,7 +1235,7 @@ export default function ReportsPage() {
             <select
               value={cidaGrade}
               onChange={(e) => setCidaGrade(e.target.value)}
-              className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-900"
+              className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-900 cursor-pointer"
             >
               {CIDA_GRADES.map((g) => (
                 <option key={g} value={g}>
@@ -793,7 +1247,7 @@ export default function ReportsPage() {
         </div>
 
         {/* Date Filter & Search Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 pt-1 border-t border-slate-100 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
           {/* Reporting Period Quick Preset */}
           <div>
             <label className="block text-slate-700 font-bold mb-1 flex items-center gap-1">
@@ -803,7 +1257,7 @@ export default function ReportsPage() {
             <select
               value={datePreset}
               onChange={(e) => handleDatePresetChange(e.target.value)}
-              className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-900"
+              className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-900 cursor-pointer"
             >
               <option value="all">All Available Records</option>
               <option value="today">Today Only</option>
@@ -825,7 +1279,7 @@ export default function ReportsPage() {
                 setStartDate(e.target.value);
                 setDatePreset("custom");
               }}
-              className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-900"
+              className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-900 cursor-pointer"
             />
           </div>
 
@@ -841,25 +1295,438 @@ export default function ReportsPage() {
                 setEndDate(e.target.value);
                 setDatePreset("custom");
               }}
-              className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-900"
+              className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-900 cursor-pointer"
             />
           </div>
 
-          {/* Search by Text Keyword */}
+          {/* Universal Multi-Field Search */}
           <div>
             <label className="block text-slate-700 font-bold mb-1 flex items-center gap-1">
               <Search className="w-3.5 h-3.5 text-blue-900" />
-              <span>Search Entity / Ref</span>
+              <span>Global Keyword Search</span>
             </label>
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by Name, Ref, or Email..."
-              className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-900 placeholder:text-slate-400"
-            />
+            <div className="relative">
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Name, Ref, Email, Phone, Project..."
+                className="w-full pl-8 pr-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-900 placeholder:text-slate-400"
+              />
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3" />
+            </div>
           </div>
         </div>
+
+        {/* EXPANDABLE MULTI-FIELD ADVANCED FILTER PANEL */}
+        {showAdvancedFilters && (
+          <div className="pt-4 border-t-2 border-dashed border-blue-200/80 space-y-4 animate-in fade-in duration-200">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-black uppercase tracking-wider text-blue-950 flex items-center gap-1.5">
+                <SlidersHorizontal className="w-3.5 h-3.5 text-blue-900" />
+                <span>Filter by Specific Questionnaire Fields</span>
+              </h4>
+              <span className="text-[11px] text-slate-500 font-medium">
+                Combine any parameters below to refine your report
+              </span>
+            </div>
+
+            {/* Row 1: District, Specialty, Experience, Preferable District */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+              {/* Operating District */}
+              <div>
+                <label className="block text-slate-700 font-bold mb-1 flex items-center gap-1">
+                  <MapPin className="w-3 h-3 text-blue-900" />
+                  <span>Operating District</span>
+                </label>
+                <select
+                  value={district}
+                  onChange={(e) => setDistrict(e.target.value)}
+                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-900 cursor-pointer"
+                >
+                  {DISTRICTS.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Area of Specialty */}
+              <div>
+                <label className="block text-slate-700 font-bold mb-1 flex items-center gap-1">
+                  <HardHat className="w-3 h-3 text-blue-900" />
+                  <span>Area of Specialty</span>
+                </label>
+                <select
+                  value={specialty}
+                  onChange={(e) => setSpecialty(e.target.value)}
+                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-900 cursor-pointer"
+                >
+                  {SPECIALTIES.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* General Construction Experience */}
+              <div>
+                <label className="block text-slate-700 font-bold mb-1 flex items-center gap-1">
+                  <Clock className="w-3 h-3 text-blue-900" />
+                  <span>General Experience</span>
+                </label>
+                <select
+                  value={experience}
+                  onChange={(e) => setExperience(e.target.value)}
+                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-900 cursor-pointer"
+                >
+                  {EXPERIENCE_OPTIONS.map((exp) => (
+                    <option key={exp} value={exp}>
+                      {exp}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Preferable Operating District */}
+              <div>
+                <label className="block text-slate-700 font-bold mb-1 flex items-center gap-1">
+                  <MapPin className="w-3 h-3 text-emerald-700" />
+                  <span>Preferred District (Interests)</span>
+                </label>
+                <select
+                  value={preferableDistrict}
+                  onChange={(e) => setPreferableDistrict(e.target.value)}
+                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-900 cursor-pointer"
+                >
+                  <option value="All Preferred Districts">All Preferred Districts</option>
+                  {DISTRICTS.filter((d) => d !== "All Districts").map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Row 2: Outstanding Value, Ongoing Contracts, RDA Experience, Litigation */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+              {/* Outstanding Works Value */}
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">
+                  Outstanding Works Value (LKR)
+                </label>
+                <select
+                  value={outstandingValue}
+                  onChange={(e) => setOutstandingValue(e.target.value)}
+                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-900 cursor-pointer"
+                >
+                  {OUTSTANDING_VALUE_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Ongoing Contracts Choice */}
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">
+                  Has Ongoing Contracts
+                </label>
+                <select
+                  value={ongoingContracts}
+                  onChange={(e) => setOngoingContracts(e.target.value)}
+                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-900 cursor-pointer"
+                >
+                  <option value="all">All (Both Yes &amp; No)</option>
+                  <option value="yes">Has Active Contracts (Yes)</option>
+                  <option value="no">No Active Contracts (No)</option>
+                </select>
+              </div>
+
+              {/* Past RDA / ICDP Experience */}
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">
+                  Past RDA / ICDP Experience
+                </label>
+                <select
+                  value={rdaExp}
+                  onChange={(e) => setRdaExp(e.target.value)}
+                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-900 cursor-pointer"
+                >
+                  <option value="all">All (Both Yes &amp; No)</option>
+                  <option value="yes">Has RDA Experience (Yes)</option>
+                  <option value="no">No RDA Experience (No)</option>
+                </select>
+              </div>
+
+              {/* Historical Litigation */}
+              <div>
+                <label className="block text-slate-700 font-bold mb-1 flex items-center gap-1">
+                  <Scale className="w-3 h-3 text-rose-700" />
+                  <span>Litigation &amp; Disputes</span>
+                </label>
+                <select
+                  value={litigation}
+                  onChange={(e) => setLitigation(e.target.value)}
+                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-900 cursor-pointer"
+                >
+                  {LITIGATION_OPTIONS.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Row 3: Machinery Plants & Supplier Materials */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+              {/* Asphalt Plant */}
+              <div>
+                <label className="block text-slate-700 font-bold mb-1 flex items-center gap-1">
+                  <Factory className="w-3 h-3 text-blue-900" />
+                  <span>Asphalt Concrete Plant</span>
+                </label>
+                <select
+                  value={hasAsphaltPlant}
+                  onChange={(e) => setHasAsphaltPlant(e.target.value)}
+                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-900 cursor-pointer"
+                >
+                  <option value="all">Any Status</option>
+                  <option value="yes">Has Asphalt Production (&gt; 0)</option>
+                  <option value="no">No Asphalt Plant</option>
+                </select>
+              </div>
+
+              {/* Ready-Mix Concrete Plant */}
+              <div>
+                <label className="block text-slate-700 font-bold mb-1 flex items-center gap-1">
+                  <Factory className="w-3 h-3 text-blue-900" />
+                  <span>Ready-Mix Concrete Plant</span>
+                </label>
+                <select
+                  value={hasConcretePlant}
+                  onChange={(e) => setHasConcretePlant(e.target.value)}
+                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-900 cursor-pointer"
+                >
+                  <option value="all">Any Status</option>
+                  <option value="yes">Has Concrete Production (&gt; 0)</option>
+                  <option value="no">No Concrete Plant</option>
+                </select>
+              </div>
+
+              {/* Aggregate Base Course (ABC) Plant */}
+              <div>
+                <label className="block text-slate-700 font-bold mb-1 flex items-center gap-1">
+                  <Factory className="w-3 h-3 text-blue-900" />
+                  <span>ABC Base Course Plant</span>
+                </label>
+                <select
+                  value={hasAbcPlant}
+                  onChange={(e) => setHasAbcPlant(e.target.value)}
+                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-900 cursor-pointer"
+                >
+                  <option value="all">Any Status</option>
+                  <option value="yes">Has ABC Production (&gt; 0)</option>
+                  <option value="no">No ABC Plant</option>
+                </select>
+              </div>
+
+              {/* Supplier Materials Supplied */}
+              <div>
+                <label className="block text-slate-700 font-bold mb-1 flex items-center gap-1">
+                  <Truck className="w-3 h-3 text-purple-700" />
+                  <span>Supplier Materials</span>
+                </label>
+                <select
+                  value={supplierMaterial}
+                  onChange={(e) => setSupplierMaterial(e.target.value)}
+                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-900 cursor-pointer"
+                >
+                  {SUPPLIER_MATERIALS.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* DYNAMIC CUSTOM QUERY RULE BUILDER */}
+            <div className="pt-3 border-t border-slate-200/80 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <Filter className="w-3.5 h-3.5 text-blue-900" />
+                  <span>Custom Dynamic Field Queries ({customRules.length})</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={handleAddCustomRule}
+                  className="inline-flex items-center gap-1 px-3 py-1 text-xs font-bold text-blue-900 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition-all cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Custom Field Filter</span>
+                </button>
+              </div>
+
+              {customRules.length === 0 ? (
+                <p className="text-[11px] text-slate-500 italic">
+                  Need to filter by a specific text field or property not listed above? Click &ldquo;Add Custom Field Filter&rdquo; to build custom query rules.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {customRules.map((rule) => (
+                    <div
+                      key={rule.id}
+                      className="flex flex-col sm:flex-row items-center gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+                    >
+                      <div className="w-full sm:w-1/3">
+                        <select
+                          value={rule.field}
+                          onChange={(e) => handleUpdateCustomRule(rule.id, { field: e.target.value })}
+                          className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs font-medium"
+                        >
+                          {CUSTOM_FILTER_FIELDS.map((f) => (
+                            <option key={f.key} value={f.key}>
+                              {f.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="w-full sm:w-1/4">
+                        <select
+                          value={rule.operator}
+                          onChange={(e) => handleUpdateCustomRule(rule.id, { operator: e.target.value as any })}
+                          className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs font-medium"
+                        >
+                          <option value="contains">Contains</option>
+                          <option value="not_contains">Does not contain</option>
+                          <option value="equals">Equals exactly</option>
+                          <option value="is_not_empty">Is not empty</option>
+                          <option value="is_empty">Is empty</option>
+                        </select>
+                      </div>
+
+                      {rule.operator !== "is_not_empty" && rule.operator !== "is_empty" && (
+                        <div className="flex-1 w-full">
+                          <input
+                            type="text"
+                            value={rule.value}
+                            onChange={(e) => handleUpdateCustomRule(rule.id, { value: e.target.value })}
+                            placeholder="Type filter value..."
+                            className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs font-medium placeholder:text-slate-400"
+                          />
+                        </div>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCustomRule(rule.id)}
+                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer shrink-0"
+                        title="Delete this rule"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ACTIVE FILTER PILLS / BADGES */}
+        {(attendance !== "All Attendance" ||
+          category !== "All Categories" ||
+          province !== "All 9 Provinces (National Level)" ||
+          cidaGrade !== "All Grades (CS1 to Specialist)" ||
+          district !== "All Districts" ||
+          specialty !== "All Specialties" ||
+          experience !== "All Experience Levels" ||
+          rdaExp !== "all" ||
+          ongoingContracts !== "all" ||
+          outstandingValue !== "all" ||
+          hasAsphaltPlant !== "all" ||
+          hasConcretePlant !== "all" ||
+          hasAbcPlant !== "all" ||
+          supplierMaterial !== "All Materials" ||
+          litigation !== "All Legal Records" ||
+          preferableDistrict !== "All Preferred Districts" ||
+          search.trim() !== "" ||
+          customRules.length > 0) && (
+          <div className="pt-2 border-t border-slate-100 flex items-center gap-1.5 flex-wrap text-xs">
+            <span className="text-[11px] font-bold text-slate-500 uppercase mr-1">Active:</span>
+
+            {attendance !== "All Attendance" && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-900 border border-blue-200 text-[11px] font-bold">
+                Attendance: {attendance === "Yes" ? "Will Attend" : "Non-Attendee"}
+                <button type="button" onClick={() => setAttendance("All Attendance")} className="hover:text-rose-600 ml-0.5">✕</button>
+              </span>
+            )}
+
+            {category !== "All Categories" && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-900 border border-blue-200 text-[11px] font-bold">
+                Category: {category}
+                <button type="button" onClick={() => setCategory("All Categories")} className="hover:text-rose-600 ml-0.5">✕</button>
+              </span>
+            )}
+
+            {province !== "All 9 Provinces (National Level)" && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-900 border border-blue-200 text-[11px] font-bold">
+                Province: {province}
+                <button type="button" onClick={() => setProvince("All 9 Provinces (National Level)")} className="hover:text-rose-600 ml-0.5">✕</button>
+              </span>
+            )}
+
+            {district !== "All Districts" && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-900 border border-purple-200 text-[11px] font-bold">
+                District: {district}
+                <button type="button" onClick={() => setDistrict("All Districts")} className="hover:text-rose-600 ml-0.5">✕</button>
+              </span>
+            )}
+
+            {cidaGrade !== "All Grades (CS1 to Specialist)" && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-900 border border-blue-200 text-[11px] font-bold">
+                Grade: {cidaGrade}
+                <button type="button" onClick={() => setCidaGrade("All Grades (CS1 to Specialist)")} className="hover:text-rose-600 ml-0.5">✕</button>
+              </span>
+            )}
+
+            {specialty !== "All Specialties" && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-900 border border-purple-200 text-[11px] font-bold">
+                Specialty: {specialty}
+                <button type="button" onClick={() => setSpecialty("All Specialties")} className="hover:text-rose-600 ml-0.5">✕</button>
+              </span>
+            )}
+
+            {search.trim() !== "" && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-800 text-[11px] font-bold">
+                Search: &ldquo;{search}&rdquo;
+                <button type="button" onClick={() => setSearch("")} className="hover:text-rose-600 ml-0.5">✕</button>
+              </span>
+            )}
+
+            {customRules.map((rule) => (
+              <span key={rule.id} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-950 border border-amber-300 text-[11px] font-bold">
+                {rule.field} {rule.operator} {rule.value}
+                <button type="button" onClick={() => handleRemoveCustomRule(rule.id)} className="hover:text-rose-600 ml-0.5">✕</button>
+              </span>
+            ))}
+
+            <button
+              type="button"
+              onClick={handleResetFilters}
+              className="text-[11px] font-bold text-rose-600 hover:underline ml-auto cursor-pointer"
+            >
+              Clear All Filters
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Pre-Configured Quick Report Action Cards (REP-01 to REP-04) */}
@@ -890,7 +1757,7 @@ export default function ReportsPage() {
                 setAttendance("Yes");
                 window.scrollTo({ top: 600, behavior: "smooth" });
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-emerald-900 bg-emerald-100 hover:bg-emerald-200 rounded-lg transition-all"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-emerald-900 bg-emerald-100 hover:bg-emerald-200 rounded-lg transition-all cursor-pointer"
             >
               <span>Filter Table</span>
               <ChevronRight className="w-3.5 h-3.5" />
@@ -899,7 +1766,7 @@ export default function ReportsPage() {
             <button
               type="button"
               onClick={() => handleExportCSV("Yes", "RDA_Workshop_Confirmed_Attendees")}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg shadow-sm transition-all"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg shadow-sm transition-all cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Export Attendees (CSV)</span>
@@ -933,7 +1800,7 @@ export default function ReportsPage() {
                 setAttendance("No");
                 window.scrollTo({ top: 600, behavior: "smooth" });
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 rounded-lg transition-all"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 rounded-lg transition-all cursor-pointer"
             >
               <span>Filter Table</span>
               <ChevronRight className="w-3.5 h-3.5" />
@@ -942,7 +1809,7 @@ export default function ReportsPage() {
             <button
               type="button"
               onClick={() => handleExportCSV("No", "RDA_Workshop_Non_Attendees_Directory")}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-amber-700 hover:bg-amber-800 rounded-lg shadow-sm transition-all"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-amber-700 hover:bg-amber-800 rounded-lg shadow-sm transition-all cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Export Directory (CSV)</span>
@@ -976,7 +1843,7 @@ export default function ReportsPage() {
             <button
               type="button"
               onClick={() => handleExportCSV(undefined, `RDA_Date_Activity_Report_${startDate || "All"}_${endDate || "All"}`)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-blue-900 bg-blue-50 hover:bg-blue-100 rounded-lg transition-all"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-blue-900 bg-blue-50 hover:bg-blue-100 rounded-lg transition-all cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Export Date Log (CSV)</span>
@@ -1010,7 +1877,7 @@ export default function ReportsPage() {
             <button
               type="button"
               onClick={() => handleExportCSV(undefined, "RDA_Master_Contractor_Capacity_Matrix")}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-sm transition-all"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-sm transition-all cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Export Full Dataset (CSV)</span>
@@ -1028,7 +1895,7 @@ export default function ReportsPage() {
               <FileSpreadsheet className="w-4 h-4 text-blue-900" />
               <span>Filtered Records Preview</span>
               <span className="text-xs font-mono font-bold bg-blue-50 text-blue-900 px-2.5 py-0.5 rounded-full border border-blue-200">
-                {analytics.total} Entities
+                {analytics.total} of {submissions.length} Entities
               </span>
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -1041,7 +1908,7 @@ export default function ReportsPage() {
               type="button"
               onClick={fetchData}
               disabled={loading}
-              className="p-2 text-slate-600 hover:text-blue-900 hover:bg-slate-100 rounded-xl transition-all"
+              className="p-2 text-slate-600 hover:text-blue-900 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
               title="Refresh Data"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
@@ -1049,11 +1916,11 @@ export default function ReportsPage() {
             <button
               type="button"
               onClick={() => handleExportCSV()}
-              disabled={isExporting || submissions.length === 0}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-xl shadow-sm transition-all"
+              disabled={isExporting || filteredSubmissions.length === 0}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-xl shadow-sm transition-all cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>Export CSV</span>
+              <span>Export Filtered CSV</span>
             </button>
           </div>
         </div>
@@ -1070,20 +1937,20 @@ export default function ReportsPage() {
             <button
               type="button"
               onClick={fetchData}
-              className="text-xs font-bold underline hover:text-rose-800"
+              className="text-xs font-bold underline hover:text-rose-800 cursor-pointer"
             >
               Retry Loading
             </button>
           </div>
-        ) : submissions.length === 0 ? (
+        ) : filteredSubmissions.length === 0 ? (
           <div className="p-12 text-center text-slate-500 space-y-3">
             <Filter className="w-8 h-8 text-slate-300 mx-auto" />
             <p className="text-sm font-bold text-slate-700">No submission records match the current filters.</p>
-            <p className="text-xs text-slate-500">Try adjusting your date range, workshop participation, or category filter.</p>
+            <p className="text-xs text-slate-500">Try adjusting your date range, workshop participation, district, or custom query rules.</p>
             <button
               type="button"
               onClick={handleResetFilters}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-blue-900 bg-blue-50 hover:bg-blue-100 rounded-xl transition-all mt-2"
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-blue-900 bg-blue-50 hover:bg-blue-100 rounded-xl transition-all mt-2 cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Reset All Filters</span>
@@ -1101,20 +1968,20 @@ export default function ReportsPage() {
                   <th className="p-3">Workshop Attendance</th>
                   <th className="p-3">CIDA Grade</th>
                   <th className="p-3">Primary Contact</th>
-                  <th className="p-3">Province</th>
+                  <th className="p-3">Province &amp; District</th>
                   <th className="p-3">Submission Date</th>
                   <th className="p-3 pr-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
-                {submissions.map((s) => {
+                {filteredSubmissions.map((s) => {
                   const q = s.questionnaireData || {};
                   const willAttend = q.willParticipate === "Yes";
                   const willNotAttend = q.willParticipate === "No";
-                  const isSubmitted = s.status === "Submitted" || s.status === "Under_Review" || s.status === "Verified";
                   const contactPerson = q.participant1?.fullName || "Representative";
                   const contactPhone = q.participant1?.mobileNumber || q.contactNumber || "—";
                   const contactEmail = q.participant1?.email || q.email || "—";
+                  const displayDistrict = q.district || q.supplierDetails?.district || "";
 
                   return (
                     <tr key={s.id || s.ref} className="hover:bg-slate-50/70 transition-colors">
@@ -1131,7 +1998,7 @@ export default function ReportsPage() {
                                 setTimeout(() => setCopiedRef(null), 2000);
                               }
                             }}
-                            className="p-1 text-slate-400 hover:text-blue-900 rounded"
+                            className="p-1 text-slate-400 hover:text-blue-900 rounded cursor-pointer"
                             title="Copy reference"
                           >
                             {copiedRef === s.ref ? (
@@ -1204,9 +2071,14 @@ export default function ReportsPage() {
                         </div>
                       </td>
 
-                      {/* Province */}
+                      {/* Province & District */}
                       <td className="p-3 whitespace-nowrap text-slate-600">
-                        {s.provincialOffice || q.supplierDetails?.province || "—"}
+                        <div>{s.provincialOffice || q.supplierDetails?.province || "—"}</div>
+                        {displayDistrict && (
+                          <div className="text-[10px] text-slate-400 font-medium">
+                            District: {displayDistrict}
+                          </div>
+                        )}
                       </td>
 
                       {/* Date */}
