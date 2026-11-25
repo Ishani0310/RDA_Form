@@ -591,8 +591,41 @@ export async function getDraftByToken(rawTokenOrRef: string): Promise<{
     }
   }
 
+  // 3. Fallback: Search by registered official email address
+  if (!submission && identifier.includes("@")) {
+    const candidateEmail = identifier.toLowerCase().trim();
+    submission = await Submission.findOne({
+      $or: [
+        { "questionnaireData.email": candidateEmail },
+        { "questionnaireData.participant1.email": candidateEmail },
+        { "questionnaireData._emailSentTo": candidateEmail },
+      ],
+    }).sort({ updatedAt: -1, createdAt: -1 });
+    if (submission) {
+      draftTokenDoc = await DraftToken.findOne({ submission: submission._id });
+    }
+  }
+
+  // 4. Fallback: Search by ICTAD registration number or Contractor registration number
+  if (!submission && identifier.length >= 3) {
+    const escaped = identifier.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const matchingContractor = await Contractor.findOne({
+      registrationNumber: { $regex: new RegExp(`^${escaped}$`, "i") },
+    }).select("_id");
+
+    submission = await Submission.findOne({
+      $or: [
+        { "questionnaireData.ictadRegistrationNumber": { $regex: new RegExp(`^${escaped}$`, "i") } },
+        ...(matchingContractor ? [{ contractor: matchingContractor._id }] : []),
+      ],
+    }).sort({ updatedAt: -1, createdAt: -1 });
+    if (submission) {
+      draftTokenDoc = await DraftToken.findOne({ submission: submission._id });
+    }
+  }
+
   if (!submission) {
-    throw new Error("Draft record not found. Please verify your Reference Number or Token.");
+    throw new Error("No registration or draft was found matching your Reference Number, Email, or Token. Please verify and try again.");
   }
 
   // Check if form is editable or read-only:
@@ -1195,8 +1228,19 @@ export async function requestEditPermission(
     });
   }
 
+  if (!submission && clean.includes("@")) {
+    const candidateEmail = clean.toLowerCase().trim();
+    submission = await Submission.findOne({
+      $or: [
+        { "questionnaireData.email": candidateEmail },
+        { "questionnaireData.participant1.email": candidateEmail },
+        { "questionnaireData._emailSentTo": candidateEmail },
+      ],
+    }).sort({ updatedAt: -1, createdAt: -1 });
+  }
+
   if (!submission) {
-    throw new Error("Submission record not found.");
+    throw new Error("No registration record was found matching your Reference Number or Email.");
   }
 
   if (submission.status === "Draft") {
