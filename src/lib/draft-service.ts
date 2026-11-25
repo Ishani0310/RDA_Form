@@ -515,10 +515,12 @@ export async function saveOrUpdateDraft(
 }
 
 /**
- * Retrieve draft data using the secure plain-text resume token
+ * Retrieve draft data using a secure plain-text resume token OR an official Reference Number (e.g. RDA-ICDP-2026-00004 or DFT-...)
+ * If a submission has been reverted to "Draft" by an administrator, this automatically restores/issues an active resume token.
  */
-export async function getDraftByToken(rawToken: string): Promise<{
+export async function getDraftByToken(rawTokenOrRef: string): Promise<{
   submissionReference: string;
+  resumeToken: string;
   status: string;
   expiresAt: string;
   contractor: {
@@ -538,47 +540,99 @@ export async function getDraftByToken(rawToken: string): Promise<{
   };
   questionnaireData: Record<string, unknown>;
 }> {
-  if (!isValidTokenFormat(rawToken)) {
-    throw new Error("Invalid token format. Resume token must be a 64-character hexadecimal key.");
+  const identifier = (rawTokenOrRef || "").trim();
+  if (!identifier) {
+    throw new Error("Resume token or Reference Number is required to load a saved registration draft.");
   }
 
   await connectToDatabase();
-  const tokenHash = hashResumeToken(rawToken);
-  const draftTokenDoc = await DraftToken.findOne({ tokenHash });
 
-  if (!draftTokenDoc) {
-    throw new Error("Draft not found. The resume token is invalid or does not exist.");
+  let submission: any = null;
+  let draftTokenDoc: any = null;
+  let activeResumeToken: string = "";
+
+  // 1. Try finding by 64-character hex resume token
+  if (isValidTokenFormat(identifier)) {
+    const tokenHash = hashResumeToken(identifier);
+    draftTokenDoc = await DraftToken.findOne({ tokenHash });
+    if (draftTokenDoc) {
+      submission = await Submission.findById(draftTokenDoc.submission);
+      activeResumeToken = identifier;
+    }
   }
 
-  if (draftTokenDoc.isRevoked) {
-    throw new Error("This draft has already been submitted and finalized. It cannot be accessed in draft mode.");
+  // 2. If not found by token hash, try finding by submissionReference (e.g. RDA-ICDP-2026-00004 or DFT-...)
+  if (!submission) {
+    const escaped = identifier.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    submission = await Submission.findOne({
+      submissionReference: { $regex: new RegExp(`^${escaped}$`, "i") },
+    });
+    if (submission) {
+      draftTokenDoc = await DraftToken.findOne({ submission: submission._id });
+    }
   }
 
-  if (new Date() > draftTokenDoc.expiresAt) {
-    throw new Error("This draft session has expired (30-day validity window).");
+  if (!submission) {
+    throw new Error("Draft record not found. Please verify your Reference Number or Token.");
   }
 
-  const contractor = await Contractor.findById(draftTokenDoc.contractor).lean();
-  const submission = await Submission.findById(draftTokenDoc.submission).lean();
-
-  if (!contractor || !submission) {
-    throw new Error("Associated draft records could not be retrieved from database.");
+  // Only allow resuming drafts if status is Draft or Action_Required
+  if (submission.status !== "Draft" && submission.status !== "Action_Required") {
+    throw new Error(
+      `This submission (${submission.submissionReference}) is currently "${submission.status}". Only registrations reverted to Draft status can be edited by the submitter.`
+    );
   }
 
-  // Update last accessed timestamp
-  await DraftToken.updateOne({ _id: draftTokenDoc._id }, { lastAccessedAt: new Date() });
+  // Ensure active, un-revoked DraftToken exists with a valid token
+  if (!activeResumeToken) {
+    activeResumeToken = generateResumeToken();
+    const tokenHash = hashResumeToken(activeResumeToken);
+    if (draftTokenDoc) {
+      draftTokenDoc.tokenHash = tokenHash;
+      draftTokenDoc.isRevoked = false;
+      draftTokenDoc.revokedAt = undefined;
+      draftTokenDoc.expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      draftTokenDoc.lastAccessedAt = new Date();
+      await draftTokenDoc.save();
+    } else {
+      draftTokenDoc = await DraftToken.create({
+        tokenHash,
+        contractor: submission.contractor,
+        submission: submission._id,
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        isRevoked: false,
+        lastAccessedAt: new Date(),
+      });
+    }
+  } else if (draftTokenDoc && draftTokenDoc.isRevoked) {
+    // If the token was previously revoked on final submission, but the admin set it back to Draft:
+    draftTokenDoc.isRevoked = false;
+    draftTokenDoc.revokedAt = undefined;
+    draftTokenDoc.expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    draftTokenDoc.lastAccessedAt = new Date();
+    await draftTokenDoc.save();
+  } else if (draftTokenDoc) {
+    draftTokenDoc.lastAccessedAt = new Date();
+    await draftTokenDoc.save();
+  }
+
+  const contractor = await Contractor.findById(submission.contractor).lean();
+  if (!contractor) {
+    throw new Error("Contractor profile associated with this submission could not be found.");
+  }
 
   return {
     submissionReference: submission.submissionReference,
+    resumeToken: activeResumeToken,
     status: submission.status,
-    expiresAt: draftTokenDoc.expiresAt.toISOString(),
+    expiresAt: (draftTokenDoc?.expiresAt || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)).toISOString(),
     contractor: {
-      registrationNumber: contractor.registrationNumber,
-      businessName: contractor.businessName,
+      registrationNumber: contractor.registrationNumber || "",
+      businessName: contractor.businessName || "",
       businessRegistrationNumber: contractor.businessRegistrationNumber || "",
-      cidaGrade: contractor.cidaGrade,
+      cidaGrade: contractor.cidaGrade || "",
       primarySpeciality: contractor.primarySpeciality || "",
-      province: contractor.province,
+      province: contractor.province || "",
       district: contractor.district || "",
       contactOfficer: {
         name: contractor.contactOfficer?.name || "",

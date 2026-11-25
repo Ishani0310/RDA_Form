@@ -4,6 +4,7 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { Submission } from "@/models/Submission";
 import { Contractor } from "@/models/Contractor";
 import { DraftToken } from "@/models/DraftToken";
+import { generateResumeToken, hashResumeToken } from "@/lib/draft-service";
 import { recordActivityLog } from "@/lib/audit";
 import "@/models/User";
 
@@ -412,6 +413,29 @@ export async function PUT(request: NextRequest) {
     if (updates.status) submission.status = updates.status;
     if (updates.provincialOffice) submission.provincialOffice = updates.provincialOffice;
     if (updates.reviewNotes !== undefined) submission.reviewNotes = updates.reviewNotes;
+
+    // When an administrator sets/reverts status to "Draft", activate/un-revoke a valid DraftToken
+    // so the contractor who submitted the form can edit their registration again seamlessly.
+    if (updates.status === "Draft") {
+      const plainToken = generateResumeToken();
+      const tokenHash = hashResumeToken(plainToken);
+      const draftTokenDoc = await DraftToken.findOne({ submission: submission._id });
+      if (draftTokenDoc) {
+        draftTokenDoc.tokenHash = tokenHash;
+        draftTokenDoc.isRevoked = false;
+        draftTokenDoc.revokedAt = undefined;
+        draftTokenDoc.expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+        await draftTokenDoc.save();
+      } else {
+        await DraftToken.create({
+          tokenHash,
+          contractor: submission.contractor,
+          submission: submission._id,
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          isRevoked: false,
+        });
+      }
+    }
 
     // Merge questionnaireData payload
     const currentQData = (submission.questionnaireData as Record<string, any>) || {};

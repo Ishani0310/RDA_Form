@@ -2062,6 +2062,18 @@ function SubmissionsContent() {
                           <Printer className="w-3.5 h-3.5 text-emerald-700" />
                           <span>PDF</span>
                         </button>
+                        {s.status === "Draft" && (
+                          <a
+                            href={`/register?ref=${encodeURIComponent(s.ref)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold text-purple-900 bg-purple-50 hover:bg-purple-100 rounded-lg border border-purple-200/60 transition-all"
+                            title="Open / Resume Contractor Form"
+                          >
+                            <FileText className="w-3.5 h-3.5 text-purple-700" />
+                            <span>Form</span>
+                          </a>
+                        )}
                         <button
                           type="button"
                           onClick={() => handleRequestDelete(s)}
@@ -2896,6 +2908,18 @@ function SubmissionsContent() {
                   <Pencil className="w-4 h-4 text-amber-700" />
                   <span>Edit Record</span>
                 </button>
+                {selectedSub.status === "Draft" && (
+                  <a
+                    href={`/register?ref=${encodeURIComponent(selectedSub.ref)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-purple-900 bg-purple-100 hover:bg-purple-200 rounded-lg border border-purple-300 transition-all"
+                    title="Open live form for contractor editing"
+                  >
+                    <FileText className="w-4 h-4 text-purple-700" />
+                    <span>Open Contractor Form &rarr;</span>
+                  </a>
+                )}
                 <button
                   type="button"
                   onClick={() => handleRequestDelete(selectedSub)}
@@ -3112,6 +3136,43 @@ function SubmissionsContent() {
                       placeholder="Add administrative review observations, field audit remarks, or verification notes..."
                     />
                   </div>
+
+                  {editFormData.status === "Draft" && (
+                    <div className="sm:col-span-2 p-3.5 bg-amber-50 rounded-xl border border-amber-300 text-amber-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-xs text-amber-900">Contractor Form Resumption Link:</span>
+                          <span className="font-mono text-xs px-2 py-0.5 bg-white border border-amber-300 rounded font-bold text-blue-950">
+                            /register?ref={subToEdit.ref}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-amber-800">
+                          Because this submission is saved in <strong>Draft</strong> status, the contractor can use this link to access and edit their live registration form.
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const url = `${window.location.origin}/register?ref=${encodeURIComponent(subToEdit.ref)}`;
+                            navigator.clipboard.writeText(url);
+                            alert(`Resumption link copied to clipboard:\n${url}`);
+                          }}
+                          className="px-3 py-1.5 bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer"
+                        >
+                          Copy Edit Link
+                        </button>
+                        <a
+                          href={`/register?ref=${encodeURIComponent(subToEdit.ref)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 bg-amber-700 hover:bg-amber-800 text-white rounded-lg text-xs font-bold transition-all shadow-xs"
+                        >
+                          Open Form &rarr;
+                        </a>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="p-3 bg-white/80 rounded-xl border border-blue-200/60 flex items-start gap-2.5 text-[11px] text-blue-900">

@@ -29,23 +29,17 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const tokenFromHeader = request.headers.get("x-resume-token") || "";
     const tokenFromQuery = searchParams.get("token") || "";
-    const token = (tokenFromHeader || tokenFromQuery).trim();
+    const refFromQuery = searchParams.get("ref") || searchParams.get("reference") || "";
+    const identifier = (refFromQuery || tokenFromHeader || tokenFromQuery).trim();
 
-    if (!token) {
+    if (!identifier) {
       return NextResponse.json(
-        { success: false, message: "Resume token is required to load a saved registration draft." },
+        { success: false, message: "Resume token or Reference Number is required to load a saved registration draft." },
         { status: 400 }
       );
     }
 
-    if (!isValidTokenFormat(token)) {
-      return NextResponse.json(
-        { success: false, message: "Malformed resume token format. Must be a 64-character hexadecimal key." },
-        { status: 400 }
-      );
-    }
-
-    const draft = await getDraftByToken(token);
+    const draft = await getDraftByToken(identifier);
 
     return NextResponse.json({
       success: true,

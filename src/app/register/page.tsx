@@ -339,15 +339,20 @@ function mapServerErrorMessageToField(message: string): { key: string; message: 
 function RegisterForm() {
   const searchParams = useSearchParams();
   const tokenFromUrl = searchParams.get("token") || "";
+  const refFromUrl = searchParams.get("ref") || searchParams.get("reference") || "";
+  const initialKey = refFromUrl || tokenFromUrl;
 
   // Draft session credentials & identifiers
-  const [currentDraftToken, setCurrentDraftToken] = useState<string>(tokenFromUrl);
-  const [currentReference, setCurrentReference] = useState<string>("");
-  const currentDraftTokenRef = useRef<string>(tokenFromUrl);
-  const currentReferenceRef = useRef<string>("");
+  const [currentDraftToken, setCurrentDraftToken] = useState<string>(initialKey);
+  const [currentReference, setCurrentReference] = useState<string>(refFromUrl);
+  const currentDraftTokenRef = useRef<string>(initialKey);
+  const currentReferenceRef = useRef<string>(refFromUrl);
   const [savedDraftsList, setSavedDraftsList] = useState<BrowserSavedDraft[]>([]);
   const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false);
   const [hasCheckedDrafts, setHasCheckedDrafts] = useState(false);
+  const [inputRefToResume, setInputRefToResume] = useState("");
+  const [isResumingByRef, setIsResumingByRef] = useState(false);
+  const [showRefInput, setShowRefInput] = useState(false);
 
   // Field-level validation state & Declaration consent
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -819,19 +824,20 @@ function RegisterForm() {
     return () => clearInterval(interval);
   }, [submissionSuccess?.reference, submissionSuccess?.emailStatus]);
 
-  // Check saved drafts on mount
+  // Check saved drafts on mount (support both token and reference query parameters)
   useEffect(() => {
     getOrCreateBrowserClientId();
     const stored = getBrowserSavedDrafts();
     setSavedDraftsList(stored);
 
-    if (tokenFromUrl) {
-      loadDraft(tokenFromUrl);
+    const initialKey = refFromUrl || tokenFromUrl;
+    if (initialKey) {
+      loadDraft(initialKey);
     } else if (stored.length > 0) {
       setShowRecoveryPrompt(true);
     }
     setHasCheckedDrafts(true);
-  }, [tokenFromUrl]);
+  }, [tokenFromUrl, refFromUrl]);
 
   // Load active published questionnaire schema & pre-warm database connection
   useEffect(() => {
@@ -1082,13 +1088,13 @@ function RegisterForm() {
     );
   };
 
-  const loadDraft = async (token: string, silent = false) => {
-    const clean = token.trim();
+  const loadDraft = async (tokenOrRef: string, silent = false) => {
+    const clean = tokenOrRef.trim();
     if (!clean) return;
     setLoading(true);
     setFormAlert(null);
     try {
-      const res = await fetch(`/api/public/draft?token=${clean}`);
+      const res = await fetch(`/api/public/draft?token=${encodeURIComponent(clean)}`);
       const data = await res.json();
       if (res.ok && data.success && data.draft) {
         const q = data.draft.questionnaireData || {};
@@ -1184,15 +1190,26 @@ function RegisterForm() {
         setSpecialtyOtherList(parseOtherSpecialties(restoredData.specialtyOther));
         setSupplierMaterialsOtherList(parseOtherSpecialties(restoredData.supplierDetails?.materialsOther));
         setCidaGradeOtherList(parseOtherSpecialties(restoredData.cidaGradeOther));
-        currentDraftTokenRef.current = clean;
-        setCurrentDraftToken(clean);
+        const effectiveToken = data.draft.resumeToken || clean;
+        currentDraftTokenRef.current = effectiveToken;
+        setCurrentDraftToken(effectiveToken);
 
         const ref = data.draft.submissionReference || data.draft.reference || "";
         currentReferenceRef.current = ref;
         setCurrentReference(ref);
         setShowRecoveryPrompt(false);
+        setShowRefInput(false);
         setAutoSaveStatus("saved");
         setLastSavedTime(new Date(data.draft.updatedAt || data.draft.createdAt || Date.now()));
+
+        // Keep local browser cache synced with active draft and reference
+        saveBrowserDraft({
+          token: effectiveToken,
+          reference: ref,
+          organizationName: restoredData.organizationName,
+          category: restoredData.participantCategory,
+          lastSavedAt: new Date().toISOString(),
+        });
 
         if (!silent) {
           setFormAlert({
@@ -2682,23 +2699,68 @@ function RegisterForm() {
         </div>
       ) : (
         <>
-          {/* Prominent Full-Width Start Registration CTA Button */}
-          <div className="w-full">
-            <button
-              type="button"
-              onClick={() => {
-                const target = document.getElementById("registration-form-start") || document.getElementById("section-1");
-                if (target) {
-                  target.scrollIntoView({ behavior: "smooth", block: "start" });
-                }
-              }}
-              className="w-full py-3 sm:py-3.5 px-4 sm:px-6 rounded-xl sm:rounded-2xl bg-gradient-to-r from-[#0b1f3a] via-[#12335f] to-[#0b1f3a] hover:from-[#0d2749] hover:to-[#0d2749] text-white font-extrabold text-xs sm:text-base shadow-lg hover:shadow-xl border border-white/15 flex items-center justify-center gap-2 sm:gap-2.5 transition-all group active:scale-[0.99] cursor-pointer min-h-[46px]"
-            >
-              <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 shrink-0" />
-              <span>Start Registration</span>
-              <span className="hidden min-[380px]:inline">&bull; Fill Questionnaire</span>
-              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 group-hover:translate-x-1 transition-transform shrink-0" />
-            </button>
+          {/* Prominent Full-Width Start Registration CTA & Resume by Reference Box */}
+          <div className="space-y-3">
+            <div className="flex flex-col sm:flex-row items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  const target = document.getElementById("registration-form-start") || document.getElementById("section-1");
+                  if (target) {
+                    target.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }
+                }}
+                className="flex-1 w-full py-3 sm:py-3.5 px-4 sm:px-6 rounded-xl sm:rounded-2xl bg-gradient-to-r from-[#0b1f3a] via-[#12335f] to-[#0b1f3a] hover:from-[#0d2749] hover:to-[#0d2749] text-white font-extrabold text-xs sm:text-base shadow-lg hover:shadow-xl border border-white/15 flex items-center justify-center gap-2 sm:gap-2.5 transition-all group active:scale-[0.99] cursor-pointer min-h-[46px]"
+              >
+                <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 shrink-0" />
+                <span>Start Registration</span>
+                <span className="hidden min-[380px]:inline">&bull; Fill Questionnaire</span>
+                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 group-hover:translate-x-1 transition-transform shrink-0" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowRefInput((prev) => !prev)}
+                className="w-full sm:w-auto py-3 sm:py-3.5 px-4 sm:px-5 rounded-xl sm:rounded-2xl bg-white hover:bg-slate-50 text-blue-900 border border-blue-200 font-bold text-xs sm:text-sm shadow-sm flex items-center justify-center gap-2 transition-all shrink-0 min-h-[46px]"
+              >
+                <RotateCcw className="w-4 h-4 text-blue-900" />
+                <span>Resume by Reference No</span>
+              </button>
+            </div>
+
+            {/* Resume by Reference Number Prompt */}
+            {showRefInput && (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (inputRefToResume.trim()) {
+                    loadDraft(inputRefToResume.trim());
+                  }
+                }}
+                className="p-4 rounded-xl bg-blue-50/70 border border-blue-200 flex flex-col sm:flex-row items-center gap-2.5 animate-in fade-in duration-200"
+              >
+                <div className="flex-1 w-full">
+                  <label className="block text-[11px] font-bold text-blue-950 mb-1">
+                    Enter Reference Number or Resume Token to Load Form:
+                  </label>
+                  <input
+                    type="text"
+                    value={inputRefToResume}
+                    onChange={(e) => setInputRefToResume(e.target.value)}
+                    placeholder="e.g. RDA-ICDP-2026-00004 or 64-char token"
+                    className="w-full p-2.5 rounded-lg border border-blue-300 bg-white text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={loading || !inputRefToResume.trim()}
+                  className="w-full sm:w-auto mt-auto px-5 py-2.5 bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs rounded-lg transition-all disabled:opacity-50 shrink-0 inline-flex items-center justify-center gap-1.5"
+                >
+                  {loading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ArrowRight className="w-3.5 h-3.5" />}
+                  <span>Load My Form</span>
+                </button>
+              </form>
+            )}
           </div>
 
           {/* Live Auto-Save Status Bar and Quick Controls */}
