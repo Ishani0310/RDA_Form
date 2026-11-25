@@ -252,6 +252,7 @@ export async function GET(request: NextRequest) {
         submissionType: s.submissionType || "Annual_Capacity_Declaration",
         provincialOffice: s.provincialOffice,
         status: s.status,
+        category: s.questionnaireData?.participantCategory || (s.contractor?.primarySpeciality ? "Contractor" : "General"),
         isViewed: Boolean(s.isViewed),
         viewedAt: s.viewedAt ? new Date(s.viewedAt).toLocaleDateString("en-GB") : null,
         viewedByName: s.viewedByName || null,
@@ -447,17 +448,35 @@ export async function PUT(request: NextRequest) {
     if (submission.contractor) {
       const contractor = await Contractor.findById(submission.contractor);
       if (contractor) {
-        if (updates.organizationName || updatedQData.organizationName) {
-          contractor.businessName = updates.organizationName || updatedQData.organizationName;
+        const newOrgName =
+          (updatedQData.participantCategory === "Supplier" && updatedQData.supplierDetails?.companyName)
+            ? updatedQData.supplierDetails.companyName
+            : (updates.organizationName || updatedQData.organizationName);
+
+        if (newOrgName) {
+          contractor.businessName = newOrgName;
         }
-        if (updatedQData.ictadRegistrationNumber) {
-          contractor.registrationNumber = updatedQData.ictadRegistrationNumber;
-        }
-        if (updatedQData.cidaGrade) {
-          contractor.cidaGrade = updatedQData.cidaGrade;
-        }
-        if (submission.provincialOffice) {
-          contractor.province = submission.provincialOffice as any;
+
+        if (updatedQData.participantCategory === "Supplier") {
+          if (updatedQData.supplierDetails?.province) {
+            contractor.province = updatedQData.supplierDetails.province as any;
+          }
+          if (updatedQData.supplierDetails?.district) {
+            contractor.district = updatedQData.supplierDetails.district;
+          }
+          if (updatedQData.supplierDetails?.materialsSupplied?.length) {
+            contractor.primarySpeciality = updatedQData.supplierDetails.materialsSupplied.join(", ");
+          }
+        } else {
+          if (updatedQData.ictadRegistrationNumber) {
+            contractor.registrationNumber = updatedQData.ictadRegistrationNumber;
+          }
+          if (updatedQData.cidaGrade) {
+            contractor.cidaGrade = updatedQData.cidaGrade;
+          }
+          if (submission.provincialOffice) {
+            contractor.province = submission.provincialOffice as any;
+          }
         }
         if (updatedQData.contactNumber || updatedQData.email || updatedQData.participant1) {
           contractor.contactOfficer = {
