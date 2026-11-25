@@ -295,65 +295,65 @@ export default function ReportsHubPage() {
           </div>
         </div>
 
-        {/* 5 Core Navigation Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {/* ONLY Participating and Not Participating Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* 1. PARTICIPATING CARD */}
-          <div className="bg-gradient-to-br from-emerald-50 via-white to-emerald-50/40 p-6 rounded-2xl border-2 border-emerald-200 shadow-sm hover:shadow-md hover:border-emerald-400 transition-all flex flex-col justify-between group">
+          <div className="bg-gradient-to-br from-emerald-50 via-white to-emerald-50/40 p-8 rounded-3xl border-2 border-emerald-200 shadow-sm hover:shadow-md hover:border-emerald-400 transition-all flex flex-col justify-between group">
             <div>
               <div className="flex items-center justify-between">
-                <div className="w-12 h-12 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-sm">
-                  <UserCheck className="w-6 h-6" />
+                <div className="w-14 h-14 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md">
+                  <UserCheck className="w-7 h-7" />
                 </div>
-                <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-200">
+                <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-3.5 py-1.5 rounded-full border border-emerald-200">
                   {metrics.partPct}% Attending
                 </span>
               </div>
 
-              <h2 className="text-xl font-extrabold text-slate-900 mt-4 group-hover:text-emerald-700 transition-colors">
+              <h2 className="text-2xl font-black text-slate-900 mt-5 group-hover:text-emerald-700 transition-colors">
                 Participating
               </h2>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-sm text-slate-500 mt-1">
                 Entities and representatives who confirmed they will attend the ICDP workshop.
               </p>
 
-              <div className="mt-4 flex items-baseline gap-2">
-                <span className="text-4xl font-black text-emerald-950 font-mono">
+              <div className="mt-6 flex items-baseline gap-3">
+                <span className="text-5xl font-black text-emerald-950 font-mono tracking-tight">
                   {metrics.participatingCount}
                 </span>
-                <span className="text-xs text-emerald-700 font-bold uppercase tracking-wider">
+                <span className="text-xs text-emerald-700 font-extrabold uppercase tracking-wider">
                   Confirmed Attendees
                 </span>
               </div>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-emerald-100 space-y-3">
+            <div className="mt-8 pt-6 border-t border-emerald-100 space-y-4">
               <Link
                 href="/reports/participating"
-                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all"
+                className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold shadow-md transition-all"
               >
                 <span>View Participating Directory</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
 
-              {/* Sub-Pages */}
-              <div className="bg-white/80 p-2.5 rounded-xl border border-emerald-100 flex items-center justify-between text-xs font-medium text-slate-600">
+              {/* Sub-Category Selection */}
+              <div className="bg-white/90 p-3 rounded-xl border border-emerald-100 flex items-center justify-around text-xs font-medium text-slate-600">
                 <Link
                   href="/reports/participating/contractors"
-                  className="text-blue-700 hover:underline font-semibold"
+                  className="text-blue-700 hover:underline font-bold"
                 >
                   Contractors ({metrics.partContractors})
                 </Link>
-                <span className="text-slate-300">&bull;</span>
+                <span className="text-slate-300 font-bold">&bull;</span>
                 <Link
                   href="/reports/participating/suppliers"
-                  className="text-purple-700 hover:underline font-semibold"
+                  className="text-purple-700 hover:underline font-bold"
                 >
                   Suppliers ({metrics.partSuppliers})
                 </Link>
-                <span className="text-slate-300">&bull;</span>
+                <span className="text-slate-300 font-bold">&bull;</span>
                 <Link
                   href="/reports/participating/officers"
-                  className="text-emerald-700 hover:underline font-semibold"
+                  className="text-emerald-700 hover:underline font-bold"
                 >
                   Officers ({metrics.partOfficers})
                 </Link>
@@ -362,281 +362,66 @@ export default function ReportsHubPage() {
           </div>
 
           {/* 2. NOT PARTICIPATING CARD */}
-          <div className="bg-gradient-to-br from-amber-50 via-white to-amber-50/40 p-6 rounded-2xl border-2 border-amber-200 shadow-sm hover:shadow-md hover:border-amber-400 transition-all flex flex-col justify-between group">
+          <div className="bg-gradient-to-br from-amber-50 via-white to-amber-50/40 p-8 rounded-3xl border-2 border-amber-200 shadow-sm hover:shadow-md hover:border-amber-400 transition-all flex flex-col justify-between group">
             <div>
               <div className="flex items-center justify-between">
-                <div className="w-12 h-12 rounded-xl bg-amber-600 text-white flex items-center justify-center shadow-sm">
-                  <UserX className="w-6 h-6" />
+                <div className="w-14 h-14 rounded-2xl bg-amber-600 text-white flex items-center justify-center shadow-md">
+                  <UserX className="w-7 h-7" />
                 </div>
-                <span className="text-xs font-bold text-amber-800 bg-amber-100 px-3 py-1 rounded-full border border-amber-200">
+                <span className="text-xs font-bold text-amber-800 bg-amber-100 px-3.5 py-1.5 rounded-full border border-amber-200">
                   {metrics.notPartPct}% Declined
                 </span>
               </div>
 
-              <h2 className="text-xl font-extrabold text-slate-900 mt-4 group-hover:text-amber-700 transition-colors">
+              <h2 className="text-2xl font-black text-slate-900 mt-5 group-hover:text-amber-700 transition-colors">
                 Not Participating
               </h2>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-sm text-slate-500 mt-1">
                 Entities unable to attend the workshop in person (Profile &amp; capacities recorded).
               </p>
 
-              <div className="mt-4 flex items-baseline gap-2">
-                <span className="text-4xl font-black text-amber-950 font-mono">
+              <div className="mt-6 flex items-baseline gap-3">
+                <span className="text-5xl font-black text-amber-950 font-mono tracking-tight">
                   {metrics.notParticipatingCount}
                 </span>
-                <span className="text-xs text-amber-700 font-bold uppercase tracking-wider">
+                <span className="text-xs text-amber-700 font-extrabold uppercase tracking-wider">
                   Non-Attendees
                 </span>
               </div>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-amber-100 space-y-3">
+            <div className="mt-8 pt-6 border-t border-amber-100 space-y-4">
               <Link
                 href="/reports/not-participating"
-                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all"
+                className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-sm font-bold shadow-md transition-all"
               >
                 <span>View Not Participating Directory</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
 
-              {/* Sub-Pages */}
-              <div className="bg-white/80 p-2.5 rounded-xl border border-amber-100 flex items-center justify-between text-xs font-medium text-slate-600">
+              {/* Sub-Category Selection */}
+              <div className="bg-white/90 p-3 rounded-xl border border-amber-100 flex items-center justify-around text-xs font-medium text-slate-600">
                 <Link
                   href="/reports/not-participating/contractors"
-                  className="text-blue-700 hover:underline font-semibold"
+                  className="text-blue-700 hover:underline font-bold"
                 >
                   Contractors ({metrics.notPartContractors})
                 </Link>
-                <span className="text-slate-300">&bull;</span>
+                <span className="text-slate-300 font-bold">&bull;</span>
                 <Link
                   href="/reports/not-participating/suppliers"
-                  className="text-purple-700 hover:underline font-semibold"
+                  className="text-purple-700 hover:underline font-bold"
                 >
                   Suppliers ({metrics.notPartSuppliers})
                 </Link>
-                <span className="text-slate-300">&bull;</span>
+                <span className="text-slate-300 font-bold">&bull;</span>
                 <Link
                   href="/reports/not-participating/officers"
-                  className="text-emerald-700 hover:underline font-semibold"
+                  className="text-emerald-700 hover:underline font-bold"
                 >
                   Officers ({metrics.notPartOfficers})
                 </Link>
               </div>
-            </div>
-          </div>
-
-          {/* 3. CONTRACTORS CARD */}
-          <div className="bg-gradient-to-br from-blue-50 via-white to-blue-50/40 p-6 rounded-2xl border-2 border-blue-200 shadow-sm hover:shadow-md hover:border-blue-400 transition-all flex flex-col justify-between group">
-            <div>
-              <div className="flex items-center justify-between">
-                <div className="w-12 h-12 rounded-xl bg-blue-900 text-white flex items-center justify-center shadow-sm">
-                  <Building2 className="w-6 h-6" />
-                </div>
-                <span className="text-xs font-bold text-blue-800 bg-blue-100 px-3 py-1 rounded-full border border-blue-200">
-                  Civil Works
-                </span>
-              </div>
-
-              <h2 className="text-xl font-extrabold text-slate-900 mt-4 group-hover:text-blue-900 transition-colors">
-                Contractors
-              </h2>
-              <p className="text-xs text-slate-500 mt-1">
-                Civil construction contractors, CIDA grades CS1 to C9, road plant availability.
-              </p>
-
-              <div className="mt-4 flex items-baseline gap-2">
-                <span className="text-4xl font-black text-blue-950 font-mono">
-                  {metrics.totalContractors}
-                </span>
-                <span className="text-xs text-blue-700 font-bold uppercase tracking-wider">
-                  Total Contractors
-                </span>
-              </div>
-            </div>
-
-            <div className="mt-6 pt-4 border-t border-blue-100 space-y-3">
-              <Link
-                href="/reports/contractors"
-                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-bold shadow-sm transition-all"
-              >
-                <span>View All Contractors</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-
-              <div className="bg-white/80 p-2.5 rounded-xl border border-blue-100 flex items-center justify-between text-xs font-medium">
-                <Link
-                  href="/reports/participating/contractors"
-                  className="text-emerald-700 hover:underline font-semibold"
-                >
-                  Attending ({metrics.partContractors})
-                </Link>
-                <span className="text-slate-300">&bull;</span>
-                <Link
-                  href="/reports/not-participating/contractors"
-                  className="text-amber-700 hover:underline font-semibold"
-                >
-                  Not Attending ({metrics.notPartContractors})
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          {/* 4. SUPPLIERS CARD */}
-          <div className="bg-gradient-to-br from-purple-50 via-white to-purple-50/40 p-6 rounded-2xl border-2 border-purple-200 shadow-sm hover:shadow-md hover:border-purple-400 transition-all flex flex-col justify-between group">
-            <div>
-              <div className="flex items-center justify-between">
-                <div className="w-12 h-12 rounded-xl bg-purple-700 text-white flex items-center justify-center shadow-sm">
-                  <Truck className="w-6 h-6" />
-                </div>
-                <span className="text-xs font-bold text-purple-800 bg-purple-100 px-3 py-1 rounded-full border border-purple-200">
-                  Materials &amp; Plants
-                </span>
-              </div>
-
-              <h2 className="text-xl font-extrabold text-slate-900 mt-4 group-hover:text-purple-700 transition-colors">
-                Suppliers
-              </h2>
-              <p className="text-xs text-slate-500 mt-1">
-                Suppliers of asphalt, aggregates, bitumen emulsion, cement, and equipment.
-              </p>
-
-              <div className="mt-4 flex items-baseline gap-2">
-                <span className="text-4xl font-black text-purple-950 font-mono">
-                  {metrics.totalSuppliers}
-                </span>
-                <span className="text-xs text-purple-700 font-bold uppercase tracking-wider">
-                  Total Suppliers
-                </span>
-              </div>
-            </div>
-
-            <div className="mt-6 pt-4 border-t border-purple-100 space-y-3">
-              <Link
-                href="/reports/suppliers"
-                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-bold shadow-sm transition-all"
-              >
-                <span>View All Suppliers</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-
-              <div className="bg-white/80 p-2.5 rounded-xl border border-purple-100 flex items-center justify-between text-xs font-medium">
-                <Link
-                  href="/reports/participating/suppliers"
-                  className="text-emerald-700 hover:underline font-semibold"
-                >
-                  Attending ({metrics.partSuppliers})
-                </Link>
-                <span className="text-slate-300">&bull;</span>
-                <Link
-                  href="/reports/not-participating/suppliers"
-                  className="text-amber-700 hover:underline font-semibold"
-                >
-                  Not Attending ({metrics.notPartSuppliers})
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          {/* 5. OFFICERS CARD */}
-          <div className="bg-gradient-to-br from-teal-50 via-white to-teal-50/40 p-6 rounded-2xl border-2 border-teal-200 shadow-sm hover:shadow-md hover:border-teal-400 transition-all flex flex-col justify-between group">
-            <div>
-              <div className="flex items-center justify-between">
-                <div className="w-12 h-12 rounded-xl bg-teal-700 text-white flex items-center justify-center shadow-sm">
-                  <Landmark className="w-6 h-6" />
-                </div>
-                <span className="text-xs font-bold text-teal-800 bg-teal-100 px-3 py-1 rounded-full border border-teal-200">
-                  Government &amp; RDA
-                </span>
-              </div>
-
-              <h2 className="text-xl font-extrabold text-slate-900 mt-4 group-hover:text-teal-700 transition-colors">
-                Officers
-              </h2>
-              <p className="text-xs text-slate-500 mt-1">
-                Provincial engineers, district officers, and public sector road stakeholders.
-              </p>
-
-              <div className="mt-4 flex items-baseline gap-2">
-                <span className="text-4xl font-black text-teal-950 font-mono">
-                  {metrics.totalOfficers}
-                </span>
-                <span className="text-xs text-teal-700 font-bold uppercase tracking-wider">
-                  Total Officers
-                </span>
-              </div>
-            </div>
-
-            <div className="mt-6 pt-4 border-t border-teal-100 space-y-3">
-              <Link
-                href="/reports/officers"
-                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-teal-700 hover:bg-teal-800 text-white rounded-xl text-xs font-bold shadow-sm transition-all"
-              >
-                <span>View All Officers</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-
-              <div className="bg-white/80 p-2.5 rounded-xl border border-teal-100 flex items-center justify-between text-xs font-medium">
-                <Link
-                  href="/reports/participating/officers"
-                  className="text-emerald-700 hover:underline font-semibold"
-                >
-                  Attending ({metrics.partOfficers})
-                </Link>
-                <span className="text-slate-300">&bull;</span>
-                <Link
-                  href="/reports/not-participating/officers"
-                  className="text-amber-700 hover:underline font-semibold"
-                >
-                  Not Attending ({metrics.notPartOfficers})
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          {/* MASTER SUMMARY / EXPORT CARD */}
-          <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-sm flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                  Dataset Summary
-                </span>
-                <span className="text-xs font-semibold bg-blue-500/20 text-blue-300 border border-blue-500/30 px-2.5 py-0.5 rounded-full">
-                  Official Records
-                </span>
-              </div>
-
-              <h2 className="text-xl font-bold text-white mt-4">Master Dataset</h2>
-              <p className="text-xs text-slate-400 mt-1">
-                Total verified submissions recorded across all categories and districts.
-              </p>
-
-              <div className="mt-4 flex items-baseline gap-2">
-                <span className="text-4xl font-black text-blue-400 font-mono">
-                  {metrics.total}
-                </span>
-                <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold">
-                  Total Submissions
-                </span>
-              </div>
-            </div>
-
-            <div className="mt-6 pt-4 border-t border-slate-800 space-y-2">
-              <button
-                type="button"
-                onClick={handleDownloadExcel}
-                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all"
-              >
-                <FileSpreadsheet className="w-4 h-4" />
-                <span>Export Complete Excel (.csv)</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition-all"
-              >
-                <Printer className="w-4 h-4" />
-                <span>Print Official Summary</span>
-              </button>
             </div>
           </div>
         </div>
