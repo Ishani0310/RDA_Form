@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import {
   Menu,
   Search,
@@ -76,6 +77,7 @@ export const TopNav: React.FC<TopNavProps> = ({ onToggleSidebar }) => {
   const [loadingNotifications, setLoadingNotifications] = useState<boolean>(false);
   const [selectedNotification, setSelectedNotification] = useState<NotificationItem | null>(null);
   const [copiedRef, setCopiedRef] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
 
   const [officer, setOfficer] = useState<CurrentOfficer>({
@@ -103,6 +105,8 @@ export const TopNav: React.FC<TopNavProps> = ({ onToggleSidebar }) => {
   }, []);
 
   useEffect(() => {
+    setMounted(true);
+
     fetch("/api/auth/me")
       .then((res) => res.json())
       .then((data) => {
@@ -434,193 +438,196 @@ export const TopNav: React.FC<TopNavProps> = ({ onToggleSidebar }) => {
         </div>
       </div>
 
-      {/* Notification Detail Modal */}
-      {selectedNotification && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh]">
-            {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
-              <div className="flex items-center gap-3">
-                <div
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center border shadow-xs ${getNotificationBadgeColor(
-                    selectedNotification.type
-                  )}`}
-                >
-                  {getNotificationIcon(selectedNotification.type)}
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900">
-                    {selectedNotification.title}
-                  </h3>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[11px] text-slate-500 font-medium flex items-center gap-1">
-                      <Clock className="w-3 h-3 text-slate-400" />
-                      {formatRelativeTime(selectedNotification.createdAt)}
-                    </span>
-                    <span className="text-[10px] text-slate-300">•</span>
-                    <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded bg-slate-200 text-slate-700">
-                      {selectedNotification.type}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <button
-                onClick={() => setSelectedNotification(null)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors cursor-pointer"
-                aria-label="Close"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Modal Content */}
-            <div className="p-6 space-y-4 overflow-y-auto text-xs">
-              {/* Message Box */}
-              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200/80">
-                <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider block mb-1">
-                  Notification Alert Details
-                </span>
-                <p className="text-slate-800 text-sm font-medium leading-relaxed">
-                  {selectedNotification.message}
-                </p>
-              </div>
-
-              {/* Reference Number if present */}
-              {selectedNotification.reference && (
-                <div className="p-3 bg-blue-50/60 border border-blue-200/70 rounded-xl flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] font-bold uppercase text-blue-900/70 block">
-                      Filing Reference Number
-                    </span>
-                    <span className="font-mono text-xs font-bold text-blue-950">
-                      {selectedNotification.reference}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => handleCopyRef(selectedNotification.reference!)}
-                    className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-blue-700 bg-white hover:bg-blue-100/60 rounded-lg border border-blue-200 transition-colors shadow-2xs cursor-pointer"
+      {/* Notification Detail Modal (Rendered via Portal to escape header containing block) */}
+      {mounted &&
+        selectedNotification &&
+        createPortal(
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150">
+            <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh]">
+              {/* Modal Header */}
+              <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center border shadow-xs ${getNotificationBadgeColor(
+                      selectedNotification.type
+                    )}`}
                   >
-                    {copiedRef ? (
-                      <>
-                        <Check className="w-3.5 h-3.5 text-emerald-600" />
-                        <span className="text-emerald-700">Copied</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-3.5 h-3.5" />
-                        <span>Copy Ref</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
-
-              {/* Timestamp Breakdown */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 bg-slate-50/70 rounded-lg border border-slate-200/60">
-                  <span className="text-[10px] font-semibold text-slate-500 uppercase block">
-                    Received Date
-                  </span>
-                  <span className="text-[11px] font-medium text-slate-800 mt-0.5 block">
-                    {new Date(selectedNotification.createdAt).toLocaleDateString("en-GB", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </span>
-                </div>
-                <div className="p-3 bg-slate-50/70 rounded-lg border border-slate-200/60">
-                  <span className="text-[10px] font-semibold text-slate-500 uppercase block">
-                    Exact Time
-                  </span>
-                  <span className="text-[11px] font-medium text-slate-800 mt-0.5 block">
-                    {new Date(selectedNotification.createdAt).toLocaleTimeString("en-GB", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      second: "2-digit",
-                    })}
-                  </span>
-                </div>
-              </div>
-
-              {/* Metadata details if available */}
-              {selectedNotification.metadata &&
-                Object.keys(selectedNotification.metadata).length > 0 && (
-                  <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-200/80">
-                    <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider block mb-2">
-                      Event Context & Metadata
-                    </span>
-                    <div className="grid grid-cols-2 gap-2 text-[11px]">
-                      {Object.entries(selectedNotification.metadata).map(([key, val]) => (
-                        <div key={key}>
-                          <span className="text-slate-400 capitalize">
-                            {key.replace(/([A-Z])/g, " $1")}:{" "}
-                          </span>
-                          <span className="font-semibold text-slate-700">
-                            {String(val)}
-                          </span>
-                        </div>
-                      ))}
+                    {getNotificationIcon(selectedNotification.type)}
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">
+                      {selectedNotification.title}
+                    </h3>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[11px] text-slate-500 font-medium flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-slate-400" />
+                        {formatRelativeTime(selectedNotification.createdAt)}
+                      </span>
+                      <span className="text-[10px] text-slate-300">•</span>
+                      <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded bg-slate-200 text-slate-700">
+                        {selectedNotification.type}
+                      </span>
                     </div>
                   </div>
-                )}
-            </div>
+                </div>
+                <button
+                  onClick={() => setSelectedNotification(null)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors cursor-pointer"
+                  aria-label="Close"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
-            {/* Modal Actions Footer */}
-            <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-3">
-              <button
-                onClick={() => setSelectedNotification(null)}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-200/60 rounded-xl transition-colors cursor-pointer"
-              >
-                Close
-              </button>
+              {/* Modal Content */}
+              <div className="p-6 space-y-4 overflow-y-auto text-xs">
+                {/* Message Box */}
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200/80">
+                  <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider block mb-1">
+                    Notification Alert Details
+                  </span>
+                  <p className="text-slate-800 text-sm font-medium leading-relaxed">
+                    {selectedNotification.message}
+                  </p>
+                </div>
 
-              <div className="flex items-center gap-2">
+                {/* Reference Number if present */}
                 {selectedNotification.reference && (
-                  <button
-                    onClick={() => {
-                      const refUrl = `/submissions?ref=${encodeURIComponent(
-                        selectedNotification.reference!
-                      )}`;
-                      window.location.href = refUrl;
-                    }}
-                    className="px-4 py-2 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-xl transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                    <span>Open Submission Record</span>
-                  </button>
+                  <div className="p-3 bg-blue-50/60 border border-blue-200/70 rounded-xl flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase text-blue-900/70 block">
+                        Filing Reference Number
+                      </span>
+                      <span className="font-mono text-xs font-bold text-blue-950">
+                        {selectedNotification.reference}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => handleCopyRef(selectedNotification.reference!)}
+                      className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-blue-700 bg-white hover:bg-blue-100/60 rounded-lg border border-blue-200 transition-colors shadow-2xs cursor-pointer"
+                    >
+                      {copiedRef ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-600" />
+                          <span className="text-emerald-700">Copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>Copy Ref</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 )}
-                {selectedNotification.type === "DRAFT" && selectedNotification.reference && (
-                  <button
-                    onClick={() => {
-                      window.open(
-                        `/register?ref=${encodeURIComponent(
+
+                {/* Timestamp Breakdown */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 bg-slate-50/70 rounded-lg border border-slate-200/60">
+                    <span className="text-[10px] font-semibold text-slate-500 uppercase block">
+                      Received Date
+                    </span>
+                    <span className="text-[11px] font-medium text-slate-800 mt-0.5 block">
+                      {new Date(selectedNotification.createdAt).toLocaleDateString("en-GB", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </span>
+                  </div>
+                  <div className="p-3 bg-slate-50/70 rounded-lg border border-slate-200/60">
+                    <span className="text-[10px] font-semibold text-slate-500 uppercase block">
+                      Exact Time
+                    </span>
+                    <span className="text-[11px] font-medium text-slate-800 mt-0.5 block">
+                      {new Date(selectedNotification.createdAt).toLocaleTimeString("en-GB", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
+                      })}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Metadata details if available */}
+                {selectedNotification.metadata &&
+                  Object.keys(selectedNotification.metadata).length > 0 && (
+                    <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-200/80">
+                      <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider block mb-2">
+                        Event Context & Metadata
+                      </span>
+                      <div className="grid grid-cols-2 gap-2 text-[11px]">
+                        {Object.entries(selectedNotification.metadata).map(([key, val]) => (
+                          <div key={key}>
+                            <span className="text-slate-400 capitalize">
+                              {key.replace(/([A-Z])/g, " $1")}:{" "}
+                            </span>
+                            <span className="font-semibold text-slate-700">
+                              {String(val)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+              </div>
+
+              {/* Modal Actions Footer */}
+              <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-3">
+                <button
+                  onClick={() => setSelectedNotification(null)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-200/60 rounded-xl transition-colors cursor-pointer"
+                >
+                  Close
+                </button>
+
+                <div className="flex items-center gap-2">
+                  {selectedNotification.reference && (
+                    <button
+                      onClick={() => {
+                        const refUrl = `/submissions?ref=${encodeURIComponent(
                           selectedNotification.reference!
-                        )}`,
-                        "_blank"
-                      );
-                    }}
-                    className="px-3 py-2 text-xs font-semibold text-amber-800 bg-amber-100 hover:bg-amber-200 rounded-xl transition-colors flex items-center gap-1 cursor-pointer"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    <span>Open Draft Form</span>
-                  </button>
-                )}
-                {selectedNotification.type === "LOGIN" && (
-                  <Link
-                    href="/submissions"
-                    onClick={() => setSelectedNotification(null)}
-                    className="px-4 py-2 text-xs font-bold text-blue-900 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors flex items-center gap-1.5"
-                  >
-                    <Shield className="w-3.5 h-3.5" />
-                    <span>View Activity Logs</span>
-                  </Link>
-                )}
+                        )}`;
+                        window.location.href = refUrl;
+                      }}
+                      className="px-4 py-2 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-xl transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Open Submission Record</span>
+                    </button>
+                  )}
+                  {selectedNotification.type === "DRAFT" && selectedNotification.reference && (
+                    <button
+                      onClick={() => {
+                        window.open(
+                          `/register?ref=${encodeURIComponent(
+                            selectedNotification.reference!
+                          )}`,
+                          "_blank"
+                        );
+                      }}
+                      className="px-3 py-2 text-xs font-semibold text-amber-800 bg-amber-100 hover:bg-amber-200 rounded-xl transition-colors flex items-center gap-1 cursor-pointer"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>Open Draft Form</span>
+                    </button>
+                  )}
+                  {selectedNotification.type === "LOGIN" && (
+                    <Link
+                      href="/submissions"
+                      onClick={() => setSelectedNotification(null)}
+                      className="px-4 py-2 text-xs font-bold text-blue-900 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors flex items-center gap-1.5"
+                    >
+                      <Shield className="w-3.5 h-3.5" />
+                      <span>View Activity Logs</span>
+                    </Link>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </header>
   );
 };
