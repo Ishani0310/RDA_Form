@@ -33,6 +33,7 @@ import {
   Trash2,
   Save,
   AlertOctagon,
+  RotateCcw,
 } from "lucide-react";
 import { DynamicFormRenderer } from "@/components/dynamic-form/DynamicFormRenderer";
 
@@ -56,6 +57,9 @@ interface FormattedSubmission {
   submittedAt?: string | null;
   reviewedBy: string;
   reviewNotes: string | null;
+  editRequested?: boolean;
+  editRequestReason?: string | null;
+  editRequestedAt?: string | null;
 }
 
 interface SubmissionsCounts {
@@ -64,6 +68,7 @@ interface SubmissionsCounts {
   draft: number;
   unseen?: number;
   seen?: number;
+  editRequested?: number;
 }
 
 interface PaginationMeta {
@@ -1361,6 +1366,76 @@ function SubmissionsContent() {
     }
   };
 
+  const [isRevertingToDraft, setIsRevertingToDraft] = useState(false);
+
+  const handlePutAsDraft = async (sub: FormattedSubmission) => {
+    const confirmMessage = sub.editRequested
+      ? `Contractor has requested edit permission for ${sub.ref} (${sub.contractor}).\n\nReason: "${sub.editRequestReason || "Not specified"}"\n\nDo you want to grant edit permission and revert this filing to Draft? The contractor will be able to edit and resubmit their form.`
+      : `Revert registration ${sub.ref} (${sub.contractor}) to Draft? This will allow the contractor to access and edit their form.`;
+
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    setIsRevertingToDraft(true);
+    try {
+      const res = await fetch("/api/submissions", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: sub.id,
+          ref: sub.ref,
+          updates: {
+            status: "Draft",
+          },
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSubmissions((prev) =>
+          prev.map((s) =>
+            s.id === sub.id
+              ? {
+                  ...s,
+                  status: "Draft",
+                  editRequested: false,
+                  editRequestReason: null,
+                  editRequestedAt: null,
+                }
+              : s
+          )
+        );
+        if (selectedSub && selectedSub.id === sub.id) {
+          setSelectedSub((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  status: "Draft",
+                  editRequested: false,
+                  editRequestReason: null,
+                  editRequestedAt: null,
+                }
+              : null
+          );
+        }
+        setCounts((prev) => ({
+          ...prev,
+          draft: (prev.draft || 0) + 1,
+          submitted: Math.max(0, (prev.submitted || 0) - 1),
+          editRequested: Math.max(0, (prev.editRequested || 0) - (sub.editRequested ? 1 : 0)),
+        }));
+        fetchSubmissions();
+        alert(`Success: Registration ${sub.ref} is now set as Draft. The contractor can now edit and resubmit their form.`);
+      } else {
+        alert(data.message || "Failed to put submission as Draft.");
+      }
+    } catch {
+      alert("Network error occurred while reverting submission to Draft.");
+    } finally {
+      setIsRevertingToDraft(false);
+    }
+  };
+
   const handleInspect = (sub: FormattedSubmission) => {
     setSelectedSub(sub);
     if (!sub.isViewed) {
@@ -2075,6 +2150,30 @@ function SubmissionsContent() {
             {counts.draft}
           </span>
         </button>
+
+        {Boolean(counts.editRequested) && (
+          <button
+            type="button"
+            onClick={() => {
+              setStatus("edit_requested");
+              setReviewFilter("all");
+              setPage(1);
+            }}
+            className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              status === "edit_requested"
+                ? "bg-amber-600 text-white shadow-sm"
+                : "bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100"
+            }`}
+          >
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+            <span>Edit Requested</span>
+            <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+              status === "edit_requested" ? "bg-amber-800 text-amber-100" : "bg-amber-200 text-amber-950 font-black"
+            }`}>
+              {counts.editRequested}
+            </span>
+          </button>
+        )}
       </div>
 
       {/* Error Banner */}
@@ -2295,7 +2394,19 @@ function SubmissionsContent() {
                         </div>
                       )}
                     </td>
-                    <td className="px-4 py-3.5">{getStatusBadge(s.status)}</td>
+                    <td className="px-4 py-3.5">
+                      {getStatusBadge(s.status)}
+                      {s.editRequested && (
+                        <div className="mt-1">
+                          <span
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-amber-100 text-amber-900 border border-amber-300 animate-pulse"
+                            title={`Contractor requested edit: ${s.editRequestReason || "Amendments needed"}`}
+                          >
+                            ⚠️ Edit Requested
+                          </span>
+                        </div>
+                      )}
+                    </td>
                     <td className="px-4 py-3.5 text-slate-600 font-mono text-[11px]">{s.createdAt || "—"}</td>
                     <td className="px-4 py-3.5 text-slate-600 font-mono text-[11px]">{s.updatedAt || s.createdAt || "—"}</td>
                     <td className="px-4 py-3.5">
@@ -2336,7 +2447,26 @@ function SubmissionsContent() {
                           <Printer className="w-3.5 h-3.5 text-emerald-700" />
                           <span>PDF</span>
                         </button>
-                        {s.status === "Draft" && (
+                        {s.status !== "Draft" ? (
+                          <button
+                            type="button"
+                            onClick={() => handlePutAsDraft(s)}
+                            disabled={isRevertingToDraft}
+                            className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-bold rounded-lg border transition-all ${
+                              s.editRequested
+                                ? "text-amber-950 bg-amber-200 hover:bg-amber-300 border-amber-400 shadow-2xs font-extrabold"
+                                : "text-amber-900 bg-amber-50 hover:bg-amber-100 border-amber-300"
+                            }`}
+                            title={
+                              s.editRequested
+                                ? `Contractor requested edit: "${s.editRequestReason || "Amendments required"}". Click to approve & put as draft.`
+                                : "Revert this submission to Draft so contractor can edit their responses"
+                            }
+                          >
+                            <RotateCcw className="w-3.5 h-3.5 text-amber-700" />
+                            <span>Put as Draft</span>
+                          </button>
+                        ) : (
                           <a
                             href={`/register?ref=${encodeURIComponent(s.ref)}`}
                             target="_blank"
@@ -2476,6 +2606,57 @@ function SubmissionsContent() {
                 </button>
               </div>
             )}
+
+            {/* Contractor Edit Permission Request Banner & Put as Draft Action */}
+            {selectedSub.editRequested ? (
+              <div className="p-4 rounded-xl bg-amber-50 border-2 border-amber-400 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-amber-950 shadow-sm">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
+                    <span className="font-extrabold text-amber-950 text-xs sm:text-sm">
+                      Contractor Requested Edit Permission
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-200 text-amber-900 uppercase">
+                      Action Needed
+                    </span>
+                  </div>
+                  {selectedSub.editRequestReason && (
+                    <p className="text-xs text-amber-900 bg-white/80 p-2.5 rounded-lg border border-amber-200 font-mono mt-1">
+                      <strong>Reason:</strong> {selectedSub.editRequestReason}
+                    </p>
+                  )}
+                  {selectedSub.editRequestedAt && (
+                    <p className="text-[11px] text-amber-800">
+                      Requested Date: <strong>{selectedSub.editRequestedAt}</strong>
+                    </p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handlePutAsDraft(selectedSub)}
+                  disabled={isRevertingToDraft}
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md transition-all shrink-0 min-h-[40px]"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  <span>Grant Access &amp; Put as Draft</span>
+                </button>
+              </div>
+            ) : selectedSub.status !== "Draft" ? (
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3 text-xs">
+                <span className="text-slate-600">
+                  Allow contractor to edit? Setting to Draft reactivates their form so they can update details.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handlePutAsDraft(selectedSub)}
+                  disabled={isRevertingToDraft}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-xs transition-colors shrink-0"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 text-amber-700" />
+                  <span>Put as Draft</span>
+                </button>
+              </div>
+            ) : null}
 
             {/* Basic Info Bar */}
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
@@ -3182,7 +3363,22 @@ function SubmissionsContent() {
                   <Pencil className="w-4 h-4 text-amber-700" />
                   <span>Edit Record</span>
                 </button>
-                {selectedSub.status === "Draft" && (
+                {selectedSub.status !== "Draft" ? (
+                  <button
+                    type="button"
+                    onClick={() => handlePutAsDraft(selectedSub)}
+                    disabled={isRevertingToDraft}
+                    className={`inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg border transition-all ${
+                      selectedSub.editRequested
+                        ? "text-amber-950 bg-amber-200 hover:bg-amber-300 border-amber-400 font-extrabold"
+                        : "text-amber-900 bg-amber-50 hover:bg-amber-100 border-amber-300"
+                    }`}
+                    title="Revert to Draft so contractor can edit"
+                  >
+                    <RotateCcw className="w-4 h-4 text-amber-700" />
+                    <span>Put as Draft</span>
+                  </button>
+                ) : (
                   <a
                     href={`/register?ref=${encodeURIComponent(selectedSub.ref)}`}
                     target="_blank"

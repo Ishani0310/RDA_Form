@@ -536,6 +536,11 @@ export async function getDraftByToken(rawTokenOrRef: string): Promise<{
   submissionReference: string;
   resumeToken: string;
   status: string;
+  isReadOnly: boolean;
+  editRequested: boolean;
+  editRequestReason?: string;
+  editRequestedAt?: string;
+  submittedAt?: string;
   expiresAt: string;
   contractor: {
     registrationNumber: string;
@@ -590,44 +595,45 @@ export async function getDraftByToken(rawTokenOrRef: string): Promise<{
     throw new Error("Draft record not found. Please verify your Reference Number or Token.");
   }
 
-  // Only allow resuming drafts if status is Draft or Action_Required
-  if (submission.status !== "Draft" && submission.status !== "Action_Required") {
-    throw new Error(
-      `This submission (${submission.submissionReference}) is currently "${submission.status}". Only registrations reverted to Draft status can be edited by the submitter.`
-    );
-  }
+  // Check if form is editable or read-only:
+  // If status is "Draft" or "Action_Required", the contractor can edit.
+  // If status is "Submitted", "Under_Review", "Verified", etc., the contractor can only view (read-only)
+  // unless an admin reverts the submission to "Draft".
+  const isReadOnly = submission.status !== "Draft" && submission.status !== "Action_Required";
 
-  // Ensure active, un-revoked DraftToken exists with a valid token
-  if (!activeResumeToken) {
-    activeResumeToken = generateResumeToken();
-    const tokenHash = hashResumeToken(activeResumeToken);
-    if (draftTokenDoc) {
-      draftTokenDoc.tokenHash = tokenHash;
+  if (!isReadOnly) {
+    // Ensure active, un-revoked DraftToken exists with a valid token
+    if (!activeResumeToken) {
+      activeResumeToken = generateResumeToken();
+      const tokenHash = hashResumeToken(activeResumeToken);
+      if (draftTokenDoc) {
+        draftTokenDoc.tokenHash = tokenHash;
+        draftTokenDoc.isRevoked = false;
+        draftTokenDoc.revokedAt = undefined;
+        draftTokenDoc.expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+        draftTokenDoc.lastAccessedAt = new Date();
+        await draftTokenDoc.save();
+      } else {
+        draftTokenDoc = await DraftToken.create({
+          tokenHash,
+          contractor: submission.contractor,
+          submission: submission._id,
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          isRevoked: false,
+          lastAccessedAt: new Date(),
+        });
+      }
+    } else if (draftTokenDoc && draftTokenDoc.isRevoked) {
+      // If the token was previously revoked on final submission, but the admin set it back to Draft:
       draftTokenDoc.isRevoked = false;
       draftTokenDoc.revokedAt = undefined;
       draftTokenDoc.expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
       draftTokenDoc.lastAccessedAt = new Date();
       await draftTokenDoc.save();
-    } else {
-      draftTokenDoc = await DraftToken.create({
-        tokenHash,
-        contractor: submission.contractor,
-        submission: submission._id,
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        isRevoked: false,
-        lastAccessedAt: new Date(),
-      });
+    } else if (draftTokenDoc) {
+      draftTokenDoc.lastAccessedAt = new Date();
+      await draftTokenDoc.save();
     }
-  } else if (draftTokenDoc && draftTokenDoc.isRevoked) {
-    // If the token was previously revoked on final submission, but the admin set it back to Draft:
-    draftTokenDoc.isRevoked = false;
-    draftTokenDoc.revokedAt = undefined;
-    draftTokenDoc.expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-    draftTokenDoc.lastAccessedAt = new Date();
-    await draftTokenDoc.save();
-  } else if (draftTokenDoc) {
-    draftTokenDoc.lastAccessedAt = new Date();
-    await draftTokenDoc.save();
   }
 
   const contractor = await Contractor.findById(submission.contractor).lean();
@@ -637,8 +643,13 @@ export async function getDraftByToken(rawTokenOrRef: string): Promise<{
 
   return {
     submissionReference: submission.submissionReference,
-    resumeToken: activeResumeToken,
+    resumeToken: activeResumeToken || identifier,
     status: submission.status,
+    isReadOnly,
+    editRequested: Boolean(submission.editRequested),
+    editRequestReason: submission.editRequestReason || "",
+    editRequestedAt: submission.editRequestedAt ? new Date(submission.editRequestedAt).toISOString() : undefined,
+    submittedAt: submission.submittedAt ? new Date(submission.submittedAt).toISOString() : undefined,
     expiresAt: (draftTokenDoc?.expiresAt || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)).toISOString(),
     contractor: {
       registrationNumber: contractor.registrationNumber || "",
@@ -839,6 +850,9 @@ export async function submitFinalDeclaration(
   submission.updatedAt = submittedAt;
   submission.createdAt = submittedAt; // Crucial: ensure newly submitted filing appears at the very top of registry
   submission.isViewed = false;
+  submission.editRequested = false;
+  submission.editRequestReason = undefined;
+  submission.editRequestedAt = undefined;
   contractor.status = "Pending_Review";
   contractor.updatedAt = submittedAt;
   draftTokenDoc.isRevoked = true;
@@ -1142,5 +1156,102 @@ export async function submitDirectDeclaration(
     provincialOffice: province,
     questionnaireData: rawQ,
     contactOfficer,
+  };
+}
+
+/**
+ * Contractor requests permission from the RDA Administrator to make changes
+ * to their previously submitted registration.
+ */
+export async function requestEditPermission(
+  identifier: string,
+  reason?: string
+): Promise<{
+  success: boolean;
+  submissionReference: string;
+  message: string;
+  editRequestedAt: string;
+}> {
+  const clean = (identifier || "").trim();
+  if (!clean) {
+    throw new Error("Submission Reference Number or Token is required to request edit permission.");
+  }
+
+  await connectToDatabase();
+
+  let submission: any = null;
+  if (isValidTokenFormat(clean)) {
+    const tokenHash = hashResumeToken(clean);
+    const draftTokenDoc = await DraftToken.findOne({ tokenHash });
+    if (draftTokenDoc) {
+      submission = await Submission.findById(draftTokenDoc.submission);
+    }
+  }
+
+  if (!submission) {
+    const escaped = clean.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    submission = await Submission.findOne({
+      submissionReference: { $regex: new RegExp(`^${escaped}$`, "i") },
+    });
+  }
+
+  if (!submission) {
+    throw new Error("Submission record not found.");
+  }
+
+  if (submission.status === "Draft") {
+    return {
+      success: true,
+      submissionReference: submission.submissionReference,
+      message: "This registration is already in Draft status and open for editing.",
+      editRequestedAt: new Date().toISOString(),
+    };
+  }
+
+  const contractor = await Contractor.findById(submission.contractor).lean();
+  const contractorName =
+    contractor?.businessName ||
+    (submission.questionnaireData as any)?.organizationName ||
+    submission.submissionReference;
+
+  const effectiveReason = (reason || "Contractor requested access to make amendments to their submitted filing.").trim();
+
+  submission.editRequested = true;
+  submission.editRequestReason = effectiveReason;
+  submission.editRequestedAt = new Date();
+  await submission.save();
+
+  // Create real-time admin alert notification
+  createNotification({
+    type: "SUBMISSION",
+    title: "Edit Permission Requested",
+    message: `${contractorName} requested permission to edit their submitted registration (${submission.submissionReference}). Reason: ${effectiveReason}`,
+    reference: submission.submissionReference,
+    link: `/submissions?search=${encodeURIComponent(submission.submissionReference)}`,
+    metadata: {
+      submissionReference: submission.submissionReference,
+      contractorName,
+      reason: effectiveReason,
+      action: "EDIT_PERMISSION_REQUESTED",
+    },
+  }).catch(() => {});
+
+  // Record audit log
+  recordActivityLog({
+    action: "STATUS_CHANGE",
+    targetType: "Submission",
+    targetId: submission._id.toString(),
+    description: `Contractor requested edit access for ${submission.submissionReference}. Reason: ${effectiveReason}`,
+    metadata: {
+      submissionReference: submission.submissionReference,
+      reason: effectiveReason,
+    },
+  }).catch(() => {});
+
+  return {
+    success: true,
+    submissionReference: submission.submissionReference,
+    message: "Edit permission request submitted to RDA Administrator successfully.",
+    editRequestedAt: submission.editRequestedAt.toISOString(),
   };
 }

@@ -64,6 +64,7 @@ export async function GET(request: NextRequest) {
       const emailList = Array.from(submittedEmails);
       await Submission.deleteMany({
         status: "Draft",
+        submissionReference: { $not: /^RDA-ICDP-/ },
         $or: [
           { "questionnaireData.email": { $in: emailList } },
           { "questionnaireData.participant1.email": { $in: emailList } },
@@ -73,7 +74,7 @@ export async function GET(request: NextRequest) {
 
     // Prevent duplicate draft records: If multiple drafts exist for the same company name, retain only the newest draft
     try {
-      const allDrafts = await Submission.find({ status: "Draft" })
+      const allDrafts = await Submission.find({ status: "Draft", submissionReference: { $not: /^RDA-ICDP-/ } })
         .select("_id contractor questionnaireData.organizationName questionnaireData.supplierDetails.companyName createdAt")
         .sort({ createdAt: -1 })
         .lean();
@@ -148,7 +149,9 @@ export async function GET(request: NextRequest) {
       // Status filter
       if (status && status !== "All Statuses") {
         const lower = status.toLowerCase();
-        if (lower === "submitted") {
+        if (lower === "edit_requested") {
+          query.editRequested = true;
+        } else if (lower === "submitted") {
           query.status = { $in: ["Submitted", "Under_Review", "Verified", "Action_Required", "Rejected"] };
         } else if (lower === "draft") {
           query.status = "Draft";
@@ -268,7 +271,15 @@ export async function GET(request: NextRequest) {
         submittedAt: finalSubmissionDate,
         reviewedBy: s.reviewedBy?.fullName || "Awaiting Review",
         reviewNotes: s.reviewNotes || null,
+        editRequested: Boolean(s.editRequested),
+        editRequestReason: s.editRequestReason || null,
+        editRequestedAt: s.editRequestedAt ? new Date(s.editRequestedAt).toLocaleDateString("en-GB") : null,
       };
+    });
+
+    const editRequestedCount = await Submission.countDocuments({
+      ...baseQueryNoStatus,
+      editRequested: true,
     });
 
     return NextResponse.json({
@@ -280,6 +291,7 @@ export async function GET(request: NextRequest) {
         draft: draftCount,
         unseen: unseenCount,
         seen: seenCount,
+        editRequested: editRequestedCount,
       },
       pagination: {
         page,
@@ -417,6 +429,10 @@ export async function PUT(request: NextRequest) {
     // When an administrator sets/reverts status to "Draft", activate/un-revoke a valid DraftToken
     // so the contractor who submitted the form can edit their registration again seamlessly.
     if (updates.status === "Draft") {
+      submission.editRequested = false;
+      submission.editRequestReason = undefined;
+      submission.editRequestedAt = undefined;
+
       const plainToken = generateResumeToken();
       const tokenHash = hashResumeToken(plainToken);
       const draftTokenDoc = await DraftToken.findOne({ submission: submission._id });

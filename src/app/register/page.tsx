@@ -37,6 +37,9 @@ import {
   ArrowUpDown,
   AlertCircle,
   ArrowDown,
+  Lock,
+  KeyRound,
+  Send,
 } from "lucide-react";
 import Link from "next/link";
 import { evaluateConditionalRule } from "@/components/dynamic-form/DynamicFormRenderer";
@@ -353,6 +356,16 @@ function RegisterForm() {
   const [inputRefToResume, setInputRefToResume] = useState("");
   const [isResumingByRef, setIsResumingByRef] = useState(false);
   const [showRefInput, setShowRefInput] = useState(false);
+
+  // Read-only inspection & edit permission request state
+  const [isReadOnly, setIsReadOnly] = useState<boolean>(false);
+  const [submissionStatus, setSubmissionStatus] = useState<string>("Draft");
+  const [isEditRequested, setIsEditRequested] = useState<boolean>(false);
+  const [editRequestReason, setEditRequestReason] = useState<string>("");
+  const [editRequestedAt, setEditRequestedAt] = useState<string>("");
+  const [showEditRequestModal, setShowEditRequestModal] = useState<boolean>(false);
+  const [editRequestReasonInput, setEditRequestReasonInput] = useState<string>("");
+  const [isSubmittingEditRequest, setIsSubmittingEditRequest] = useState<boolean>(false);
 
   // Field-level validation state & Declaration consent
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -770,7 +783,7 @@ function RegisterForm() {
 
   // UI States
   const [loading, setLoading] = useState(false);
-  const [formAlert, setFormAlert] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [formAlert, setFormAlert] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
   const [submissionSuccess, setSubmissionSuccess] = useState<{
     reference: string;
     businessName: string;
@@ -1190,6 +1203,13 @@ function RegisterForm() {
         setSpecialtyOtherList(parseOtherSpecialties(restoredData.specialtyOther));
         setSupplierMaterialsOtherList(parseOtherSpecialties(restoredData.supplierDetails?.materialsOther));
         setCidaGradeOtherList(parseOtherSpecialties(restoredData.cidaGradeOther));
+        const isReadOnlyMode = Boolean(data.draft.isReadOnly);
+        setIsReadOnly(isReadOnlyMode);
+        setIsEditRequested(Boolean(data.draft.editRequested));
+        setEditRequestReason(data.draft.editRequestReason || "");
+        setEditRequestedAt(data.draft.editRequestedAt || "");
+        setSubmissionStatus(data.draft.status || (isReadOnlyMode ? "Submitted" : "Draft"));
+
         const effectiveToken = data.draft.resumeToken || clean;
         currentDraftTokenRef.current = effectiveToken;
         setCurrentDraftToken(effectiveToken);
@@ -1199,7 +1219,7 @@ function RegisterForm() {
         setCurrentReference(ref);
         setShowRecoveryPrompt(false);
         setShowRefInput(false);
-        setAutoSaveStatus("saved");
+        setAutoSaveStatus(isReadOnlyMode ? "idle" : "saved");
         setLastSavedTime(new Date(data.draft.updatedAt || data.draft.createdAt || Date.now()));
 
         // Keep local browser cache synced with active draft and reference
@@ -1212,10 +1232,24 @@ function RegisterForm() {
         });
 
         if (!silent) {
-          setFormAlert({
-            type: "success",
-            message: `Previous registration draft restored successfully (${ref || "Draft Reference Active"}). All entered details have been recovered.`,
-          });
+          if (isReadOnlyMode) {
+            if (data.draft.editRequested) {
+              setFormAlert({
+                type: "info",
+                message: `Viewing official registration (${ref || "Submitted Filing"}). Your edit permission request is currently pending RDA Administrator review.`,
+              });
+            } else {
+              setFormAlert({
+                type: "info",
+                message: `Viewing official registration (${ref || "Submitted Filing"}). This form is in Read-Only mode. To request changes, click "Request Edit Permission".`,
+              });
+            }
+          } else {
+            setFormAlert({
+              type: "success",
+              message: `Previous registration draft restored successfully (${ref || "Draft Reference Active"}). All entered details have been recovered.`,
+            });
+          }
         }
       } else {
         setFormAlert({
@@ -1239,7 +1273,56 @@ function RegisterForm() {
     }
   };
 
+  const handleSendEditRequest = async () => {
+    if (!editRequestReasonInput.trim()) return;
+    setIsSubmittingEditRequest(true);
+    try {
+      const res = await fetch("/api/public/request-edit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reference: currentReference || currentDraftToken,
+          token: currentDraftToken,
+          reason: editRequestReasonInput.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setIsEditRequested(true);
+        setEditRequestReason(editRequestReasonInput.trim());
+        setEditRequestedAt(data.editRequestedAt || new Date().toISOString());
+        setShowEditRequestModal(false);
+        setFormAlert({
+          type: "success",
+          message: "Edit permission request submitted to RDA Administration successfully. Once approved, the form will be reverted to Draft for editing.",
+        });
+      } else {
+        setFormAlert({
+          type: "error",
+          message: data.message || "Failed to submit edit request.",
+        });
+      }
+    } catch {
+      setFormAlert({
+        type: "error",
+        message: "Network error submitting edit request. Please check your connection.",
+      });
+    } finally {
+      setIsSubmittingEditRequest(false);
+    }
+  };
+
   const performDraftSave = async (isAutoSave = false): Promise<boolean> => {
+    if (isReadOnly) {
+      if (!isAutoSave) {
+        setFormAlert({
+          type: "error",
+          message: "This registration has already been submitted and is locked for editing. Please request edit permission from the RDA Administrator.",
+        });
+      }
+      return false;
+    }
+
     const orgName = (formData.organizationName || formData.supplierDetails?.companyName || "").trim();
     if (!orgName) {
       if (!isAutoSave) {
@@ -1455,6 +1538,11 @@ function RegisterForm() {
     setIsCheckingEmail(false);
     setCurrentDraftToken("");
     setCurrentReference("");
+    setIsReadOnly(false);
+    setIsEditRequested(false);
+    setEditRequestReason("");
+    setEditRequestedAt("");
+    setSubmissionStatus("Draft");
     setAutoSaveStatus("idle");
     setLastSavedTime(null);
     setConfirmationEmail("");
@@ -2764,10 +2852,19 @@ function RegisterForm() {
           </div>
 
           {/* Live Auto-Save Status Bar and Quick Controls */}
-          <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className={`rounded-xl border px-4 py-3 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+            isReadOnly ? "bg-amber-50/80 border-amber-300" : "bg-white border-slate-200"
+          }`}>
             {/* Left: Auto-save status */}
             <div className="flex items-center gap-2.5">
-              {autoSaveStatus === "saving" ? (
+              {isReadOnly ? (
+                <div className="flex items-center gap-2 text-xs font-bold text-amber-950">
+                  <Lock className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>
+                    Official Filing ({currentReference || "Submitted"}) &bull; Status: {submissionStatus} &bull; Read-Only
+                  </span>
+                </div>
+              ) : autoSaveStatus === "saving" ? (
                 <div className="flex items-center gap-2 text-xs font-semibold text-blue-900">
                   <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-900" />
                   <span>Saving draft progress...</span>
@@ -2806,17 +2903,40 @@ function RegisterForm() {
 
             {/* Right: Quick actions */}
             <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
-              {/* Manual Save as Draft button */}
-              <button
-                type="button"
-                onClick={() => performDraftSave(false)}
-                disabled={loading}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-sm transition-all"
-                title="Explicitly save form draft now"
-              >
-                <Save className="w-3.5 h-3.5 text-blue-900" />
-                <span>Save as Draft</span>
-              </button>
+              {/* If read-only and no request yet, show Request Edit Permission button */}
+              {isReadOnly && !isEditRequested && (
+                <button
+                  type="button"
+                  onClick={() => setShowEditRequestModal(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-sm transition-all"
+                  title="Request permission from RDA Administrator to edit this form"
+                >
+                  <KeyRound className="w-3.5 h-3.5" />
+                  <span>Request Edit Permission</span>
+                </button>
+              )}
+
+              {/* If read-only and request already sent */}
+              {isReadOnly && isEditRequested && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 border border-blue-200 font-bold text-xs">
+                  <Clock className="w-3.5 h-3.5 text-blue-700" />
+                  <span>Edit Requested (Pending Admin)</span>
+                </span>
+              )}
+
+              {/* Manual Save as Draft button (only when editable) */}
+              {!isReadOnly && (
+                <button
+                  type="button"
+                  onClick={() => performDraftSave(false)}
+                  disabled={loading}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-sm transition-all"
+                  title="Explicitly save form draft now"
+                >
+                  <Save className="w-3.5 h-3.5 text-blue-900" />
+                  <span>Save as Draft</span>
+                </button>
+              )}
 
               {/* If other saved drafts exist in browser, allow switching */}
               {savedDraftsList.length > 0 && (
@@ -2843,6 +2963,76 @@ function RegisterForm() {
               </button>
             </div>
           </div>
+
+          {/* Prominent Read-Only & Edit Permission Notice Banner */}
+          {isReadOnly && (
+            <div
+              className={`p-4 sm:p-5 rounded-2xl border-2 shadow-sm ${
+                isEditRequested
+                  ? "bg-blue-50 border-blue-300 text-blue-950"
+                  : "bg-amber-50 border-amber-300 text-amber-950"
+              }`}
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm mt-0.5 ${
+                      isEditRequested ? "bg-blue-900 text-white" : "bg-amber-500 text-white"
+                    }`}
+                  >
+                    {isEditRequested ? (
+                      <Clock className="w-5 h-5 text-amber-300" />
+                    ) : (
+                      <Lock className="w-5 h-5" />
+                    )}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-extrabold text-sm sm:text-base">
+                        {isEditRequested
+                          ? "Edit Permission Requested (Awaiting Admin Review)"
+                          : "Official Registration Filed (View-Only Mode)"}
+                      </h3>
+                      <span
+                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                          isEditRequested
+                            ? "bg-blue-200 text-blue-950 border border-blue-300"
+                            : "bg-amber-200 text-amber-950 border border-amber-300"
+                        }`}
+                      >
+                        {isEditRequested ? "Pending Approval" : "Submitted"}
+                      </span>
+                    </div>
+                    <p className="text-xs sm:text-sm mt-1 leading-relaxed opacity-90">
+                      {isEditRequested
+                        ? `Your request to amend registration (${currentReference}) was sent to the RDA Administration. Once approved and reverted to Draft, you will be able to edit and resubmit your responses here.`
+                        : `This registration was officially submitted under reference (${currentReference}). Responses are locked. If you need to make changes, please request edit permission from the RDA Administrator.`}
+                    </p>
+                    {isEditRequested && editRequestReason && (
+                      <div className="text-xs mt-2 bg-white/80 p-2.5 rounded-lg border border-blue-200 font-mono text-blue-950">
+                        <strong>Reason submitted:</strong> {editRequestReason}
+                        {editRequestedAt && (
+                          <span className="block text-[11px] text-blue-700 mt-0.5 font-sans">
+                            Requested at: {new Date(editRequestedAt).toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {!isEditRequested && (
+                  <button
+                    type="button"
+                    onClick={() => setShowEditRequestModal(true)}
+                    className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs sm:text-sm shadow-md transition-all shrink-0 min-h-[42px]"
+                  >
+                    <KeyRound className="w-4 h-4" />
+                    <span>Request Edit Permission</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
 
           <div id="registration-form-start" className="space-y-6 scroll-mt-6">
             {/* Global Error Summary Banner when validation errors exist */}
@@ -2878,13 +3068,18 @@ function RegisterForm() {
 
             {formAlert && (
               <div
-                className={`p-4 rounded-xl border text-xs flex items-start gap-2.5 ${formAlert.type === "success"
-                  ? "bg-emerald-50 border-emerald-200 text-emerald-900"
-                  : "bg-rose-50 border-rose-200 text-rose-900"
-                  }`}
+                className={`p-4 rounded-xl border text-xs flex items-start gap-2.5 ${
+                  formAlert.type === "success"
+                    ? "bg-emerald-50 border-emerald-200 text-emerald-900"
+                    : formAlert.type === "info"
+                    ? "bg-blue-50 border-blue-200 text-blue-900"
+                    : "bg-rose-50 border-rose-200 text-rose-900"
+                }`}
               >
                 {formAlert.type === "success" ? (
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                ) : formAlert.type === "info" ? (
+                  <Info className="w-4 h-4 text-blue-900 shrink-0 mt-0.5" />
                 ) : (
                   <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
                 )}
@@ -2892,7 +3087,7 @@ function RegisterForm() {
               </div>
             )}
 
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6 lg:p-8 space-y-8">
+            <fieldset disabled={isReadOnly} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6 lg:p-8 space-y-8 border-0 m-0 block disabled:opacity-95">
               {/* SECTION 1: BASIC INFORMATION */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
@@ -3078,52 +3273,100 @@ function RegisterForm() {
                         </div>
                       )}
 
-                      <div className="flex flex-wrap items-center gap-2.5 pt-1">
-                        <button
-                          type="button"
-                          onClick={() => performDraftSave(false)}
-                          disabled={loading}
-                          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-sm transition-all min-h-[44px]"
-                        >
-                          <Save className="w-3.5 h-3.5 text-blue-900" />
-                          <span>Save as Draft</span>
-                        </button>
+                      {isReadOnly ? (
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-xl bg-amber-50 border border-amber-200 w-full mt-2">
+                          <div className="flex items-center gap-2 text-amber-950 font-bold text-xs">
+                            <Lock className="w-4 h-4 text-amber-600 shrink-0" />
+                            <span>This filing is officially submitted and locked (Read-Only).</span>
+                          </div>
+                          {!isEditRequested ? (
+                            <button
+                              type="button"
+                              onClick={() => setShowEditRequestModal(true)}
+                              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md transition-all shrink-0"
+                            >
+                              <KeyRound className="w-4 h-4" />
+                              <span>Request Edit Permission</span>
+                            </button>
+                          ) : (
+                            <span className="text-xs font-bold text-blue-900 bg-blue-100 px-3 py-1.5 rounded-lg border border-blue-200">
+                              Edit Request Pending Admin Review
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex flex-wrap items-center gap-2.5 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => performDraftSave(false)}
+                            disabled={loading}
+                            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-sm transition-all min-h-[44px]"
+                          >
+                            <Save className="w-3.5 h-3.5 text-blue-900" />
+                            <span>Save as Draft</span>
+                          </button>
 
-                        <button
-                          type="button"
-                          onClick={handleInitiateReview}
-                          disabled={loading}
-                          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs shadow-md transition-all disabled:opacity-60 min-h-[44px]"
-                        >
-                          {loading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Eye className="w-3.5 h-3.5 text-amber-400" />}
-                          <span>Review &amp; Submit Response</span>
-                        </button>
-                      </div>
+                          <button
+                            type="button"
+                            onClick={handleInitiateReview}
+                            disabled={loading}
+                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs shadow-md transition-all disabled:opacity-60 min-h-[44px]"
+                          >
+                            {loading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Eye className="w-3.5 h-3.5 text-amber-400" />}
+                            <span>Review &amp; Submit Response</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
 
                   {/* INITIAL PATH WHEN PARTICIPATION IS NOT YET SELECTED */}
                   {!formData.willParticipate && (
                     <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                      <button
-                        type="button"
-                        onClick={() => performDraftSave(false)}
-                        disabled={loading}
-                        className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-sm transition-all min-h-[44px]"
-                      >
-                        <Save className="w-3.5 h-3.5 text-blue-900" />
-                        <span>{currentReference ? `Save Draft (${currentReference})` : "Save as Draft"}</span>
-                      </button>
+                      {isReadOnly ? (
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-xl bg-amber-50 border border-amber-200 w-full">
+                          <div className="flex items-center gap-2 text-amber-950 font-bold text-xs">
+                            <Lock className="w-4 h-4 text-amber-600 shrink-0" />
+                            <span>This filing is officially submitted and locked (Read-Only).</span>
+                          </div>
+                          {!isEditRequested ? (
+                            <button
+                              type="button"
+                              onClick={() => setShowEditRequestModal(true)}
+                              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md transition-all shrink-0"
+                            >
+                              <KeyRound className="w-4 h-4" />
+                              <span>Request Edit Permission</span>
+                            </button>
+                          ) : (
+                            <span className="text-xs font-bold text-blue-900 bg-blue-100 px-3 py-1.5 rounded-lg border border-blue-200">
+                              Edit Request Pending Admin Review
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => performDraftSave(false)}
+                            disabled={loading}
+                            className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-sm transition-all min-h-[44px]"
+                          >
+                            <Save className="w-3.5 h-3.5 text-blue-900" />
+                            <span>{currentReference ? `Save Draft (${currentReference})` : "Save as Draft"}</span>
+                          </button>
 
-                      <button
-                        type="button"
-                        onClick={handleInitiateReview}
-                        disabled={loading}
-                        className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-900 to-blue-800 hover:from-blue-800 hover:to-blue-700 text-white font-extrabold text-xs shadow-md transition-all disabled:opacity-60 min-h-[44px]"
-                      >
-                        {loading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Eye className="w-3.5 h-3.5 text-amber-400" />}
-                        <span>Review &amp; Submit Questionnaire Response</span>
-                      </button>
+                          <button
+                            type="button"
+                            onClick={handleInitiateReview}
+                            disabled={loading}
+                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-900 to-blue-800 hover:from-blue-800 hover:to-blue-700 text-white font-extrabold text-xs shadow-md transition-all disabled:opacity-60 min-h-[44px]"
+                          >
+                            {loading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Eye className="w-3.5 h-3.5 text-amber-400" />}
+                            <span>Review &amp; Submit Questionnaire Response</span>
+                          </button>
+                        </>
+                      )}
                     </div>
                   )}
 
@@ -5912,44 +6155,69 @@ function RegisterForm() {
 
                   {/* ACTION BAR */}
                   <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
-                    <button
-                      type="button"
-                      onClick={() => performDraftSave(false)}
-                      disabled={loading}
-                      className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-5 py-3 sm:py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-sm transition-all min-h-[44px]"
-                    >
-                      {loading ? (
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-900" />
-                      ) : (
-                        <Save className="w-3.5 h-3.5 text-blue-900" />
-                      )}
-                      <span>
-                        {currentReference ? `Save Draft (${currentReference})` : "Save as Draft"}
-                      </span>
-                    </button>
+                    {isReadOnly ? (
+                      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-xl bg-amber-50 border border-amber-200 w-full">
+                        <div className="flex items-center gap-2 text-amber-950 font-bold text-xs">
+                          <Lock className="w-4 h-4 text-amber-600 shrink-0" />
+                          <span>This official registration is currently submitted and locked (Read-Only).</span>
+                        </div>
+                        {!isEditRequested ? (
+                          <button
+                            type="button"
+                            onClick={() => setShowEditRequestModal(true)}
+                            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md transition-all shrink-0"
+                          >
+                            <KeyRound className="w-4 h-4" />
+                            <span>Request Edit Permission from Admin</span>
+                          </button>
+                        ) : (
+                          <span className="text-xs font-bold text-blue-900 bg-blue-100 px-3 py-1.5 rounded-lg border border-blue-200">
+                            Edit Request Pending Admin Review
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => performDraftSave(false)}
+                          disabled={loading}
+                          className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-5 py-3 sm:py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-sm transition-all min-h-[44px]"
+                        >
+                          {loading ? (
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-900" />
+                          ) : (
+                            <Save className="w-3.5 h-3.5 text-blue-900" />
+                          )}
+                          <span>
+                            {currentReference ? `Save Draft (${currentReference})` : "Save as Draft"}
+                          </span>
+                        </button>
 
-                    <button
-                      type="button"
-                      onClick={handleInitiateReview}
-                      disabled={loading}
-                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 sm:py-2.5 rounded-xl bg-gradient-to-r from-blue-900 to-blue-800 hover:from-blue-800 hover:to-blue-700 text-white font-extrabold text-xs shadow-md shadow-blue-900/20 transition-all min-h-[44px]"
-                    >
-                      {loading ? (
-                        <>
-                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                          <span>Validating Form...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Eye className="w-4 h-4 text-amber-400" />
-                          <span>Review &amp; Submit Questionnaire Response</span>
-                        </>
-                      )}
-                    </button>
+                        <button
+                          type="button"
+                          onClick={handleInitiateReview}
+                          disabled={loading}
+                          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 sm:py-2.5 rounded-xl bg-gradient-to-r from-blue-900 to-blue-800 hover:from-blue-800 hover:to-blue-700 text-white font-extrabold text-xs shadow-md shadow-blue-900/20 transition-all min-h-[44px]"
+                        >
+                          {loading ? (
+                            <>
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                              <span>Validating Form...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Eye className="w-4 h-4 text-amber-400" />
+                              <span>Review &amp; Submit Questionnaire Response</span>
+                            </>
+                          )}
+                        </button>
+                      </>
+                    )}
                   </div>
                 </>
               )}
-            </div>
+            </fieldset>
           </div>
         </>
       )}
@@ -6744,6 +7012,83 @@ function RegisterForm() {
                   )}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* CONTRACTOR REQUEST EDIT PERMISSION MODAL                                   */}
+      {/* ========================================================================= */}
+      {showEditRequestModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-fadeIn">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full p-6 space-y-4 animate-in fade-in zoom-in-95 my-8">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center shadow-xs">
+                  <KeyRound className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-slate-900 text-sm sm:text-base">
+                    Request Edit Access from Admin
+                  </h3>
+                  <span className="text-[10px] text-slate-500 font-mono">
+                    {currentReference || "Official Filing"}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowEditRequestModal(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed">
+              This registration was submitted and is currently locked. To make updates, submit a request below. An RDA Administrator will review your request and revert the registration to <strong>Draft</strong> mode so you can modify and resubmit.
+            </p>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-700">
+                Reason for Edit / Modification *
+              </label>
+              <textarea
+                rows={3}
+                value={editRequestReasonInput}
+                onChange={(e) => setEditRequestReasonInput(e.target.value)}
+                placeholder="e.g. Need to update contact mobile number, CIDA grading, or production capacity figures."
+                className="w-full p-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-900 font-sans"
+              />
+            </div>
+
+            <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setShowEditRequestModal(false)}
+                className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isSubmittingEditRequest || !editRequestReasonInput.trim()}
+                onClick={handleSendEditRequest}
+                className="inline-flex items-center justify-center gap-1.5 px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md transition-all disabled:opacity-50"
+              >
+                {isSubmittingEditRequest ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Submitting Request...</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-3.5 h-3.5" />
+                    <span>Send Request to Admin</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>

@@ -20,6 +20,9 @@ export interface ISubmission extends Document {
   reviewNotes?: string;
   reviewedAt?: Date;
   submittedAt?: Date;
+  editRequested?: boolean;
+  editRequestReason?: string;
+  editRequestedAt?: Date;
   schemaVersion: string;
   formId?: string;
   formSlug?: string;
@@ -110,6 +113,18 @@ const SubmissionSchema = new Schema<ISubmission>(
     submittedAt: {
       type: Date,
       index: true,
+    },
+    editRequested: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    editRequestReason: {
+      type: String,
+      trim: true,
+    },
+    editRequestedAt: {
+      type: Date,
     },
     schemaVersion: {
       type: String,
