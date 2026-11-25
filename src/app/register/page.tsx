@@ -1618,9 +1618,9 @@ function RegisterForm() {
       const orgName = formData.organizationName.trim() || formData.supplierDetails?.companyName?.trim();
       const tokenToSubmit = currentDraftToken?.trim() || undefined;
 
-      // AbortController timeout guard (15s) to prevent indefinite UI hanging
+      // AbortController timeout guard (60s) to prevent premature aborts during server compilation or network delays
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
 
       // Direct single-roundtrip final submission (sub-300ms execution & decoupled email dispatch)
       const subRes = await fetch("/api/public/submit", {
@@ -2776,7 +2776,7 @@ function RegisterForm() {
                 <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                   <span>
-                    Saved {currentReference ? `&bull; Ref: ${currentReference}` : ""}
+                    Saved {currentReference ? `• Ref: ${currentReference}` : ""}
                     {lastSavedTime
                       ? ` (${lastSavedTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })})`
                       : ""}

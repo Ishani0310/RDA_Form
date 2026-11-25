@@ -673,10 +673,6 @@ export async function submitFinalDeclaration(
     throw new Error("Draft session not found.");
   }
 
-  if (draftTokenDoc.isRevoked) {
-    throw new Error("This declaration has already been submitted. Duplicate submissions are strictly prevented.");
-  }
-
   if (new Date() > draftTokenDoc.expiresAt) {
     throw new Error("This draft session has expired. Submissions must occur within the active 30-day window.");
   }
@@ -690,8 +686,17 @@ export async function submitFinalDeclaration(
     throw new Error("Draft records not found in database.");
   }
 
-  if (submission.status === "Submitted") {
-    throw new Error("This registration has already been successfully submitted. Duplicate submissions are strictly prevented.");
+  if (draftTokenDoc.isRevoked || submission.status === "Submitted") {
+    // If this declaration was already submitted for this session (e.g. client retried or had a timeout delay),
+    // idempotently return the successful submission data so the user receives their confirmation screen.
+    return {
+      submissionReference: submission.submissionReference,
+      businessName: contractor.businessName || (submission.questionnaireData as any)?.organizationName || "RDA Participant",
+      submittedAt: submission.submittedAt ? submission.submittedAt.toISOString() : new Date().toISOString(),
+      provincialOffice: submission.provincialOffice || "Western Province",
+      questionnaireData: (submission.questionnaireData as Record<string, any>) || latestQuestionnaireData,
+      contactOfficer: contractor.contactOfficer,
+    };
   }
 
   const targetFormCode = submission.formId || DEFAULT_QUESTIONNAIRE_CODE;
