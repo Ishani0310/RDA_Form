@@ -35,6 +35,9 @@ export async function GET(request: NextRequest) {
     const viewStatus = (searchParams.get("viewStatus") || "").trim().toLowerCase();
     const ref = (searchParams.get("ref") || "").trim();
     const formFilter = (searchParams.get("formId") || searchParams.get("form") || "").trim();
+    const startDateParam = (searchParams.get("startDate") || "").trim();
+    const endDateParam = (searchParams.get("endDate") || "").trim();
+    const cidaGrade = (searchParams.get("cidaGrade") || "").trim();
 
     const pageParam = parseInt(searchParams.get("page") || "1", 10);
     const limitParam = parseInt(searchParams.get("limit") || "10", 10);
@@ -163,6 +166,32 @@ export async function GET(request: NextRequest) {
           query.status = { $in: ["Rejected", "Action_Required"] };
         } else {
           query.status = status;
+        }
+      }
+      // CIDA Grade filter
+      if (cidaGrade && cidaGrade !== "All Grades" && !cidaGrade.startsWith("All Grades")) {
+        query["questionnaireData.cidaGrade"] = cidaGrade;
+      }
+
+      // Date Range Filter (Filter on createdAt or submittedAt)
+      if (startDateParam || endDateParam) {
+        const dateFilter: Record<string, unknown> = {};
+        if (startDateParam) {
+          const sDate = new Date(startDateParam);
+          if (!isNaN(sDate.getTime())) {
+            sDate.setHours(0, 0, 0, 0);
+            dateFilter.$gte = sDate;
+          }
+        }
+        if (endDateParam) {
+          const eDate = new Date(endDateParam);
+          if (!isNaN(eDate.getTime())) {
+            eDate.setHours(23, 59, 59, 999);
+            dateFilter.$lte = eDate;
+          }
+        }
+        if (Object.keys(dateFilter).length > 0) {
+          query.createdAt = dateFilter;
         }
       }
     }
