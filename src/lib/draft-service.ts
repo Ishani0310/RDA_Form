@@ -836,8 +836,11 @@ export async function submitFinalDeclaration(
   // Transition submission, contractor and draft token
   submission.status = "Submitted";
   submission.submittedAt = submittedAt;
+  submission.updatedAt = submittedAt;
+  submission.createdAt = submittedAt; // Crucial: ensure newly submitted filing appears at the very top of registry
   submission.isViewed = false;
   contractor.status = "Pending_Review";
+  contractor.updatedAt = submittedAt;
   draftTokenDoc.isRevoked = true;
   draftTokenDoc.revokedAt = submittedAt;
 

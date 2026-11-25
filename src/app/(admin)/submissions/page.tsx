@@ -942,6 +942,7 @@ function SubmissionsContent() {
 
   // Selected for quick detail modal
   const [selectedSub, setSelectedSub] = useState<FormattedSubmission | null>(null);
+  const [hasAutoOpenedRef, setHasAutoOpenedRef] = useState(false);
   const [counts, setCounts] = useState<SubmissionsCounts>({ all: 0, submitted: 0, draft: 0, unseen: 0, seen: 0 });
 
   // Delete confirmation modal state
@@ -1380,7 +1381,6 @@ function SubmissionsContent() {
       if (category !== "All Categories") params.append("category", category);
       if (attendance !== "All Attendance") params.append("attendance", attendance);
       if (reviewFilter !== "all") params.append("viewStatus", reviewFilter);
-      if (initialRef) params.append("ref", initialRef);
 
       const res = await fetch(`/api/submissions?${params.toString()}`);
       if (!res.ok) {
@@ -1395,19 +1395,34 @@ function SubmissionsContent() {
         if (data.pagination) setPagination(data.pagination);
         if (data.counts) setCounts(data.counts);
 
-        // Auto-select modal if ref was requested
-        if (initialRef && Array.isArray(data.data)) {
-          const match = data.data.find(
-            (s: FormattedSubmission) =>
-              s.ref?.toLowerCase() === initialRef.toLowerCase() ||
-              s.id === initialRef ||
-              s.regNo?.toLowerCase() === initialRef.toLowerCase()
-          );
+        // Auto-select modal once if ref was requested in URL without filtering the table
+        if (initialRef && !hasAutoOpenedRef) {
+          const match = Array.isArray(data.data)
+            ? data.data.find(
+                (s: FormattedSubmission) =>
+                  s.ref?.toLowerCase() === initialRef.toLowerCase() ||
+                  s.id === initialRef ||
+                  s.regNo?.toLowerCase() === initialRef.toLowerCase()
+              )
+            : null;
+
           if (match) {
             setSelectedSub(match);
+            setHasAutoOpenedRef(true);
             if (!match.isViewed) {
               handleToggleSeen(match.id, true);
             }
+          } else {
+            // If requested ref is on a different page, fetch specifically for the detail modal
+            fetch(`/api/submissions?ref=${encodeURIComponent(initialRef)}`)
+              .then((r) => r.json())
+              .then((d) => {
+                if (d.success && Array.isArray(d.data) && d.data.length > 0) {
+                  setSelectedSub(d.data[0]);
+                  setHasAutoOpenedRef(true);
+                }
+              })
+              .catch(() => {});
           }
         }
       } else {
@@ -1418,10 +1433,26 @@ function SubmissionsContent() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, status, province, category, attendance, reviewFilter, initialRef]);
+  }, [page, search, status, province, category, attendance, reviewFilter, initialRef, hasAutoOpenedRef]);
 
   useEffect(() => {
     fetchSubmissions();
+
+    // 15s auto-polling to ensure newly submitted submissions appear automatically
+    const pollInterval = setInterval(() => {
+      fetchSubmissions();
+    }, 15000);
+
+    // Refresh immediately when officer switches back to this tab
+    const handleFocus = () => {
+      fetchSubmissions();
+    };
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      clearInterval(pollInterval);
+      window.removeEventListener("focus", handleFocus);
+    };
   }, [fetchSubmissions]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {

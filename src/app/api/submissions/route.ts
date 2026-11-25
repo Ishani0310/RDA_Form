@@ -227,7 +227,7 @@ export async function GET(request: NextRequest) {
     const submissions = await Submission.find(query)
       .populate("contractor", "businessName registrationNumber cidaGrade province")
       .populate("reviewedBy", "fullName designation")
-      .sort({ createdAt: -1 })
+      .sort({ updatedAt: -1, submittedAt: -1, createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .lean();
