@@ -4,6 +4,7 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { Submission } from "@/models/Submission";
 import { Contractor } from "@/models/Contractor";
 import { DraftToken } from "@/models/DraftToken";
+import { recordActivityLog } from "@/lib/audit";
 import "@/models/User";
 
 /**
@@ -357,6 +358,223 @@ export async function PATCH(request: NextRequest) {
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to update submission view status.";
+    return NextResponse.json({ success: false, message }, { status: 500 });
+  }
+}
+
+/**
+ * PUT /api/submissions
+ * Updates an existing submission record and its questionnaire data.
+ * Accessible to authenticated RDA officers.
+ */
+export async function PUT(request: NextRequest) {
+  try {
+    const session = await getCurrentOfficerSession();
+
+    if (!session) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized. Official RDA officer authentication required." },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json().catch(() => ({}));
+    const { id, ref, updates } = body;
+
+    if (!id && !ref) {
+      return NextResponse.json(
+        { success: false, message: "Submission ID or Reference is required to update." },
+        { status: 400 }
+      );
+    }
+
+    if (!updates || typeof updates !== "object") {
+      return NextResponse.json(
+        { success: false, message: "Valid update payload is required." },
+        { status: 400 }
+      );
+    }
+
+    await connectToDatabase();
+
+    const query: Record<string, unknown> = id ? { _id: id } : { submissionReference: ref };
+    const submission = await Submission.findOne(query);
+
+    if (!submission) {
+      return NextResponse.json(
+        { success: false, message: "Submission record not found." },
+        { status: 404 }
+      );
+    }
+
+    // Update submission level attributes
+    if (updates.status) submission.status = updates.status;
+    if (updates.provincialOffice) submission.provincialOffice = updates.provincialOffice;
+    if (updates.reviewNotes !== undefined) submission.reviewNotes = updates.reviewNotes;
+
+    // Merge questionnaireData payload
+    const currentQData = (submission.questionnaireData as Record<string, any>) || {};
+    const updatedQData: Record<string, any> = {
+      ...currentQData,
+      ...(updates.questionnaireData || {}),
+    };
+
+    // Sync high-level quick-edit fields into questionnaireData
+    if (updates.organizationName) updatedQData.organizationName = updates.organizationName;
+    if (updates.contactNumber) updatedQData.contactNumber = updates.contactNumber;
+    if (updates.email) updatedQData.email = updates.email;
+    if (updates.willParticipate) updatedQData.willParticipate = updates.willParticipate;
+    if (updates.participantCategory) updatedQData.participantCategory = updates.participantCategory;
+    if (updates.participant1) updatedQData.participant1 = updates.participant1;
+    if (updates.participant2) updatedQData.participant2 = updates.participant2;
+    if (updates.supplierDetails) updatedQData.supplierDetails = updates.supplierDetails;
+    if (updates.ictadRegistrationNumber !== undefined) updatedQData.ictadRegistrationNumber = updates.ictadRegistrationNumber;
+    if (updates.cidaGrade !== undefined) updatedQData.cidaGrade = updates.cidaGrade;
+    if (updates.generalExperience !== undefined) updatedQData.generalExperience = updates.generalExperience;
+    if (updates.hasRdaOrIcdpExperience !== undefined) updatedQData.hasRdaOrIcdpExperience = updates.hasRdaOrIcdpExperience;
+    if (updates.rdaIcdpExperienceType !== undefined) updatedQData.rdaIcdpExperienceType = updates.rdaIcdpExperienceType;
+    if (updates.forecastedCapacity2027 !== undefined) updatedQData.forecastedCapacity2027 = updates.forecastedCapacity2027;
+    if (updates.forecastedRuralRoadKmPerYear !== undefined) updatedQData.forecastedRuralRoadKmPerYear = updates.forecastedRuralRoadKmPerYear;
+    if (updates.forecastedNationalProvincialKmPerYear !== undefined) updatedQData.forecastedNationalProvincialKmPerYear = updates.forecastedNationalProvincialKmPerYear;
+    if (updates.preferableDistricts !== undefined) updatedQData.preferableDistricts = updates.preferableDistricts;
+    if (updates.mattersForDiscussion !== undefined) updatedQData.mattersForDiscussion = updates.mattersForDiscussion;
+
+    submission.questionnaireData = updatedQData;
+    submission.updatedAt = new Date();
+    await submission.save();
+
+    // Synchronize Contractor document
+    if (submission.contractor) {
+      const contractor = await Contractor.findById(submission.contractor);
+      if (contractor) {
+        if (updates.organizationName || updatedQData.organizationName) {
+          contractor.businessName = updates.organizationName || updatedQData.organizationName;
+        }
+        if (updatedQData.ictadRegistrationNumber) {
+          contractor.registrationNumber = updatedQData.ictadRegistrationNumber;
+        }
+        if (updatedQData.cidaGrade) {
+          contractor.cidaGrade = updatedQData.cidaGrade;
+        }
+        if (submission.provincialOffice) {
+          contractor.province = submission.provincialOffice as any;
+        }
+        if (updatedQData.contactNumber || updatedQData.email || updatedQData.participant1) {
+          contractor.contactOfficer = {
+            name: updatedQData.participant1?.fullName || contractor.contactOfficer?.name || "",
+            designation: updatedQData.participant1?.designation || contractor.contactOfficer?.designation || "",
+            phone: updatedQData.contactNumber || updatedQData.participant1?.mobileNumber || contractor.contactOfficer?.phone || "",
+            email: updatedQData.email || updatedQData.participant1?.email || contractor.contactOfficer?.email || "",
+          };
+        }
+        await contractor.save();
+      }
+    }
+
+    // Record audit activity log
+    await recordActivityLog({
+      action: "SUBMISSION_UPDATED",
+      session,
+      targetType: "Submission",
+      targetId: submission._id.toString(),
+      description: `Submission ${submission.submissionReference} was edited and updated by ${session.fullName || "RDA Officer"}.`,
+      metadata: {
+        reference: submission.submissionReference,
+        status: submission.status,
+      },
+    }).catch(() => {});
+
+    return NextResponse.json({
+      success: true,
+      message: `Submission ${submission.submissionReference} updated successfully.`,
+      data: {
+        id: submission._id.toString(),
+        ref: submission.submissionReference,
+        status: submission.status,
+        provincialOffice: submission.provincialOffice,
+        questionnaireData: submission.questionnaireData,
+      },
+    });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Failed to update submission data.";
+    return NextResponse.json({ success: false, message }, { status: 500 });
+  }
+}
+
+/**
+ * DELETE /api/submissions
+ * Permanently deletes a submission record and its associated draft tokens.
+ * Only authenticated RDA officers can delete records.
+ */
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getCurrentOfficerSession();
+
+    if (!session) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized. Official RDA officer authentication required." },
+        { status: 401 }
+      );
+    }
+
+    const { searchParams } = new URL(request.url);
+    const body = await request.json().catch(() => ({}));
+    const id = body.id || searchParams.get("id");
+    const ref = body.ref || searchParams.get("ref");
+
+    if (!id && !ref) {
+      return NextResponse.json(
+        { success: false, message: "Submission ID or Reference is required for deletion." },
+        { status: 400 }
+      );
+    }
+
+    await connectToDatabase();
+
+    const query: Record<string, unknown> = id ? { _id: id } : { submissionReference: ref };
+    const submission = await Submission.findOne(query);
+
+    if (!submission) {
+      return NextResponse.json(
+        { success: false, message: "Submission record not found." },
+        { status: 404 }
+      );
+    }
+
+    const submissionId = submission._id;
+    const subRef = submission.submissionReference;
+    const contractorId = submission.contractor;
+
+    // Remove associated DraftToken documents
+    await DraftToken.deleteMany({ submission: submissionId }).catch(() => {});
+
+    // Delete submission
+    await Submission.deleteOne({ _id: submissionId });
+
+    // If contractor has no remaining submissions and was in Draft status, clean up
+    if (contractorId) {
+      const remainingSubs = await Submission.countDocuments({ contractor: contractorId });
+      if (remainingSubs === 0) {
+        await Contractor.deleteOne({ _id: contractorId, status: "Draft" }).catch(() => {});
+      }
+    }
+
+    // Record audit activity log
+    await recordActivityLog({
+      action: "SUBMISSION_DELETED",
+      session,
+      targetType: "Submission",
+      targetId: submissionId.toString(),
+      description: `Submission ${subRef} was permanently deleted by ${session.fullName || "RDA Officer"}.`,
+      metadata: { reference: subRef },
+    }).catch(() => {});
+
+    return NextResponse.json({
+      success: true,
+      message: `Submission ${subRef} was permanently deleted.`,
+    });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Failed to delete submission record.";
     return NextResponse.json({ success: false, message }, { status: 500 });
   }
 }

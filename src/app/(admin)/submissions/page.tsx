@@ -29,6 +29,10 @@ import {
   Printer,
   FileText,
   Scale,
+  Pencil,
+  Trash2,
+  Save,
+  AlertOctagon,
 } from "lucide-react";
 
 interface FormattedSubmission {
@@ -938,6 +942,162 @@ function SubmissionsContent() {
   const [selectedSub, setSelectedSub] = useState<FormattedSubmission | null>(null);
   const [counts, setCounts] = useState<SubmissionsCounts>({ all: 0, submitted: 0, draft: 0, unseen: 0, seen: 0 });
 
+  // Delete confirmation modal state
+  const [subToDelete, setSubToDelete] = useState<FormattedSubmission | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteAlert, setDeleteAlert] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  // Edit submission modal state
+  const [subToEdit, setSubToEdit] = useState<FormattedSubmission | null>(null);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [editFormData, setEditFormData] = useState<Record<string, any>>({});
+  const [editAlert, setEditAlert] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  const handleRequestDelete = (sub: FormattedSubmission) => {
+    setSubToDelete(sub);
+    setDeleteAlert(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!subToDelete) return;
+    try {
+      setIsDeleting(true);
+      setDeleteAlert(null);
+      const res = await fetch("/api/submissions", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: subToDelete.id, ref: subToDelete.ref }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSubmissions((prev) => prev.filter((s) => s.id !== subToDelete.id));
+        if (selectedSub?.id === subToDelete.id) setSelectedSub(null);
+        setSubToDelete(null);
+        fetchSubmissions();
+      } else {
+        setDeleteAlert({ type: "error", message: data.message || "Failed to delete submission record." });
+      }
+    } catch {
+      setDeleteAlert({ type: "error", message: "Network error occurred while deleting submission." });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleOpenEdit = (sub: FormattedSubmission) => {
+    const q = sub.questionnaireData || {};
+    setSubToEdit(sub);
+    setEditAlert(null);
+    setEditFormData({
+      organizationName: sub.contractor || q.organizationName || "",
+      status: sub.status || "Submitted",
+      provincialOffice: sub.provincialOffice || q.province || "Western Province",
+      willParticipate: q.willParticipate || "Yes",
+      participantCategory: q.participantCategory || "Contractor",
+      contactNumber: q.contactNumber || "",
+      email: q.email || "",
+      participant1: {
+        fullName: q.participant1?.fullName || "",
+        designation: q.participant1?.designation || "",
+        mobileNumber: q.participant1?.mobileNumber || "",
+        email: q.participant1?.email || "",
+      },
+      participant2: {
+        fullName: q.participant2?.fullName || "",
+        designation: q.participant2?.designation || "",
+        mobileNumber: q.participant2?.mobileNumber || "",
+        email: q.participant2?.email || "",
+      },
+      ictadRegistrationNumber: q.ictadRegistrationNumber || (sub.regNo !== "N/A" && !sub.regNo.startsWith("DFT-") ? sub.regNo : ""),
+      cidaGrade: q.cidaGrade || (sub.grade !== "Pending" && sub.grade !== "N/A" ? sub.grade : ""),
+      generalExperience: q.generalExperience || "",
+      hasRdaOrIcdpExperience: q.hasRdaOrIcdpExperience || "No",
+      rdaIcdpExperienceType: q.rdaIcdpExperienceType || "",
+      forecastedCapacity2027: q.forecastedCapacity2027 || "",
+      forecastedRuralRoadKmPerYear: q.forecastedRuralRoadKmPerYear || "",
+      forecastedNationalProvincialKmPerYear: q.forecastedNationalProvincialKmPerYear || "",
+      preferableDistricts: Array.isArray(q.preferableDistricts) ? q.preferableDistricts : [],
+      supplierDetails: {
+        companyName: q.supplierDetails?.companyName || sub.contractor || "",
+        province: q.supplierDetails?.province || "",
+        district: q.supplierDetails?.district || "",
+        locationAddress: q.supplierDetails?.locationAddress || "",
+        latitude: q.supplierDetails?.latitude || "",
+        longitude: q.supplierDetails?.longitude || "",
+        materialsOther: q.supplierDetails?.materialsOther || "",
+      },
+      mattersForDiscussion: q.mattersForDiscussion || "",
+      reviewNotes: sub.reviewNotes || "",
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!subToEdit || !editFormData) return;
+    try {
+      setIsSavingEdit(true);
+      setEditAlert(null);
+      const res = await fetch("/api/submissions", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: subToEdit.id,
+          ref: subToEdit.ref,
+          updates: editFormData,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setEditAlert({ type: "success", message: "Submission updated successfully!" });
+        // Update local state immediately
+        setSubmissions((prev) =>
+          prev.map((s) => {
+            if (s.id !== subToEdit.id) return s;
+            const updatedQ = {
+              ...(s.questionnaireData || {}),
+              ...editFormData,
+            };
+            return {
+              ...s,
+              contractor: editFormData.organizationName || s.contractor,
+              status: editFormData.status || s.status,
+              provincialOffice: editFormData.provincialOffice || s.provincialOffice,
+              regNo: editFormData.ictadRegistrationNumber || s.regNo,
+              grade: editFormData.cidaGrade || s.grade,
+              questionnaireData: updatedQ,
+            };
+          })
+        );
+        if (selectedSub?.id === subToEdit.id) {
+          setSelectedSub((prev) => {
+            if (!prev) return null;
+            return {
+              ...prev,
+              contractor: editFormData.organizationName || prev.contractor,
+              status: editFormData.status || prev.status,
+              provincialOffice: editFormData.provincialOffice || prev.provincialOffice,
+              regNo: editFormData.ictadRegistrationNumber || prev.regNo,
+              grade: editFormData.cidaGrade || prev.grade,
+              questionnaireData: {
+                ...(prev.questionnaireData || {}),
+                ...editFormData,
+              },
+            };
+          });
+        }
+        setTimeout(() => {
+          setSubToEdit(null);
+          fetchSubmissions();
+        }, 600);
+      } else {
+        setEditAlert({ type: "error", message: data.message || "Failed to save submission edits." });
+      }
+    } catch {
+      setEditAlert({ type: "error", message: "Network error occurred while saving edits." });
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
   const handleToggleSeen = async (submissionId: string, markSeen: boolean) => {
     try {
       const res = await fetch("/api/submissions", {
@@ -1667,12 +1827,30 @@ function SubmissionsContent() {
                         </button>
                         <button
                           type="button"
+                          onClick={() => handleOpenEdit(s)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-amber-900 bg-amber-50 hover:bg-amber-100 rounded-lg border border-amber-200/60 transition-all"
+                          title="Edit Submission Data"
+                        >
+                          <Pencil className="w-3.5 h-3.5 text-amber-700" />
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => handlePrintPdf(s)}
                           className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 rounded-lg border border-emerald-200/60 transition-all"
                           title="Download Official PDF / Print"
                         >
                           <Printer className="w-3.5 h-3.5 text-emerald-700" />
                           <span>PDF</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRequestDelete(s)}
+                          className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg border border-rose-200/60 transition-all"
+                          title="Delete Submission Record"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                          <span className="sr-only sm:not-sr-only">Delete</span>
                         </button>
                       </div>
                     </td>
@@ -2482,20 +2660,519 @@ function SubmissionsContent() {
             )}
 
             <div className="pt-3 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => handlePrintPdf(selectedSub)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-sm transition-all"
-              >
-                <Printer className="w-4 h-4" />
-                <span>Download Official PDF / Print</span>
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handlePrintPdf(selectedSub)}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-sm transition-all"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>Download Official PDF / Print</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleOpenEdit(selectedSub)}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-amber-900 bg-amber-100 hover:bg-amber-200 rounded-lg border border-amber-300 transition-all"
+                >
+                  <Pencil className="w-4 h-4 text-amber-700" />
+                  <span>Edit Record</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleRequestDelete(selectedSub)}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-rose-800 bg-rose-100 hover:bg-rose-200 rounded-lg border border-rose-300 transition-all"
+                >
+                  <Trash2 className="w-4 h-4 text-rose-700" />
+                  <span>Delete Record</span>
+                </button>
+              </div>
               <button
                 type="button"
                 onClick={() => setSelectedSub(null)}
                 className="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-all min-h-[38px]"
               >
                 Close Inspection
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal (Always asks permission before delete) */}
+      {subToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+            <div className="p-6 space-y-4">
+              <div className="flex items-center gap-3 text-rose-600">
+                <div className="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center shrink-0">
+                  <AlertOctagon className="w-6 h-6 text-rose-600" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Confirm Deletion</h3>
+                  <p className="text-xs text-slate-500">Permission required before deleting submission data</p>
+                </div>
+              </div>
+
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-slate-500 font-medium">Reference:</span>
+                  <span className="font-mono font-bold text-blue-950">{subToDelete.ref}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500 font-medium">Organization:</span>
+                  <span className="font-bold text-slate-800">{subToDelete.contractor}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500 font-medium">Status:</span>
+                  <span className="font-medium text-slate-700">{subToDelete.status}</span>
+                </div>
+              </div>
+
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Are you sure you want to permanently delete this registration record? All submitted questionnaire answers, candidate details, and audit history will be permanently deleted from the database. <strong>This action cannot be undone.</strong>
+              </p>
+
+              {deleteAlert && (
+                <div className="p-2.5 rounded-lg text-xs bg-rose-50 border border-rose-200 text-rose-700">
+                  {deleteAlert.message}
+                </div>
+              )}
+
+              <div className="pt-2 flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  disabled={isDeleting}
+                  onClick={() => setSubToDelete(null)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={isDeleting}
+                  onClick={handleConfirmDelete}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-sm transition-all disabled:opacity-60"
+                >
+                  {isDeleting ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Deleting Record...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Yes, Delete Record</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Submission Modal */}
+      {subToEdit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+          <div className="relative w-full max-w-2xl max-h-[90vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col my-auto">
+            {/* Modal Header */}
+            <div className="p-5 border-b border-slate-200 flex items-center justify-between shrink-0 bg-slate-50/80 rounded-t-2xl">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center">
+                  <Pencil className="w-5 h-5 text-amber-700" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-extrabold text-slate-900">
+                    Edit Submission: <span className="font-mono text-blue-950">{subToEdit.ref}</span>
+                  </h3>
+                  <p className="text-xs text-slate-500">Update official record details and questionnaire responses</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSubToEdit(null)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/80 transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto space-y-5 text-xs">
+              {editAlert && (
+                <div
+                  className={`p-3 rounded-xl border text-xs font-semibold ${
+                    editAlert.type === "success"
+                      ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                      : "bg-rose-50 border-rose-200 text-rose-800"
+                  }`}
+                >
+                  {editAlert.message}
+                </div>
+              )}
+
+              {/* Section 1: Basic Profile & Status */}
+              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-3">
+                <span className="font-bold text-slate-900 uppercase text-[11px] tracking-wide block">
+                  1. Organization Profile &amp; Submission Status
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Company / Organization Name</label>
+                    <input
+                      type="text"
+                      value={editFormData.organizationName || ""}
+                      onChange={(e) => setEditFormData({ ...editFormData, organizationName: e.target.value })}
+                      className="w-full p-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900/20 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Status</label>
+                    <select
+                      value={editFormData.status || "Submitted"}
+                      onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
+                      className="w-full p-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900/20 text-xs font-medium"
+                    >
+                      <option value="Submitted">Submitted</option>
+                      <option value="Under_Review">Under Review</option>
+                      <option value="Verified">Verified / Approved</option>
+                      <option value="Action_Required">Action Required</option>
+                      <option value="Rejected">Rejected</option>
+                      <option value="Draft">Draft (Incomplete)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Official Contact Number</label>
+                    <input
+                      type="text"
+                      value={editFormData.contactNumber || ""}
+                      onChange={(e) => setEditFormData({ ...editFormData, contactNumber: e.target.value })}
+                      className="w-full p-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900/20 text-xs font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Official Email Address</label>
+                    <input
+                      type="email"
+                      value={editFormData.email || ""}
+                      onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                      className="w-full p-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900/20 text-xs font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Workshop Attendance (07 Dec 2026)</label>
+                    <select
+                      value={editFormData.willParticipate || "Yes"}
+                      onChange={(e) => setEditFormData({ ...editFormData, willParticipate: e.target.value })}
+                      className="w-full p-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900/20 text-xs"
+                    >
+                      <option value="Yes">Yes (Participating)</option>
+                      <option value="No">No (Declined)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Category</label>
+                    <select
+                      value={editFormData.participantCategory || "Contractor"}
+                      onChange={(e) => setEditFormData({ ...editFormData, participantCategory: e.target.value })}
+                      className="w-full p-2 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900/20 text-xs"
+                    >
+                      <option value="Contractor">Contractor</option>
+                      <option value="Supplier">Supplier</option>
+                      <option value="Government Officer">Government Officer</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 2: Nominated Attendees */}
+              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-3">
+                <span className="font-bold text-slate-900 uppercase text-[11px] tracking-wide block">
+                  2. Nominated Attendees
+                </span>
+                <div className="space-y-3">
+                  <div className="p-3 bg-white rounded-lg border border-slate-200 space-y-2">
+                    <span className="text-[10px] font-bold text-blue-900 uppercase">Participant 1 (Primary Delegate)</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <input
+                        type="text"
+                        placeholder="Full Name"
+                        value={editFormData.participant1?.fullName || ""}
+                        onChange={(e) =>
+                          setEditFormData({
+                            ...editFormData,
+                            participant1: { ...(editFormData.participant1 || {}), fullName: e.target.value },
+                          })
+                        }
+                        className="p-1.5 rounded border border-slate-300 text-xs"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Designation"
+                        value={editFormData.participant1?.designation || ""}
+                        onChange={(e) =>
+                          setEditFormData({
+                            ...editFormData,
+                            participant1: { ...(editFormData.participant1 || {}), designation: e.target.value },
+                          })
+                        }
+                        className="p-1.5 rounded border border-slate-300 text-xs"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Mobile Number"
+                        value={editFormData.participant1?.mobileNumber || ""}
+                        onChange={(e) =>
+                          setEditFormData({
+                            ...editFormData,
+                            participant1: { ...(editFormData.participant1 || {}), mobileNumber: e.target.value },
+                          })
+                        }
+                        className="p-1.5 rounded border border-slate-300 text-xs font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-white rounded-lg border border-slate-200 space-y-2">
+                    <span className="text-[10px] font-bold text-slate-700 uppercase">Participant 2 (Secondary Delegate - Optional)</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <input
+                        type="text"
+                        placeholder="Full Name"
+                        value={editFormData.participant2?.fullName || ""}
+                        onChange={(e) =>
+                          setEditFormData({
+                            ...editFormData,
+                            participant2: { ...(editFormData.participant2 || {}), fullName: e.target.value },
+                          })
+                        }
+                        className="p-1.5 rounded border border-slate-300 text-xs"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Designation"
+                        value={editFormData.participant2?.designation || ""}
+                        onChange={(e) =>
+                          setEditFormData({
+                            ...editFormData,
+                            participant2: { ...(editFormData.participant2 || {}), designation: e.target.value },
+                          })
+                        }
+                        className="p-1.5 rounded border border-slate-300 text-xs"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Mobile Number"
+                        value={editFormData.participant2?.mobileNumber || ""}
+                        onChange={(e) =>
+                          setEditFormData({
+                            ...editFormData,
+                            participant2: { ...(editFormData.participant2 || {}), mobileNumber: e.target.value },
+                          })
+                        }
+                        className="p-1.5 rounded border border-slate-300 text-xs font-mono"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 3: Technical Details */}
+              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-3">
+                <span className="font-bold text-slate-900 uppercase text-[11px] tracking-wide block">
+                  3. Technical &amp; Operational Capacity Details
+                </span>
+                {editFormData.participantCategory === "Supplier" ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">Province</label>
+                      <input
+                        type="text"
+                        value={editFormData.supplierDetails?.province || ""}
+                        onChange={(e) =>
+                          setEditFormData({
+                            ...editFormData,
+                            supplierDetails: { ...(editFormData.supplierDetails || {}), province: e.target.value },
+                          })
+                        }
+                        className="w-full p-2 rounded-lg border border-slate-300 text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">District</label>
+                      <input
+                        type="text"
+                        value={editFormData.supplierDetails?.district || ""}
+                        onChange={(e) =>
+                          setEditFormData({
+                            ...editFormData,
+                            supplierDetails: { ...(editFormData.supplierDetails || {}), district: e.target.value },
+                          })
+                        }
+                        className="w-full p-2 rounded-lg border border-slate-300 text-xs"
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="block font-semibold text-slate-700 mb-1">Plant Location Address</label>
+                      <input
+                        type="text"
+                        value={editFormData.supplierDetails?.locationAddress || ""}
+                        onChange={(e) =>
+                          setEditFormData({
+                            ...editFormData,
+                            supplierDetails: { ...(editFormData.supplierDetails || {}), locationAddress: e.target.value },
+                          })
+                        }
+                        className="w-full p-2 rounded-lg border border-slate-300 text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">GPS Latitude</label>
+                      <input
+                        type="text"
+                        value={editFormData.supplierDetails?.latitude || ""}
+                        onChange={(e) =>
+                          setEditFormData({
+                            ...editFormData,
+                            supplierDetails: { ...(editFormData.supplierDetails || {}), latitude: e.target.value },
+                          })
+                        }
+                        className="w-full p-2 rounded-lg border border-slate-300 text-xs font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">GPS Longitude</label>
+                      <input
+                        type="text"
+                        value={editFormData.supplierDetails?.longitude || ""}
+                        onChange={(e) =>
+                          setEditFormData({
+                            ...editFormData,
+                            supplierDetails: { ...(editFormData.supplierDetails || {}), longitude: e.target.value },
+                          })
+                        }
+                        className="w-full p-2 rounded-lg border border-slate-300 text-xs font-mono"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">ICTAD / CIDA Registration No</label>
+                      <input
+                        type="text"
+                        value={editFormData.ictadRegistrationNumber || ""}
+                        onChange={(e) => setEditFormData({ ...editFormData, ictadRegistrationNumber: e.target.value })}
+                        className="w-full p-2 rounded-lg border border-slate-300 text-xs font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">CIDA Grade</label>
+                      <input
+                        type="text"
+                        value={editFormData.cidaGrade || ""}
+                        onChange={(e) => setEditFormData({ ...editFormData, cidaGrade: e.target.value })}
+                        className="w-full p-2 rounded-lg border border-slate-300 text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">General Civil Experience</label>
+                      <input
+                        type="text"
+                        value={editFormData.generalExperience || ""}
+                        onChange={(e) => setEditFormData({ ...editFormData, generalExperience: e.target.value })}
+                        className="w-full p-2 rounded-lg border border-slate-300 text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">RDA / ICDP Prior Experience</label>
+                      <select
+                        value={editFormData.hasRdaOrIcdpExperience || "No"}
+                        onChange={(e) => setEditFormData({ ...editFormData, hasRdaOrIcdpExperience: e.target.value })}
+                        className="w-full p-2 rounded-lg border border-slate-300 text-xs"
+                      >
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">Forecasted 2027 Turnover (LKR M)</label>
+                      <input
+                        type="text"
+                        value={editFormData.forecastedCapacity2027 || ""}
+                        onChange={(e) => setEditFormData({ ...editFormData, forecastedCapacity2027: e.target.value })}
+                        className="w-full p-2 rounded-lg border border-slate-300 text-xs font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">Rural Roads Capacity (Km/Yr)</label>
+                      <input
+                        type="text"
+                        value={editFormData.forecastedRuralRoadKmPerYear || ""}
+                        onChange={(e) => setEditFormData({ ...editFormData, forecastedRuralRoadKmPerYear: e.target.value })}
+                        className="w-full p-2 rounded-lg border border-slate-300 text-xs font-mono"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Section 4: Agenda & Review Notes */}
+              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-3">
+                <span className="font-bold text-slate-900 uppercase text-[11px] tracking-wide block">
+                  4. Agenda Discussion &amp; Reviewer Notes
+                </span>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Matters for Discussion (07 Dec 2026)</label>
+                    <textarea
+                      rows={2}
+                      value={editFormData.mattersForDiscussion || ""}
+                      onChange={(e) => setEditFormData({ ...editFormData, mattersForDiscussion: e.target.value })}
+                      className="w-full p-2 rounded-lg border border-slate-300 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Official Review Notes (Internal)</label>
+                    <textarea
+                      rows={2}
+                      value={editFormData.reviewNotes || ""}
+                      onChange={(e) => setEditFormData({ ...editFormData, reviewNotes: e.target.value })}
+                      className="w-full p-2 rounded-lg border border-slate-300 text-xs"
+                      placeholder="Add administrative review observations or inspection notes..."
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-end gap-2.5 rounded-b-2xl shrink-0">
+              <button
+                type="button"
+                disabled={isSavingEdit}
+                onClick={() => setSubToEdit(null)}
+                className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-100 rounded-lg transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isSavingEdit}
+                onClick={handleSaveEdit}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-sm transition-all disabled:opacity-60"
+              >
+                {isSavingEdit ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Saving Changes...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-3.5 h-3.5" />
+                    <span>Save Changes</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
