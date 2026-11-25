@@ -1397,7 +1397,12 @@ function SubmissionsContent() {
 
         // Auto-select modal if ref was requested
         if (initialRef && Array.isArray(data.data)) {
-          const match = data.data.find((s: FormattedSubmission) => s.ref === initialRef);
+          const match = data.data.find(
+            (s: FormattedSubmission) =>
+              s.ref?.toLowerCase() === initialRef.toLowerCase() ||
+              s.id === initialRef ||
+              s.regNo?.toLowerCase() === initialRef.toLowerCase()
+          );
           if (match) {
             setSelectedSub(match);
             if (!match.isViewed) {

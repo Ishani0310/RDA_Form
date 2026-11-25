@@ -124,43 +124,43 @@ export async function GET(request: NextRequest) {
       query.provincialOffice = province;
     }
 
-    // Direct reference match
+    // Direct reference match - if specific ref is requested, bypass category/status restrictions so it is always found
     if (ref) {
       query.submissionReference = ref;
-    }
+    } else {
+      // Category filter (Contractor, Supplier, Government Officer)
+      if (category && category !== "All Categories") {
+        query["questionnaireData.participantCategory"] = category;
+      }
 
-    // Category filter (Contractor, Supplier, Government Officer)
-    if (category && category !== "All Categories") {
-      query["questionnaireData.participantCategory"] = category;
-    }
+      // Workshop Attendance filter (Yes, No)
+      if (attendance && attendance !== "All Attendance") {
+        query["questionnaireData.willParticipate"] = attendance;
+      }
 
-    // Workshop Attendance filter (Yes, No)
-    if (attendance && attendance !== "All Attendance") {
-      query["questionnaireData.willParticipate"] = attendance;
-    }
+      // Review / Viewed Status filter (unseen, seen)
+      if (viewStatus === "unseen") {
+        query.$or = [{ isViewed: false }, { isViewed: { $exists: false } }];
+      } else if (viewStatus === "seen") {
+        query.isViewed = true;
+      }
 
-    // Review / Viewed Status filter (unseen, seen)
-    if (viewStatus === "unseen") {
-      query.$or = [{ isViewed: false }, { isViewed: { $exists: false } }];
-    } else if (viewStatus === "seen") {
-      query.isViewed = true;
-    }
-
-    // Status filter
-    if (status && status !== "All Statuses") {
-      const lower = status.toLowerCase();
-      if (lower === "submitted") {
-        query.status = { $in: ["Submitted", "Under_Review", "Verified", "Action_Required", "Rejected"] };
-      } else if (lower === "draft") {
-        query.status = "Draft";
-      } else if (lower === "under_review") {
-        query.status = "Under_Review";
-      } else if (lower === "approved" || lower === "verified") {
-        query.status = "Verified";
-      } else if (lower === "rejected" || lower === "action_required") {
-        query.status = { $in: ["Rejected", "Action_Required"] };
-      } else {
-        query.status = status;
+      // Status filter
+      if (status && status !== "All Statuses") {
+        const lower = status.toLowerCase();
+        if (lower === "submitted") {
+          query.status = { $in: ["Submitted", "Under_Review", "Verified", "Action_Required", "Rejected"] };
+        } else if (lower === "draft") {
+          query.status = "Draft";
+        } else if (lower === "under_review") {
+          query.status = "Under_Review";
+        } else if (lower === "approved" || lower === "verified") {
+          query.status = "Verified";
+        } else if (lower === "rejected" || lower === "action_required") {
+          query.status = { $in: ["Rejected", "Action_Required"] };
+        } else {
+          query.status = status;
+        }
       }
     }
 
