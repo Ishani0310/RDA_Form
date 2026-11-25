@@ -1452,7 +1452,7 @@ export default function FormBuilderPage() {
                           About the Workshop &amp; Registration Instructions
                         </span>
                         <span className="text-[11px] text-slate-500">
-                          Date: 07 Dec 2026 &bull; Time: 9.00 AM &bull; Deadline: 05 Dec 2026 &bull; Click to {showWorkshopInfo ? "hide" : "view"} official details
+                          Date: 07 Dec 2026 &bull; Time: 9.00 AM &bull; <strong className="text-rose-700 font-bold">Deadline: 03 Dec 2026</strong> &bull; Click to {showWorkshopInfo ? "hide" : "view"} official details
                         </span>
                       </div>
                     </div>
@@ -1489,7 +1489,7 @@ export default function FormBuilderPage() {
                             </p>
                             <p className="flex items-center gap-1.5">
                               <Clock className="w-3.5 h-3.5 text-rose-700 shrink-0" />
-                              <strong>Registration Deadline:</strong> 05 December 2026
+                              <strong>Registration Deadline:</strong> <strong className="font-black text-rose-900">03 December 2026</strong>
                             </p>
                             <div className="pt-0.5 space-y-1">
                               <p className="flex items-center gap-1.5">

@@ -2591,9 +2591,9 @@ function RegisterForm() {
                   <span className="font-normal text-slate-500">(9.00 AM)</span>
                 </span>
                 <span className="text-slate-300 hidden sm:inline">&bull;</span>
-                <span className="inline-flex items-center gap-1 font-semibold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200/60">
+                <span className="inline-flex items-center gap-1 font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200/80">
                   <Clock className="w-3 h-3 text-rose-600 shrink-0" />
-                  <span>Deadline: 05 Dec 2026</span>
+                  <span><strong>Deadline: 03 Dec 2026</strong></span>
                 </span>
               </div>
             </div>
@@ -2639,9 +2639,9 @@ function RegisterForm() {
                       <Calendar className="w-3.5 h-3.5 text-blue-900 shrink-0" />
                       <strong>Date:</strong> 07 December 2026 (9.00 AM)
                     </span>
-                    <span className="inline-flex items-center gap-1.5 text-rose-700 font-semibold">
+                    <span className="inline-flex items-center gap-1.5 text-rose-700 font-bold bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
                       <Clock className="w-3.5 h-3.5 text-rose-600 shrink-0" />
-                      <strong>Deadline:</strong> 05 December 2026
+                      <strong>Deadline:</strong> <strong className="font-black text-rose-900">03 December 2026</strong>
                     </span>
                   </div>
 

@@ -31,7 +31,7 @@ export const SystemNotices: React.FC = () => {
               Early Market Engagement Workshop
             </p>
             <p className="text-[11px] text-slate-500 leading-relaxed">
-              Commencing at 9.00 AM. Registration closes officially on 05 December 2026.
+              Commencing at 9.00 AM. Registration closes officially on <strong className="font-bold text-rose-700">03 December 2026</strong>.
             </p>
             <div className="pt-1 flex items-center gap-1.5 text-[11px] text-slate-700 font-medium">
               <Phone className="w-3 h-3 text-slate-400" />
