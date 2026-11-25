@@ -462,185 +462,34 @@ export default function ReportDirectoryView({
             </div>
 
             {/* Status Summary Pill */}
-            <div className="flex items-center gap-4 bg-slate-50 px-4 py-3 rounded-xl border border-slate-200/80">
+            <div className="flex items-center gap-4 bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-200/80">
               <div className="text-right">
-                <span className="text-xs uppercase tracking-wider font-semibold text-slate-400 block">
+                <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 block">
                   Total Matches
                 </span>
-                <span className="text-2xl font-extrabold text-slate-900">{filteredRecords.length}</span>
-              </div>
-              <div className="h-8 w-px bg-slate-200" />
-              <div>
-                <span className="text-xs text-slate-500 block">Status Filter</span>
-                <span className="text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
-                  Official Submitted
-                </span>
+                <span className="text-xl font-extrabold text-slate-900">{filteredRecords.length}</span>
               </div>
             </div>
-          </div>
-
-          {/* Sub-Category Navigation Tabs (Contractors, Suppliers, Officers) */}
-          <div className="mt-6 pt-5 border-t border-slate-100 flex flex-wrap items-center gap-2 print:hidden">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 mr-2">
-              Select Category:
-            </span>
-
-            {/* All Category */}
-            <Link
-              href={routePrefix}
-              className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                activeTabKey === "all"
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
-            >
-              <Users className="w-3.5 h-3.5" />
-              All Entities ({tabCounts.all})
-            </Link>
-
-            {/* Contractors */}
-            <Link
-              href={`${routePrefix}/contractors`}
-              className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                activeTabKey === "contractors"
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
-            >
-              <Building2 className="w-3.5 h-3.5" />
-              Civil Contractors ({tabCounts.contractors})
-            </Link>
-
-            {/* Suppliers */}
-            <Link
-              href={`${routePrefix}/suppliers`}
-              className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                activeTabKey === "suppliers"
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
-            >
-              <Truck className="w-3.5 h-3.5" />
-              Material Suppliers ({tabCounts.suppliers})
-            </Link>
-
-            {/* Officers */}
-            <Link
-              href={`${routePrefix}/officers`}
-              className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                activeTabKey === "officers"
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
-            >
-              <Landmark className="w-3.5 h-3.5" />
-              Government Officers ({tabCounts.officers})
-            </Link>
           </div>
         </div>
 
-        {/* Search & Filter Toolbar */}
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm mb-6 print:hidden">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-            {/* Search Input */}
-            <div className="md:col-span-5 relative">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search by organization name, contact person, phone, email, reference..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-slate-800"
-              />
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm("")}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600 font-bold"
-                >
-                  ×
-                </button>
-              )}
-            </div>
-
-            {/* District Filter */}
-            <div className="md:col-span-3">
-              <select
-                value={districtFilter}
-                onChange={(e) => setDistrictFilter(e.target.value)}
-                className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 font-medium"
-              >
-                {DISTRICTS.map((d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Date Preset Selector */}
-            <div className="md:col-span-4 flex items-center gap-1.5 overflow-x-auto">
-              {[
-                { label: "All Time", key: "all" },
-                { label: "Today", key: "today" },
-                { label: "7 Days", key: "7days" },
-                { label: "30 Days", key: "30days" },
-                { label: "This Month", key: "month" },
-              ].map((p) => (
-                <button
-                  key={p.key}
-                  onClick={() => handleDatePreset(p.key)}
-                  className={`px-2.5 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap transition-colors ${
-                    datePreset === p.key
-                      ? "bg-slate-800 text-white"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                  }`}
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Custom Date Pickers */}
-          <div className="mt-3 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-4 text-xs text-slate-600">
-            <span className="font-semibold text-slate-700 flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5 text-slate-400" />
-              Custom Date Range:
-            </span>
-            <div className="flex items-center gap-2">
-              <span>From:</span>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => {
-                  setStartDate(e.target.value);
-                  setDatePreset("custom");
-                }}
-                className="px-2 py-1 text-xs border border-slate-200 rounded bg-slate-50 text-slate-800"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <span>To:</span>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => {
-                  setEndDate(e.target.value);
-                  setDatePreset("custom");
-                }}
-                className="px-2 py-1 text-xs border border-slate-200 rounded bg-slate-50 text-slate-800"
-              />
-            </div>
-            {(startDate || endDate || districtFilter !== "All Districts" || searchTerm) && (
+        {/* Simple Clean Search Bar */}
+        <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm mb-5 print:hidden">
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search by organization name, contact person, phone, email, reference..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-8 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-slate-800"
+            />
+            {searchTerm && (
               <button
-                onClick={() => {
-                  setSearchTerm("");
-                  setDistrictFilter("All Districts");
-                  handleDatePreset("all");
-                }}
-                className="ml-auto text-xs text-blue-600 hover:underline font-medium"
+                onClick={() => setSearchTerm("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600 font-bold"
               >
-                Reset Filters
+                ×
               </button>
             )}
           </div>
