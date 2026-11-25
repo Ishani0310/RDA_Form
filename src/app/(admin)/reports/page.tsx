@@ -212,13 +212,30 @@ const CUSTOM_FILTER_FIELDS = [
   { label: "Litigation Dispute Details / Reason", key: "litigationDetails" },
 ];
 
+function formatDisplayDate(val: any): string {
+  if (!val) return "—";
+  if (typeof val === "string") {
+    const trimmed = val.trim();
+    if (!trimmed || trimmed === "null" || trimmed === "undefined" || trimmed === "—") return "—";
+    // Check if already in DD/MM/YYYY or YYYY-MM-DD
+    if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(trimmed)) return trimmed;
+    const d = new Date(trimmed);
+    if (!isNaN(d.getTime())) return d.toLocaleDateString("en-GB");
+    return trimmed;
+  }
+  if (val instanceof Date && !isNaN(val.getTime())) {
+    return val.toLocaleDateString("en-GB");
+  }
+  return "—";
+}
+
 export default function ReportsPage() {
-  // Primary Filter States
+  // Primary Filter States (Defaults to official submitted records only)
   const [attendance, setAttendance] = useState<string>("All Attendance");
   const [category, setCategory] = useState<string>("All Categories");
   const [province, setProvince] = useState<string>("All 9 Provinces (National Level)");
   const [cidaGrade, setCidaGrade] = useState<string>("All Grades (CS1 to Specialist)");
-  const [status, setStatus] = useState<string>("All Statuses");
+  const [status, setStatus] = useState<string>("submitted");
   const [datePreset, setDatePreset] = useState<string>("all");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
@@ -350,7 +367,7 @@ export default function ReportsPage() {
     setCategory("All Categories");
     setProvince("All 9 Provinces (National Level)");
     setCidaGrade("All Grades (CS1 to Specialist)");
-    setStatus("All Statuses");
+    setStatus("submitted");
     setDatePreset("all");
     setStartDate("");
     setEndDate("");
@@ -407,6 +424,15 @@ export default function ReportsPage() {
   const filteredSubmissions = useMemo(() => {
     return submissions.filter((s) => {
       const q = s.questionnaireData || {};
+
+      // Exclude fake/dummy test entries and unsubmitted draft tokens from official reporting
+      if (s.ref?.startsWith("DFT-") || s.status === "Draft") {
+        if (status !== "All Statuses" && status !== "draft") return false;
+      }
+      const entityName = (s.contractor || q.organizationName || "").toLowerCase();
+      if (entityName.includes("testing") || entityName.includes("dummy")) {
+        return false;
+      }
 
       // 1. Attendance Filter
       if (attendance !== "All Attendance") {
@@ -746,11 +772,7 @@ export default function ReportsPage() {
         const q = s.questionnaireData || {};
         const isSubmitted = s.status === "Submitted" || s.status === "Under_Review" || s.status === "Verified";
         const subDate = isSubmitted
-          ? s.submittedAt
-            ? new Date(s.submittedAt).toLocaleDateString("en-GB")
-            : s.createdAt
-            ? new Date(s.createdAt).toLocaleDateString("en-GB")
-            : "Submitted"
+          ? formatDisplayDate(s.submittedAt || s.createdAt)
           : "Draft";
 
         return [
@@ -759,7 +781,7 @@ export default function ReportsPage() {
           q.participantCategory || s.category || "General",
           q.willParticipate === "Yes" ? "Attending (Yes)" : q.willParticipate === "No" ? "Not Attending (No)" : "Unspecified",
           s.status,
-          s.createdAt ? new Date(s.createdAt).toLocaleDateString("en-GB") : "",
+          formatDisplayDate(s.createdAt),
           subDate,
           q.contactNumber || "",
           q.email || "",
@@ -2082,12 +2104,8 @@ export default function ReportsPage() {
                       </td>
 
                       {/* Date */}
-                      <td className="p-3 whitespace-nowrap text-slate-600">
-                        {s.submittedAt
-                          ? new Date(s.submittedAt).toLocaleDateString("en-GB")
-                          : s.createdAt
-                          ? new Date(s.createdAt).toLocaleDateString("en-GB")
-                          : "—"}
+                      <td className="p-3 whitespace-nowrap text-slate-600 font-medium">
+                        {formatDisplayDate(s.submittedAt || s.createdAt)}
                       </td>
 
                       {/* Actions */}

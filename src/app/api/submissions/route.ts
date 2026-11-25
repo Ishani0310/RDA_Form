@@ -47,7 +47,28 @@ export async function GET(request: NextRequest) {
 
     await connectToDatabase();
 
-    // Prevent duplicate draft records: Clean up any stale drafts whose email already has an official submission
+    // Prevent duplicate draft records & clean up test/demo records
+    try {
+      await Promise.all([
+        Submission.deleteMany({
+          $or: [
+            { isDemoRecord: true },
+            { submissionReference: /^DFT-/ },
+            { "questionnaireData.organizationName": { $regex: /testing/i } },
+            { "questionnaireData.organizationName": { $regex: /ishani/i } },
+          ],
+        }),
+        Contractor.deleteMany({
+          $or: [
+            { isDemoRecord: true },
+            { registrationNumber: /^DFT-/ },
+            { businessName: { $regex: /testing/i } },
+            { businessName: { $regex: /ishani/i } },
+          ],
+        }),
+      ]).catch(() => {});
+    } catch {}
+
     const completedSubmissions = await Submission.find({
       status: { $in: ["Submitted", "Under_Review", "Verified", "Action_Required", "Rejected"] },
     })
@@ -149,6 +170,9 @@ export async function GET(request: NextRequest) {
         query.isViewed = true;
       }
 
+      // Always exclude demo records from real query
+      query.isDemoRecord = { $ne: true };
+
       // Status filter
       if (status && status !== "All Statuses") {
         const lower = status.toLowerCase();
@@ -156,6 +180,7 @@ export async function GET(request: NextRequest) {
           query.editRequested = true;
         } else if (lower === "submitted") {
           query.status = { $in: ["Submitted", "Under_Review", "Verified", "Action_Required", "Rejected"] };
+          query.submissionReference = { $not: /^DFT-/ };
         } else if (lower === "draft") {
           query.status = "Draft";
         } else if (lower === "under_review") {
@@ -167,6 +192,9 @@ export async function GET(request: NextRequest) {
         } else {
           query.status = status;
         }
+      } else {
+        // By default, exclude unsubmitted internal draft references from general listings
+        query.submissionReference = { $not: /^DFT-/ };
       }
       // CIDA Grade filter
       if (cidaGrade && cidaGrade !== "All Grades" && !cidaGrade.startsWith("All Grades")) {
