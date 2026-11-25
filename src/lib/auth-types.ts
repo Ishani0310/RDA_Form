@@ -34,7 +34,7 @@ export const DEV_DEMO_OFFICERS: DemoOfficerCredential[] = [
   {
     email: "superadmin@rda.gov.lk",
     role: "SUPER_ADMIN",
-    fullName: "Eng. K. Bandara",
+    fullName: "Engineer MR Indunil Madhusanka",
     designation: "Chief Engineer (Planning & Procurement)",
     assignedProvince: "All Provinces (National HQ)",
     rdaStaffId: "RDA/HQ/DIR/014",

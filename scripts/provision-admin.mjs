@@ -80,7 +80,7 @@ async function run() {
     console.log("   Windows PowerShell Example:");
     console.log('   $env:INIT_ADMIN_EMAIL="official.admin@rda.gov.lk"');
     console.log('   $env:INIT_ADMIN_PASSWORD="YourStrongPassword2026!"');
-    console.log('   $env:INIT_ADMIN_NAME="Eng. K. Bandara"');
+    console.log('   $env:INIT_ADMIN_NAME="Engineer MR Indunil Madhusanka"');
     console.log('   node --env-file=.env.local scripts/provision-admin.mjs\n');
     console.log("Standing by. Database remains unpopulated and secure.\n");
     await mongoose.disconnect();
