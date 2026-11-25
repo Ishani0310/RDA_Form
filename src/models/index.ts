@@ -19,6 +19,9 @@ export type { IDraftToken } from "./DraftToken";
 export { SystemSetting } from "./SystemSetting";
 export type { ISystemSetting } from "./SystemSetting";
 
+export { Notification } from "./Notification";
+export type { INotification } from "./Notification";
+
 export { Questionnaire, computeQuestionnaireStats } from "./Questionnaire";
 export type {
   IQuestionnaire,

@@ -7,6 +7,7 @@ import { DraftToken, IDraftToken } from "@/models/DraftToken";
 import { Questionnaire } from "@/models/Questionnaire";
 import { DEFAULT_QUESTIONNAIRE_CODE } from "@/lib/questionnaire-seed";
 import { recordActivityLog } from "@/lib/audit";
+import { createNotification } from "./notification-service";
 
 import {
   normalizeQuestionnaireData,
@@ -493,6 +494,19 @@ export async function saveOrUpdateDraft(
     ipAddress: clientIp || "web-portal",
   });
 
+  // Real-time alert: contractor started filling registration form
+  createNotification({
+    type: "DRAFT",
+    title: "Registration Form Started",
+    message: `${contractor.businessName && contractor.businessName !== "New Registration Draft" ? contractor.businessName : "A stakeholder"} started filling registration form (${permanentRef})`,
+    reference: permanentRef,
+    link: `/submissions?ref=${encodeURIComponent(permanentRef)}`,
+    metadata: {
+      submissionReference: permanentRef,
+      category: payload.questionnaireData?.participantCategory || "Contractor",
+    },
+  }).catch(() => {});
+
   return {
     token: rawToken,
     submissionReference: permanentRef,
@@ -875,6 +889,21 @@ export async function submitFinalDeclaration(
     },
   }).catch((err) => console.error("Non-blocking audit log error:", err));
 
+  // Real-time alert: contractor successfully submitted registration form
+  createNotification({
+    type: "SUBMISSION",
+    title: "New Registration Submitted",
+    message: `${contractor.businessName || "Stakeholder"} has submitted official registration (${officialSubmissionRef})`,
+    reference: officialSubmissionRef,
+    link: `/submissions?ref=${encodeURIComponent(officialSubmissionRef)}`,
+    metadata: {
+      registrationNumber: contractor.registrationNumber,
+      submissionReference: officialSubmissionRef,
+      category: rawQ.participantCategory || "Contractor",
+      attendance: rawQ.willParticipate || "Yes",
+    },
+  }).catch(() => {});
+
   return {
     submissionReference: officialSubmissionRef,
     businessName: contractor.businessName,
@@ -1087,6 +1116,21 @@ export async function submitDirectDeclaration(
       cidaGrade,
     },
   }).catch((err) => console.error("Non-blocking audit log error:", err));
+
+  // Real-time alert: contractor successfully submitted registration form
+  createNotification({
+    type: "SUBMISSION",
+    title: "New Registration Submitted",
+    message: `${businessName || "Stakeholder"} has submitted official registration (${permanentRef})`,
+    reference: permanentRef,
+    link: `/submissions?ref=${encodeURIComponent(permanentRef)}`,
+    metadata: {
+      registrationNumber,
+      submissionReference: permanentRef,
+      category: payload.questionnaireData?.participantCategory || "Contractor",
+      attendance: payload.questionnaireData?.willParticipate || "Yes",
+    },
+  }).catch(() => {});
 
   return {
     submissionReference: permanentRef,

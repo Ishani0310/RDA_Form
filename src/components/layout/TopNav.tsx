@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Menu,
   Search,
@@ -10,7 +10,14 @@ import {
   LogOut,
   Shield,
   User,
+  FileCheck2,
+  FileEdit,
+  ShieldCheck,
+  CheckCheck,
+  ExternalLink,
+  Info,
 } from "lucide-react";
+import Link from "next/link";
 
 interface TopNavProps {
   onToggleSidebar: () => void;
@@ -26,9 +33,42 @@ interface CurrentOfficer {
   isDemoSession?: boolean;
 }
 
+interface NotificationItem {
+  _id: string;
+  type: "SUBMISSION" | "DRAFT" | "LOGIN" | "SYSTEM" | "ALERT";
+  title: string;
+  message: string;
+  reference?: string;
+  link?: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+function formatRelativeTime(dateString: string | Date | undefined): string {
+  if (!dateString) return "Just now";
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffSec = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (diffSec < 45) return "Just now";
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  const diffDays = Math.floor(diffHr / 24);
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+}
+
 export const TopNav: React.FC<TopNavProps> = ({ onToggleSidebar }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [loadingNotifications, setLoadingNotifications] = useState<boolean>(false);
+  const notificationsRef = useRef<HTMLDivElement>(null);
+
   const [officer, setOfficer] = useState<CurrentOfficer>({
     fullName: "RDA Officer",
     email: "",
@@ -39,6 +79,20 @@ export const TopNav: React.FC<TopNavProps> = ({ onToggleSidebar }) => {
     isDemoSession: false,
   });
 
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const res = await fetch("/api/notifications");
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.success) {
+        setNotifications(data.notifications || []);
+        setUnreadCount(data.unreadCount || 0);
+      }
+    } catch {
+      // ignore network errors on polling
+    }
+  }, []);
+
   useEffect(() => {
     fetch("/api/auth/me")
       .then((res) => res.json())
@@ -48,13 +102,92 @@ export const TopNav: React.FC<TopNavProps> = ({ onToggleSidebar }) => {
         }
       })
       .catch(() => {});
-  }, []);
+
+    fetchNotifications();
+    const timer = setInterval(fetchNotifications, 20000); // Poll every 20s
+    return () => clearInterval(timer);
+  }, [fetchNotifications]);
+
+  // Click outside to close notifications dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        notificationsRef.current &&
+        !notificationsRef.current.contains(event.target as Node)
+      ) {
+        setShowNotifications(false);
+      }
+    };
+    if (showNotifications) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showNotifications]);
+
+  const handleMarkAllAsRead = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await fetch("/api/notifications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      setUnreadCount(0);
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    } catch {}
+  };
+
+  const handleNotificationClick = async (notif: NotificationItem) => {
+    if (!notif.isRead) {
+      fetch("/api/notifications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: notif._id }),
+      }).catch(() => {});
+      setNotifications((prev) =>
+        prev.map((n) => (n._id === notif._id ? { ...n, isRead: true } : n))
+      );
+      setUnreadCount((c) => Math.max(0, c - 1));
+    }
+    setShowNotifications(false);
+    if (notif.link) {
+      window.location.href = notif.link;
+    }
+  };
 
   const handleLogout = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
     } finally {
       window.location.href = "/login";
+    }
+  };
+
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case "SUBMISSION":
+        return <FileCheck2 className="w-4 h-4 text-emerald-600" />;
+      case "DRAFT":
+        return <FileEdit className="w-4 h-4 text-amber-600" />;
+      case "LOGIN":
+        return <ShieldCheck className="w-4 h-4 text-blue-600" />;
+      default:
+        return <Info className="w-4 h-4 text-slate-500" />;
+    }
+  };
+
+  const getNotificationBadgeColor = (type: string) => {
+    switch (type) {
+      case "SUBMISSION":
+        return "bg-emerald-50 border-emerald-200 text-emerald-700";
+      case "DRAFT":
+        return "bg-amber-50 border-amber-200 text-amber-700";
+      case "LOGIN":
+        return "bg-blue-50 border-blue-200 text-blue-700";
+      default:
+        return "bg-slate-50 border-slate-200 text-slate-700";
     }
   };
 
@@ -112,46 +245,111 @@ export const TopNav: React.FC<TopNavProps> = ({ onToggleSidebar }) => {
           </div>
 
           {/* Notifications Dropdown */}
-          <div className="relative">
+          <div className="relative" ref={notificationsRef}>
             <button
               onClick={() => {
                 setShowNotifications(!showNotifications);
                 setShowUserMenu(false);
               }}
-              className="relative p-2 rounded-lg text-slate-600 hover:text-blue-900 hover:bg-slate-100 transition-colors"
+              className="relative p-2 rounded-lg text-slate-600 hover:text-blue-900 hover:bg-slate-100 transition-colors focus:outline-none"
               aria-label="Notifications"
             >
               <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-blue-600 ring-2 ring-white"></span>
+              {unreadCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-600 ring-2 ring-white"></span>
+                </span>
+              )}
             </button>
 
             {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-200 py-2 z-50 text-xs">
-                <div className="px-4 py-2 border-b border-slate-100 flex items-center justify-between">
-                  <span className="font-semibold text-slate-900">RDA System Alerts</span>
-                  <span className="text-[10px] text-amber-600 font-bold bg-amber-50 px-2 py-0.5 rounded">
-                    SAMPLE NOTICES
-                  </span>
+              <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-2xl border border-slate-200 py-2 z-50 text-xs animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-slate-900 text-sm">System Alerts</span>
+                    {unreadCount > 0 && (
+                      <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-600 text-white">
+                        {unreadCount} new
+                      </span>
+                    )}
+                  </div>
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={handleMarkAllAsRead}
+                      className="text-[11px] text-blue-700 hover:text-blue-900 font-medium flex items-center gap-1 hover:underline cursor-pointer"
+                    >
+                      <CheckCheck className="w-3.5 h-3.5" />
+                      Mark all read
+                    </button>
+                  )}
                 </div>
-                <div className="divide-y divide-slate-100">
-                  <div className="p-3 hover:bg-slate-50">
-                    <p className="font-semibold text-slate-800">
-                      Official Questionnaire Pending
-                    </p>
-                    <p className="text-slate-500 text-[11px] mt-0.5">
-                      The questionnaire formulation committee has convened. Question fields are locked from user editing.
-                    </p>
-                    <span className="text-[10px] text-slate-400 mt-1 block">10 mins ago</span>
-                  </div>
-                  <div className="p-3 hover:bg-slate-50">
-                    <p className="font-semibold text-slate-800">
-                      Officer Portal Session Active
-                    </p>
-                    <p className="text-slate-500 text-[11px] mt-0.5">
-                      Authenticated as {officer.fullName} ({officer.role.replace("_", " ")}).
-                    </p>
-                    <span className="text-[10px] text-slate-400 mt-1 block">Just now</span>
-                  </div>
+
+                <div className="max-h-[380px] overflow-y-auto divide-y divide-slate-100">
+                  {notifications.length === 0 ? (
+                    <div className="py-8 text-center text-slate-400">
+                      <Bell className="w-8 h-8 mx-auto mb-2 text-slate-300 opacity-60" />
+                      <p className="text-xs font-medium">No recent notifications</p>
+                    </div>
+                  ) : (
+                    notifications.map((notif) => (
+                      <div
+                        key={notif._id}
+                        onClick={() => handleNotificationClick(notif)}
+                        className={`p-3 transition-colors cursor-pointer flex gap-3 items-start ${
+                          notif.isRead
+                            ? "hover:bg-slate-50 bg-white"
+                            : "bg-blue-50/40 hover:bg-blue-50/70"
+                        }`}
+                      >
+                        <div
+                          className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border mt-0.5 ${getNotificationBadgeColor(
+                            notif.type
+                          )}`}
+                        >
+                          {getNotificationIcon(notif.type)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-1">
+                            <p
+                              className={`text-xs truncate ${
+                                notif.isRead
+                                  ? "font-semibold text-slate-700"
+                                  : "font-bold text-slate-900"
+                              }`}
+                            >
+                              {notif.title}
+                            </p>
+                            <span className="text-[10px] text-slate-400 shrink-0 whitespace-nowrap">
+                              {formatRelativeTime(notif.createdAt)}
+                            </span>
+                          </div>
+                          <p className="text-slate-600 text-[11px] mt-0.5 line-clamp-2 leading-relaxed">
+                            {notif.message}
+                          </p>
+                          {notif.reference && (
+                            <span className="inline-block mt-1 font-mono text-[10px] text-blue-800 bg-blue-50/80 px-1.5 py-0.2 rounded border border-blue-100">
+                              {notif.reference}
+                            </span>
+                          )}
+                        </div>
+                        {!notif.isRead && (
+                          <span className="w-2 h-2 rounded-full bg-blue-600 shrink-0 mt-2"></span>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div className="p-2 border-t border-slate-100 text-center bg-slate-50/60 rounded-b-xl">
+                  <Link
+                    href="/submissions"
+                    onClick={() => setShowNotifications(false)}
+                    className="text-[11px] text-slate-600 hover:text-blue-900 font-semibold inline-flex items-center gap-1"
+                  >
+                    View All Submissions & Activity Log
+                    <ExternalLink className="w-3 h-3" />
+                  </Link>
                 </div>
               </div>
             )}

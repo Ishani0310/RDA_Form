@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticateOfficer } from "@/lib/auth-service";
 import { signSessionToken, getSessionCookieOptions } from "@/lib/auth";
 import { recordActivityLog } from "@/lib/audit";
+import { createNotification } from "@/lib/notification-service";
 
 export async function POST(request: NextRequest) {
   let attemptedEmail = "";
@@ -63,6 +64,20 @@ export async function POST(request: NextRequest) {
       ipAddress: clientIp,
       province: officer.assignedProvince,
     });
+
+    // Real-time system alert for admin login
+    createNotification({
+      type: "LOGIN",
+      title: "Officer Logged In",
+      message: `${officer.fullName} (${officer.role.replace("_", " ")}) authenticated successfully`,
+      metadata: {
+        userId: officer.userId,
+        email: officer.email,
+        fullName: officer.fullName,
+        role: officer.role,
+        ipAddress: clientIp,
+      },
+    }).catch(() => {});
 
     const response = NextResponse.json({
       success: true,
