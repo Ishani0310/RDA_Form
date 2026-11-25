@@ -2215,8 +2215,18 @@ function RegisterForm() {
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500 font-sans">Recorded Timestamp:</span>
-              <span className="text-slate-700">
-                {new Date(submissionSuccess.submittedAt).toLocaleString("en-GB")}
+              <span className="text-slate-700 font-medium">
+                {new Date(submissionSuccess.submittedAt).toLocaleString("en-GB", {
+                  timeZone: "Asia/Colombo",
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  second: "2-digit",
+                  hour12: false,
+                })}{" "}
+                <span className="text-xs text-slate-500">(Sri Lanka Time)</span>
               </span>
             </div>
           </div>

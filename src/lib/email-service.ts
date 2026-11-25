@@ -155,10 +155,22 @@ export async function sendRegistrationConfirmationEmail(
   const contactPhone = q.contactNumber || q.participant1?.mobileNumber || "—";
   const contactEmail = q.email || to.trim();
 
-  const formattedDate =
-    typeof submittedAt === "string"
-      ? new Date(submittedAt).toLocaleString("en-GB")
-      : submittedAt.toLocaleString("en-GB");
+  // Format real Sri Lanka Time (Asia/Colombo, UTC+05:30)
+  const rawDate =
+    typeof submittedAt === "string" || typeof submittedAt === "number"
+      ? new Date(submittedAt)
+      : (submittedAt || new Date());
+  const validDate = isNaN(rawDate.getTime()) ? new Date() : rawDate;
+  const formattedDate = validDate.toLocaleString("en-GB", {
+    timeZone: "Asia/Colombo",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
 
   // Determine sender and test routing parameters
   const configuredFrom = (process.env.RESEND_FROM || process.env.EMAIL_FROM || "").trim().replace(/^["']|["']$/g, "");
@@ -212,7 +224,7 @@ SUMMARY OF SUBMISSION:
 • Workshop Date: ${workshopDate}
 • Workshop Time: ${workshopTime}
 • Venue: Road Development Authority / ICDP, Colombo, Sri Lanka
-• Submission Timestamp: ${formattedDate}
+• Submission Timestamp: ${formattedDate} (Sri Lanka Time)
 
 -------------------------------------------------------
 SECTION 1: BASIC INFORMATION
@@ -1016,7 +1028,9 @@ Inclusive Connectivity and Development Project (ICDP)
           </tr>
           <tr>
             <td style="padding: 10px 14px; color: #64748b; font-weight: 600;">Filing Timestamp:</td>
-            <td style="padding: 10px 14px; color: #0f172a;">${formattedDate}</td>
+            <td style="padding: 10px 14px; color: #0f172a; font-weight: 700;">
+              ${formattedDate} <span style="font-size: 11px; color: #64748b; font-weight: 500;">(Sri Lanka Time)</span>
+            </td>
           </tr>
         </tbody>
       </table>
