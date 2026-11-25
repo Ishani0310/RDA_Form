@@ -343,6 +343,8 @@ function RegisterForm() {
   // Draft session credentials & identifiers
   const [currentDraftToken, setCurrentDraftToken] = useState<string>(tokenFromUrl);
   const [currentReference, setCurrentReference] = useState<string>("");
+  const currentDraftTokenRef = useRef<string>(tokenFromUrl);
+  const currentReferenceRef = useRef<string>("");
   const [savedDraftsList, setSavedDraftsList] = useState<BrowserSavedDraft[]>([]);
   const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false);
   const [hasCheckedDrafts, setHasCheckedDrafts] = useState(false);
@@ -1182,9 +1184,11 @@ function RegisterForm() {
         setSpecialtyOtherList(parseOtherSpecialties(restoredData.specialtyOther));
         setSupplierMaterialsOtherList(parseOtherSpecialties(restoredData.supplierDetails?.materialsOther));
         setCidaGradeOtherList(parseOtherSpecialties(restoredData.cidaGradeOther));
+        currentDraftTokenRef.current = clean;
         setCurrentDraftToken(clean);
 
         const ref = data.draft.submissionReference || data.draft.reference || "";
+        currentReferenceRef.current = ref;
         setCurrentReference(ref);
         setShowRecoveryPrompt(false);
         setAutoSaveStatus("saved");
@@ -1240,6 +1244,20 @@ function RegisterForm() {
     }
 
     try {
+      // Synchronously retrieve latest token from ref, state, or browser saved drafts
+      let tokenToUse = (currentDraftTokenRef.current || currentDraftToken || "").trim();
+      if (!tokenToUse && typeof window !== "undefined") {
+        const stored = getBrowserSavedDrafts();
+        const match = stored.find(
+          (d) => d.organizationName?.trim().toLowerCase() === orgName.toLowerCase()
+        );
+        if (match?.token) {
+          tokenToUse = match.token;
+          currentDraftTokenRef.current = match.token;
+          setCurrentDraftToken(match.token);
+        }
+      }
+
       const payload: Record<string, unknown> = {
         questionnaireData: formData,
         businessName: orgName,
@@ -1254,13 +1272,18 @@ function RegisterForm() {
         },
       };
 
-      if (currentDraftToken) {
-        payload.resumeToken = currentDraftToken;
+      if (tokenToUse) {
+        payload.resumeToken = tokenToUse;
+      }
+
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (tokenToUse) {
+        headers["X-Resume-Token"] = tokenToUse;
       }
 
       const res = await fetch("/api/public/draft", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(payload),
       });
       const data = await res.json();
@@ -1269,10 +1292,15 @@ function RegisterForm() {
         const assignedRef =
           data.submissionReference ||
           data.data?.submission?.submissionReference ||
+          currentReferenceRef.current ||
           currentReference;
 
+        currentDraftTokenRef.current = data.token;
         setCurrentDraftToken(data.token);
-        if (assignedRef) setCurrentReference(assignedRef);
+        if (assignedRef) {
+          currentReferenceRef.current = assignedRef;
+          setCurrentReference(assignedRef);
+        }
 
         const draftEntry: BrowserSavedDraft = {
           token: data.token,
@@ -1305,13 +1333,19 @@ function RegisterForm() {
             type: "error",
             message: data.message,
           });
+          if (currentDraftTokenRef.current) removeBrowserDraft(currentDraftTokenRef.current);
           if (currentDraftToken) removeBrowserDraft(currentDraftToken);
+          currentDraftTokenRef.current = "";
+          currentReferenceRef.current = "";
           setCurrentDraftToken("");
           setCurrentReference("");
           setSavedDraftsList(getBrowserSavedDrafts());
         } else if (data.message && (data.message.includes("resume token") || data.message.includes("unrecognized") || data.message.includes("not found"))) {
           // Token is stale or unrecognized; purge from local storage and restart cleanly
+          if (currentDraftTokenRef.current) removeBrowserDraft(currentDraftTokenRef.current);
           if (currentDraftToken) removeBrowserDraft(currentDraftToken);
+          currentDraftTokenRef.current = "";
+          currentReferenceRef.current = "";
           setCurrentDraftToken("");
           setCurrentReference("");
           setSavedDraftsList(getBrowserSavedDrafts());
@@ -1361,6 +1395,13 @@ function RegisterForm() {
 
     setAutoSaveStatus("saving");
     debounceTimerRef.current = setTimeout(() => {
+      // If a save is already in-flight, postpone slightly until the in-flight save returns its token
+      if (isSavingRef.current) {
+        debounceTimerRef.current = setTimeout(() => {
+          performDraftSave(true);
+        }, 800);
+        return;
+      }
       performDraftSave(true);
     }, 2000);
 

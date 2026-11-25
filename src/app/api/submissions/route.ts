@@ -3,6 +3,7 @@ import { getCurrentOfficerSession } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Submission } from "@/models/Submission";
 import { Contractor } from "@/models/Contractor";
+import { DraftToken } from "@/models/DraftToken";
 import "@/models/User";
 
 /**
@@ -66,6 +67,45 @@ export async function GET(request: NextRequest) {
           { "questionnaireData.participant1.email": { $in: emailList } },
         ],
       }).catch(() => {});
+    }
+
+    // Prevent duplicate draft records: If multiple drafts exist for the same company name, retain only the newest draft
+    try {
+      const allDrafts = await Submission.find({ status: "Draft" })
+        .select("_id contractor questionnaireData.organizationName questionnaireData.supplierDetails.companyName createdAt")
+        .sort({ createdAt: -1 })
+        .lean();
+
+      const seenOrgs = new Set<string>();
+      const dupDraftSubIds: any[] = [];
+      const dupContractorIds: any[] = [];
+
+      for (const d of allDrafts) {
+        const org = (
+          (d as any).questionnaireData?.organizationName ||
+          (d as any).questionnaireData?.supplierDetails?.companyName ||
+          ""
+        ).trim().toLowerCase();
+
+        if (org && org !== "new registration draft") {
+          if (seenOrgs.has(org)) {
+            dupDraftSubIds.push(d._id);
+            if ((d as any).contractor) dupContractorIds.push((d as any).contractor);
+          } else {
+            seenOrgs.add(org);
+          }
+        }
+      }
+
+      if (dupDraftSubIds.length > 0) {
+        await Promise.all([
+          Submission.deleteMany({ _id: { $in: dupDraftSubIds } }),
+          DraftToken.deleteMany({ submission: { $in: dupDraftSubIds } }),
+          Contractor.deleteMany({ _id: { $in: dupContractorIds }, status: "Draft" }),
+        ]).catch(() => {});
+      }
+    } catch {
+      // Background draft cleanup guard
     }
 
     const query: Record<string, unknown> = {};

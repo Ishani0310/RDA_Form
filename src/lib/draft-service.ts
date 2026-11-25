@@ -297,6 +297,137 @@ export async function saveOrUpdateDraft(
     );
   }
 
+  // Check if an existing unsubmitted Draft session already exists for this organization/contractor or email
+  let existingDraftSub = null;
+  const draftQueryConditions: any[] = [];
+
+  if (candidateEmail && candidateEmail !== "contact@rda.gov.lk" && candidateEmail !== "contact@contractor.lk") {
+    draftQueryConditions.push({ "questionnaireData.email": candidateEmail });
+    draftQueryConditions.push({ "questionnaireData.participant1.email": candidateEmail });
+  }
+
+  if (effectiveBusinessName && effectiveBusinessName !== "New Registration Draft") {
+    const escaped = effectiveBusinessName.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+    draftQueryConditions.push({ "questionnaireData.organizationName": { $regex: `^${escaped}$`, $options: "i" } });
+    draftQueryConditions.push({ "questionnaireData.supplierDetails.companyName": { $regex: `^${escaped}$`, $options: "i" } });
+  }
+
+  if (rawReg) {
+    draftQueryConditions.push({ "questionnaireData.ictadRegistrationNumber": rawReg });
+  }
+
+  if (draftQueryConditions.length > 0) {
+    existingDraftSub = await Submission.findOne({
+      status: "Draft",
+      $or: draftQueryConditions,
+    }).sort({ updatedAt: -1, createdAt: -1 });
+  }
+
+  if (existingDraftSub) {
+    let draftTokenDoc = await DraftToken.findOne({
+      submission: existingDraftSub._id,
+      isRevoked: false,
+    }).sort({ createdAt: -1 });
+
+    const contractor = await Contractor.findById(existingDraftSub.contractor);
+
+    if (contractor) {
+      if (businessName) contractor.businessName = businessName;
+      if (rawReg && rawReg.toUpperCase() !== contractor.registrationNumber) {
+        contractor.registrationNumber = rawReg.toUpperCase();
+      }
+      if (payload.businessRegistrationNumber) contractor.businessRegistrationNumber = payload.businessRegistrationNumber.trim();
+      if (payload.cidaGrade || qData.cidaGrade) contractor.cidaGrade = (payload.cidaGrade || qData.cidaGrade) as any;
+      if (payload.primarySpeciality) contractor.primarySpeciality = payload.primarySpeciality.trim();
+      if (province) contractor.province = province as any;
+      if (district) contractor.district = district;
+      if (payload.contactOfficer || qData.contactNumber || qData.email) {
+        contractor.contactOfficer = {
+          name: payload.contactOfficer?.name?.trim() || qData.participant1?.fullName?.trim() || contractor.contactOfficer?.name || "Authorized Representative",
+          designation: payload.contactOfficer?.designation?.trim() || qData.participant1?.designation?.trim() || contractor.contactOfficer?.designation || "Authorized Officer",
+          phone: payload.contactOfficer?.phone?.trim() || qData.contactNumber?.trim() || contractor.contactOfficer?.phone || "",
+          email: payload.contactOfficer?.email?.trim().toLowerCase() || qData.email?.trim().toLowerCase() || contractor.contactOfficer?.email || "",
+        };
+      }
+
+      if (province) existingDraftSub.provincialOffice = province;
+      if (payload.questionnaireData) {
+        existingDraftSub.questionnaireData = normalizeQuestionnaireData(payload.questionnaireData) as unknown as Record<string, unknown>;
+      }
+      existingDraftSub.updatedAt = new Date();
+
+      // Issue or refresh a valid high-entropy plain-text token for the client
+      const rawToken = generateResumeToken();
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + DRAFT_TOKEN_EXPIRATION_DAYS);
+
+      if (draftTokenDoc) {
+        draftTokenDoc.tokenHash = hashResumeToken(rawToken);
+        draftTokenDoc.expiresAt = expiresAt;
+        draftTokenDoc.lastAccessedAt = new Date();
+      } else {
+        draftTokenDoc = await DraftToken.create({
+          tokenHash: hashResumeToken(rawToken),
+          contractor: contractor._id,
+          submission: existingDraftSub._id,
+          expiresAt,
+          isRevoked: false,
+          lastAccessedAt: new Date(),
+          ipAddress: clientIp || "web-portal",
+        });
+      }
+
+      await Promise.all([
+        contractor.save(),
+        existingDraftSub.save(),
+        draftTokenDoc.save(),
+      ]);
+
+      // Clean up any older duplicate draft submissions for this exact organization name
+      if (effectiveBusinessName && effectiveBusinessName !== "New Registration Draft") {
+        const escaped = effectiveBusinessName.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+        const dupDrafts = await Submission.find({
+          _id: { $ne: existingDraftSub._id },
+          status: "Draft",
+          $or: [
+            { "questionnaireData.organizationName": { $regex: `^${escaped}$`, $options: "i" } },
+            { "questionnaireData.supplierDetails.companyName": { $regex: `^${escaped}$`, $options: "i" } },
+          ],
+        }).select("_id contractor").lean();
+
+        if (dupDrafts.length > 0) {
+          const dupSubIds = dupDrafts.map((d: any) => d._id);
+          const dupContractorIds = dupDrafts.map((d: any) => d.contractor).filter(Boolean);
+          await Promise.all([
+            Submission.deleteMany({ _id: { $in: dupSubIds } }),
+            DraftToken.deleteMany({ submission: { $in: dupSubIds } }),
+            Contractor.deleteMany({ _id: { $in: dupContractorIds }, status: "Draft" }),
+          ]).catch(() => {});
+        }
+      }
+
+      return {
+        token: rawToken,
+        submissionReference: existingDraftSub.submissionReference || "RDA-ICDP-DRAFT",
+        expiresAt: expiresAt.toISOString(),
+        isNew: false,
+        contractor: {
+          id: contractor._id.toString(),
+          registrationNumber: contractor.registrationNumber,
+          businessName: contractor.businessName,
+          cidaGrade: contractor.cidaGrade,
+          province: contractor.province,
+          contactOfficer: contractor.contactOfficer,
+        },
+        submission: {
+          id: existingDraftSub._id.toString(),
+          reference: existingDraftSub.submissionReference,
+          status: existingDraftSub.status,
+        },
+      };
+    }
+  }
+
   // Create or reuse draft contractor record
   let contractor = await Contractor.findOne({ registrationNumber: effectiveRegNo, status: "Draft" });
 
