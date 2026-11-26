@@ -1450,6 +1450,7 @@ function SubmissionsContent() {
       const params = new URLSearchParams({
         page: page.toString(),
         limit: "10",
+        excludeForm: "supplier",
       });
       if (search.trim()) params.append("search", search.trim());
       if (status !== "All Statuses") params.append("status", status);
@@ -1574,6 +1575,7 @@ function SubmissionsContent() {
       const params = new URLSearchParams({
         page: "1",
         limit: "5000",
+        excludeForm: "supplier",
       });
       if (search.trim()) params.append("search", search.trim());
       if (status !== "All Statuses") params.append("status", status);

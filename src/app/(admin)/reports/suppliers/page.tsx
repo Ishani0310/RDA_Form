@@ -6,12 +6,12 @@ import ReportDirectoryView from "@/components/admin/ReportDirectoryView";
 export default function AllSuppliersReportPage() {
   return (
     <ReportDirectoryView
-      title="Material Suppliers Master Directory"
-      subtitle="Complete official registry of material, equipment, and plant suppliers."
+      title="Supplier Submissions"
+      subtitle="Complete official registry of material, equipment, and plant supplier submissions."
       attendanceFilter="all"
       categoryFilter="Supplier"
-      parentPath="/reports"
-      parentLabel="Analytics & Reports"
+      parentPath="/submissions"
+      parentLabel="Data Submissions"
       currentPath="/reports/suppliers"
       activeTabKey="suppliers"
     />

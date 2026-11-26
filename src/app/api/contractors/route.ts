@@ -84,6 +84,25 @@ export async function GET(request: NextRequest) {
     // 4. Build Filter Query with Strict Whitelist
     const query: Record<string, unknown> = {};
 
+    // Strictly exclude any records originating from the new supplier form (Form 2 / RDA-SUPPLIER-Q)
+    // As per user specification: new supplier form submissions must NOT appear in Contractor Registry
+    const supplierFormSubs = await Submission.find({
+      $or: [{ formId: "RDA-SUPPLIER-Q" }, { formSlug: "supplier" }],
+    })
+      .select("contractor")
+      .lean();
+
+    const excludedContractorIds = supplierFormSubs.map((s) => s.contractor).filter(Boolean);
+
+    // Also exclude any contractor created specifically for the new supplier form
+    query["metadata.formSlug"] = { $ne: "supplier" };
+    query["metadata.isNewSupplierForm"] = { $ne: true };
+    query.registrationNumber = { $not: /^SUP-/ };
+
+    if (excludedContractorIds.length > 0) {
+      query._id = { $nin: excludedContractorIds };
+    }
+
     if (province && VALID_PROVINCES.includes(province)) {
       query.province = province;
     }

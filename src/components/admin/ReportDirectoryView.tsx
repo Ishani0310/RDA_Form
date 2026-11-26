@@ -25,6 +25,7 @@ import {
   HardHat,
   AlertCircle,
   FileText,
+  X,
 } from "lucide-react";
 
 export interface FormattedRecord {
@@ -115,6 +116,7 @@ export default function ReportDirectoryView({
   const [datePreset, setDatePreset] = useState<string>("all");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
+  const [selectedRecord, setSelectedRecord] = useState<FormattedRecord | null>(null);
 
   const fetchRecords = useCallback(async () => {
     setLoading(true);
@@ -620,13 +622,14 @@ export default function ReportDirectoryView({
                         </td>
                         <td className="p-3 whitespace-nowrap text-slate-600 font-medium">{subDate}</td>
                         <td className="p-3 text-right whitespace-nowrap print:hidden">
-                          <Link
-                            href={`/submissions?ref=${encodeURIComponent(s.ref)}`}
-                            className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 font-semibold text-xs hover:underline"
+                          <button
+                            type="button"
+                            onClick={() => setSelectedRecord(s)}
+                            className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 font-semibold text-xs hover:underline cursor-pointer"
                           >
                             View
                             <ExternalLink className="w-3 h-3" />
-                          </Link>
+                          </button>
                         </td>
                       </tr>
                     );
@@ -658,6 +661,95 @@ export default function ReportDirectoryView({
           </div>
         </div>
       </div>
+
+      {/* Record Detail Modal */}
+      {selectedRecord && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-xl w-full p-6 space-y-5 my-8">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  Official Record Filing
+                </span>
+                <span className="font-mono text-base font-black text-blue-950">
+                  {selectedRecord.ref}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedRecord(null)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  Organization / Company Name
+                </span>
+                <span className="text-base font-bold text-slate-900 block mt-0.5">
+                  {selectedRecord.contractor || selectedRecord.questionnaireData?.organizationName || "—"}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Contact Phone Number
+                  </span>
+                  <span className="font-semibold text-slate-800 block mt-1">
+                    {selectedRecord.questionnaireData?.contactNumber || selectedRecord.questionnaireData?.participant1?.mobile || "—"}
+                  </span>
+                </div>
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Official Email
+                  </span>
+                  <span className="font-semibold text-blue-900 block mt-1 break-all">
+                    {selectedRecord.questionnaireData?.email || selectedRecord.questionnaireData?.participant1?.email || "—"}
+                  </span>
+                </div>
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Stakeholder Category
+                  </span>
+                  <span className="font-bold text-purple-800 block mt-1">
+                    {selectedRecord.questionnaireData?.participantCategory || selectedRecord.category || "Supplier"}
+                  </span>
+                </div>
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Submission Timestamp
+                  </span>
+                  <span className="font-semibold text-slate-800 block mt-1">
+                    {formatDisplayDate(selectedRecord.submittedAt || selectedRecord.createdAt)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                <span>Print Record</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedRecord(null)}
+                className="px-4 py-2 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-xl transition-all shadow-xs"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

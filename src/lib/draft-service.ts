@@ -1115,6 +1115,11 @@ export async function submitDirectDeclaration(
       district,
       contactOfficer,
       status: "Pending_Review",
+      metadata: {
+        formId: activePublished?.code || targetFormCode,
+        formSlug: activePublished?.slug || targetFormSlug || "supplier",
+        isNewSupplierForm: targetFormCode === "RDA-SUPPLIER-Q" || targetFormSlug === "supplier",
+      },
       isDemoRecord: false,
     }),
     Submission.create({
@@ -1126,7 +1131,7 @@ export async function submitDirectDeclaration(
       submittedAt,
       schemaVersion: activePublished?.version || "2.0.0-official-form",
       formId: activePublished?.code || targetFormCode,
-      formSlug: activePublished?.slug || "contractor",
+      formSlug: activePublished?.slug || targetFormSlug || "contractor",
       questionnaireId: activePublished?._id,
       questionnaireVersion: activePublished?.version,
       questionnaireData: normalizedQ as unknown as Record<string, unknown>,

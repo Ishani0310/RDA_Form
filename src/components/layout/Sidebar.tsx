@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Building2,
   FileCheck2,
+  Truck,
   QrCode,
   BarChart3,
   Users2,
@@ -40,6 +41,12 @@ export const navItems = [
     name: "Data Submissions",
     href: "/submissions",
     icon: FileCheck2,
+    badge: null,
+  },
+  {
+    name: "Supplier Submissions",
+    href: "/reports/suppliers",
+    icon: Truck,
     badge: null,
   },
   {

@@ -137,9 +137,24 @@ export async function GET(request: NextRequest) {
 
     const query: Record<string, unknown> = {};
 
+    const excludeForm = searchParams.get("excludeForm");
+    if (excludeForm === "supplier") {
+      query.formId = { $ne: "RDA-SUPPLIER-Q" };
+      query.formSlug = { $ne: "supplier" };
+    }
+
     // Specific Form Filter
     if (formFilter && formFilter !== "ALL") {
-      query.$or = [{ formId: formFilter }, { formSlug: formFilter }];
+      if (formFilter === "contractor" || formFilter === "RDA-ICDP-CONTRACTOR-Q") {
+        query.$or = [
+          { formId: "RDA-ICDP-CONTRACTOR-Q" },
+          { formSlug: "contractor" },
+          { formId: { $exists: false } },
+          { formSlug: { $exists: false } },
+        ];
+      } else {
+        query.$or = [{ formId: formFilter }, { formSlug: formFilter }];
+      }
     }
 
     // Provincial Director / Engineer scoping
@@ -259,6 +274,11 @@ export async function GET(request: NextRequest) {
     delete baseQueryNoStatus.status;
     delete baseQueryNoStatus.isViewed;
     delete baseQueryNoStatus.$or;
+
+    if (excludeForm === "supplier") {
+      baseQueryNoStatus.formId = { $ne: "RDA-SUPPLIER-Q" };
+      baseQueryNoStatus.formSlug = { $ne: "supplier" };
+    }
 
     const [totalCount, submittedCount, draftCount, unseenCount, seenCount] = await Promise.all([
       Submission.countDocuments(query),
