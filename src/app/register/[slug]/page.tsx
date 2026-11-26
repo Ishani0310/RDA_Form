@@ -1061,18 +1061,29 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
       <div className="max-w-3xl mx-auto space-y-6">
         {/* Top Government Letterhead Bar with Language Switcher */}
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3 sm:gap-4">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/ministry-logo.png" alt="Ministry of Transport" className="h-8 sm:h-10 w-auto object-contain" />
-            <div className="h-8 w-px bg-slate-200" />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/rda-logo.png" alt="Road Development Authority" className="h-8 sm:h-10 w-auto object-contain" />
-            <div className="h-8 w-px bg-slate-200" />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/icdp-logo.jpg" alt="ICDP" className="h-8 sm:h-10 w-auto object-contain" />
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/ministry-logo.png" alt="Ministry of Transport" className="h-8 sm:h-10 w-auto object-contain" />
+              <div className="h-8 w-px bg-slate-200" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/rda-logo.png" alt="Road Development Authority" className="h-8 sm:h-10 w-auto object-contain" />
+              <div className="h-8 w-px bg-slate-200" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/icdp-logo.jpg" alt="ICDP" className="h-8 sm:h-10 w-auto object-contain" />
+            </div>
+
+            <div className="sm:border-l sm:border-slate-200 sm:pl-3.5 text-left">
+              <span className="text-[10px] font-bold text-amber-700 uppercase tracking-widest block leading-tight">
+                {t.govSriLanka}
+              </span>
+              <span className="text-xs font-black text-blue-950 block leading-tight">
+                {t.rda}
+              </span>
+            </div>
           </div>
 
-          <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
+          <div className="flex items-center justify-end w-full sm:w-auto">
             {/* Language Switcher Pill */}
             <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs shadow-2xs">
               <Globe className="w-3.5 h-3.5 text-slate-500 ml-1.5 mr-0.5" />
@@ -1109,15 +1120,6 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
               >
                 தமிழ்
               </button>
-            </div>
-
-            <div className="text-right hidden md:block">
-              <span className="text-[10px] font-bold text-amber-700 uppercase tracking-widest block">
-                {t.govSriLanka}
-              </span>
-              <span className="text-xs font-black text-blue-950 block">
-                {t.rda}
-              </span>
             </div>
           </div>
         </div>
