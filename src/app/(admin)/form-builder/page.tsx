@@ -59,6 +59,7 @@ import {
   Info,
   AlertTriangle,
   Users,
+  MapPin,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -1469,7 +1470,7 @@ export default function FormBuilderPage() {
                           About the Workshop &amp; Registration Instructions
                         </span>
                         <span className="text-[11px] text-slate-500">
-                          Date: 07 Dec 2026 &bull; Time: 9.00 AM &bull; <strong className="text-rose-700 font-bold">Deadline: 03 Dec 2026</strong> &bull; Click to {showWorkshopInfo ? "hide" : "view"} official details
+                          Date: 07 Dec 2026 (9.00 AM) &bull; Venue: Waters Edge (The Pavilion), Battaramulla &bull; <strong className="text-rose-700 font-bold">Deadline: 03 Dec 2026</strong> &bull; Click to {showWorkshopInfo ? "hide" : "view"} official details
                         </span>
                       </div>
                     </div>
@@ -1503,6 +1504,10 @@ export default function FormBuilderPage() {
                             <p className="flex items-center gap-1.5">
                               <Calendar className="w-3.5 h-3.5 text-blue-900 shrink-0" />
                               <strong>Workshop Date:</strong> 07 December 2026 at 9.00 AM
+                            </p>
+                            <p className="flex items-center gap-1.5">
+                              <MapPin className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                              <strong>Venue:</strong> Waters Edge (The Pavilion), Battaramulla
                             </p>
                             <p className="flex items-center gap-1.5">
                               <Clock className="w-3.5 h-3.5 text-rose-700 shrink-0" />

@@ -2593,6 +2593,11 @@ function RegisterForm() {
                   <span className="font-normal text-slate-500">(9.00 AM)</span>
                 </span>
                 <span className="text-slate-300 hidden sm:inline">&bull;</span>
+                <span className="inline-flex items-center gap-1 font-semibold text-slate-800">
+                  <MapPin className="w-3 h-3 text-emerald-700 shrink-0" />
+                  <span>Waters Edge (The Pavilion), Battaramulla</span>
+                </span>
+                <span className="text-slate-300 hidden sm:inline">&bull;</span>
                 <span className="inline-flex items-center gap-1 font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200/80">
                   <Clock className="w-3 h-3 text-rose-600 shrink-0" />
                   <span><strong>Deadline: 03 Dec 2026</strong></span>
@@ -2640,6 +2645,10 @@ function RegisterForm() {
                     <span className="inline-flex items-center gap-1.5 text-slate-800 font-semibold">
                       <Calendar className="w-3.5 h-3.5 text-blue-900 shrink-0" />
                       <strong>Date:</strong> 07 December 2026 (9.00 AM)
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 text-slate-800 font-semibold">
+                      <MapPin className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                      <strong>Venue:</strong> Waters Edge (The Pavilion), Battaramulla
                     </span>
                     <span className="inline-flex items-center gap-1.5 text-rose-700 font-bold bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
                       <Clock className="w-3.5 h-3.5 text-rose-600 shrink-0" />
