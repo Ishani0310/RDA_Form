@@ -87,8 +87,8 @@ export default function ReportsHubPage() {
       const q = s.questionnaireData || {};
       const orgName = (s.contractor || q.organizationName || "").toLowerCase();
       if (orgName.includes("testing") || orgName.includes("dummy")) return false;
-      // Do not connect new supplier form with analytics
-      if (s.formId === "RDA-SUPPLIER-Q" || s.formSlug === "supplier" || q.formSlug === "supplier") return false;
+      // Only exclude submissions from the new standalone supplier form (RDA-SUPPLIER-Q)
+      if (s.formId === "RDA-SUPPLIER-Q") return false;
       return true;
     });
   }, [submissions]);

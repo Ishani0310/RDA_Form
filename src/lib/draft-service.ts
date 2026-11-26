@@ -1019,20 +1019,18 @@ export async function submitDirectDeclaration(
   let registrationNumber = "";
   let cidaGrade = "Pending";
 
-  if (
-    normalizedQ.participantCategory === "Supplier" ||
-    targetFormCode === "RDA-SUPPLIER-Q" ||
-    targetFormSlug === "supplier"
-  ) {
-    if (normalizedQ.organizationName) businessName = normalizedQ.organizationName.trim();
-    else if (normalizedQ.supplierDetails?.companyName) businessName = normalizedQ.supplierDetails.companyName.trim();
+  const isNewForm2 = targetFormCode === "RDA-SUPPLIER-Q" || targetFormSlug === "supplier";
 
+  if (isNewForm2) {
+    if (normalizedQ.organizationName) businessName = normalizedQ.organizationName.trim();
+    primarySpeciality = "Materials & Equipment Supplier";
+    registrationNumber = `SUP-${Date.now().toString().slice(-6)}`;
+  } else if (normalizedQ.participantCategory === "Supplier") {
+    if (normalizedQ.supplierDetails?.companyName) businessName = normalizedQ.supplierDetails.companyName.trim();
     if (normalizedQ.supplierDetails?.province) province = normalizedQ.supplierDetails.province.trim();
     if (normalizedQ.supplierDetails?.district) district = normalizedQ.supplierDetails.district.trim();
     if (normalizedQ.supplierDetails?.materialsSupplied?.length) {
       primarySpeciality = normalizedQ.supplierDetails.materialsSupplied.join(", ");
-    } else {
-      primarySpeciality = "Materials & Equipment Supplier";
     }
     registrationNumber = `SUP-${Date.now().toString().slice(-6)}`;
   } else if (normalizedQ.participantCategory === "Government Officer") {
@@ -1116,9 +1114,9 @@ export async function submitDirectDeclaration(
       contactOfficer,
       status: "Pending_Review",
       metadata: {
-        formId: activePublished?.code || targetFormCode,
-        formSlug: activePublished?.slug || targetFormSlug || "supplier",
-        isNewSupplierForm: targetFormCode === "RDA-SUPPLIER-Q" || targetFormSlug === "supplier",
+        formId: isNewForm2 ? "RDA-SUPPLIER-Q" : "RDA-ICDP-CONTRACTOR-Q",
+        formSlug: isNewForm2 ? "supplier" : "contractor",
+        isNewSupplierForm: isNewForm2,
       },
       isDemoRecord: false,
     }),
@@ -1129,9 +1127,9 @@ export async function submitDirectDeclaration(
       provincialOffice: province,
       status: "Submitted",
       submittedAt,
-      schemaVersion: activePublished?.version || "2.0.0-official-form",
-      formId: activePublished?.code || targetFormCode,
-      formSlug: activePublished?.slug || targetFormSlug || "contractor",
+      schemaVersion: isNewForm2 ? "1.0.0-supplier-form" : (activePublished?.version || "2.0.0-official-form"),
+      formId: isNewForm2 ? "RDA-SUPPLIER-Q" : "RDA-ICDP-CONTRACTOR-Q",
+      formSlug: isNewForm2 ? "supplier" : "contractor",
       questionnaireId: activePublished?._id,
       questionnaireVersion: activePublished?.version,
       questionnaireData: normalizedQ as unknown as Record<string, unknown>,

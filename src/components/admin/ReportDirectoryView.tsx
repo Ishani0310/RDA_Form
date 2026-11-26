@@ -149,8 +149,8 @@ export default function ReportDirectoryView({
       const orgName = (s.contractor || q.organizationName || "").toLowerCase();
       if (orgName.includes("testing") || orgName.includes("dummy")) return false;
 
-      // Do not connect new supplier form with analytics & reports
-      if (s.formId === "RDA-SUPPLIER-Q" || s.formSlug === "supplier" || q.formSlug === "supplier") return false;
+      // Exclude only the new standalone supplier form
+      if (s.formId === "RDA-SUPPLIER-Q") return false;
 
       if (attendanceFilter === "Yes" && q.willParticipate !== "Yes") return false;
       if (attendanceFilter === "No" && q.willParticipate !== "No") return false;

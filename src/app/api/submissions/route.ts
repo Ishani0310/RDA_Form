@@ -140,7 +140,6 @@ export async function GET(request: NextRequest) {
     const excludeForm = searchParams.get("excludeForm");
     if (excludeForm === "supplier") {
       query.formId = { $ne: "RDA-SUPPLIER-Q" };
-      query.formSlug = { $ne: "supplier" };
     }
 
     // Specific Form Filter
@@ -277,7 +276,6 @@ export async function GET(request: NextRequest) {
 
     if (excludeForm === "supplier") {
       baseQueryNoStatus.formId = { $ne: "RDA-SUPPLIER-Q" };
-      baseQueryNoStatus.formSlug = { $ne: "supplier" };
     }
 
     const [totalCount, submittedCount, draftCount, unseenCount, seenCount] = await Promise.all([
