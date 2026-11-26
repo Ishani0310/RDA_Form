@@ -1061,19 +1061,21 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
       <div className="max-w-3xl mx-auto space-y-6">
         {/* Top Government Letterhead Bar with Language Switcher */}
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+          <div className="flex flex-col gap-2 text-left">
+            {/* Logos Row */}
             <div className="flex items-center gap-3 sm:gap-4">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/ministry-logo.png" alt="Ministry of Transport" className="h-8 sm:h-10 w-auto object-contain" />
-              <div className="h-8 w-px bg-slate-200" />
+              <img src="/ministry-logo.png" alt="Ministry of Transport" className="h-7 sm:h-8 w-auto object-contain" />
+              <div className="h-6 w-px bg-slate-200" />
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/rda-logo.png" alt="Road Development Authority" className="h-8 sm:h-10 w-auto object-contain" />
-              <div className="h-8 w-px bg-slate-200" />
+              <img src="/rda-logo.png" alt="Road Development Authority" className="h-7 sm:h-8 w-auto object-contain" />
+              <div className="h-6 w-px bg-slate-200" />
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/icdp-logo.jpg" alt="ICDP" className="h-8 sm:h-10 w-auto object-contain" />
+              <img src="/icdp-logo.jpg" alt="ICDP" className="h-7 sm:h-8 w-auto object-contain" />
             </div>
 
-            <div className="sm:border-l sm:border-slate-200 sm:pl-3.5 text-left">
+            {/* Positioned directly down under the logos */}
+            <div className="pt-0.5">
               <span className="text-[10px] font-bold text-amber-700 uppercase tracking-widest block leading-tight">
                 {t.govSriLanka}
               </span>
