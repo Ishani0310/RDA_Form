@@ -539,9 +539,10 @@ export default function ReportDirectoryView({
                     const contactName =
                       q.participant1?.name ||
                       q.representativeName ||
+                      q.contactOfficer?.name ||
                       q.supplierDetails?.repName ||
                       q.officerDetails?.officerName ||
-                      "—";
+                      (cat.toLowerCase().includes("supplier") ? "Supplier Contact" : "Authorized Representative");
                     const phone =
                       q.contactNumber ||
                       q.participant1?.mobile ||

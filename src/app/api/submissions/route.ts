@@ -313,7 +313,11 @@ export async function GET(request: NextRequest) {
         submissionType: s.submissionType || "Annual_Capacity_Declaration",
         provincialOffice: s.provincialOffice,
         status: s.status,
-        category: s.questionnaireData?.participantCategory || (s.contractor?.primarySpeciality ? "Contractor" : "General"),
+        category:
+          s.questionnaireData?.participantCategory ||
+          (s.formSlug === "supplier" || s.formId === "RDA-SUPPLIER-Q"
+            ? "Supplier"
+            : s.contractor?.primarySpeciality ? "Contractor" : "General"),
         isViewed: Boolean(s.isViewed),
         viewedAt: s.viewedAt ? new Date(s.viewedAt).toLocaleDateString("en-GB") : null,
         viewedByName: s.viewedByName || null,

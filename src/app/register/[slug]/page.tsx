@@ -16,6 +16,7 @@ import {
   HelpCircle,
   Copy,
   ArrowRight,
+  Truck,
 } from "lucide-react";
 import Link from "next/link";
 import { IQuestionnaireData, IFormSection, IFormQuestion } from "@/types/questionnaire";
@@ -55,6 +56,7 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
 
   // Submission state
   const [submitting, setSubmitting] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [submissionSuccess, setSubmissionSuccess] = useState<{
     reference: string;
     organizationName: string;
@@ -191,6 +193,16 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
 
       const data = await res.json();
       if (res.ok && data.success) {
+        setIsRedirecting(true);
+
+        // If this is the supplier registration form, redirect immediately to the supplier page as requested
+        if (slug === "supplier" || questionnaire?.slug === "supplier" || questionnaire?.category === "Supplier") {
+          setTimeout(() => {
+            window.location.href = "/reports/suppliers";
+          }, 600);
+          return;
+        }
+
         setSubmissionSuccess({
           reference: data.reference,
           organizationName: formData.organizationName.trim(),
@@ -320,6 +332,14 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <Link
+              href="/reports/suppliers"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-xl shadow-xs transition-all"
+            >
+              <Truck className="w-4 h-4" />
+              <span>Go to Supplier Directory</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
             <button
               type="button"
               onClick={() => window.print()}
@@ -334,9 +354,9 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
                 setSubmissionSuccess(null);
                 setFormData({ organizationName: "", contactNumber: "", email: "" });
               }}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-xl shadow-xs transition-all"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl shadow-xs transition-all"
             >
-              <span>Submit Another Record</span>
+              <span>Submit Another</span>
             </Link>
           </div>
 
@@ -350,7 +370,21 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
 
   // ACTIVE REGISTRATION FORM VIEW
   return (
-    <div className="min-h-screen bg-slate-100/80 py-8 px-4 sm:px-6">
+    <div className="min-h-screen bg-slate-100/80 py-8 px-4 sm:px-6 relative">
+      {/* Redirecting Overlay */}
+      {isRedirecting && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center text-white p-6 text-center">
+          <div className="w-16 h-16 bg-emerald-500 rounded-2xl flex items-center justify-center shadow-lg mb-4 animate-bounce">
+            <CheckCircle2 className="w-10 h-10 text-white" />
+          </div>
+          <h2 className="text-xl font-bold">Supplier Registration Submitted Successfully!</h2>
+          <p className="text-xs text-slate-300 mt-2 flex items-center justify-center gap-2">
+            <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-400" />
+            <span>Redirecting to Material Suppliers Directory...</span>
+          </p>
+        </div>
+      )}
+
       <div className="max-w-3xl mx-auto space-y-6">
         {/* Top Government Letterhead Bar */}
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-sm flex items-center justify-between gap-4">

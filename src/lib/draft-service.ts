@@ -984,6 +984,7 @@ export async function submitDirectDeclaration(
   const normalizedQ = normalizeQuestionnaireData(rawQ);
 
   const targetFormCode = (payload.formId || payload.formSlug || DEFAULT_QUESTIONNAIRE_CODE).trim();
+  const targetFormSlug = (payload.formSlug || "").trim().toLowerCase();
 
   // Validate questionnaire
   if (!payload.formId || payload.formId === DEFAULT_QUESTIONNAIRE_CODE) {
@@ -1018,12 +1019,20 @@ export async function submitDirectDeclaration(
   let registrationNumber = "";
   let cidaGrade = "Pending";
 
-  if (normalizedQ.participantCategory === "Supplier") {
-    if (normalizedQ.supplierDetails?.companyName) businessName = normalizedQ.supplierDetails.companyName.trim();
+  if (
+    normalizedQ.participantCategory === "Supplier" ||
+    targetFormCode === "RDA-SUPPLIER-Q" ||
+    targetFormSlug === "supplier"
+  ) {
+    if (normalizedQ.organizationName) businessName = normalizedQ.organizationName.trim();
+    else if (normalizedQ.supplierDetails?.companyName) businessName = normalizedQ.supplierDetails.companyName.trim();
+
     if (normalizedQ.supplierDetails?.province) province = normalizedQ.supplierDetails.province.trim();
     if (normalizedQ.supplierDetails?.district) district = normalizedQ.supplierDetails.district.trim();
     if (normalizedQ.supplierDetails?.materialsSupplied?.length) {
       primarySpeciality = normalizedQ.supplierDetails.materialsSupplied.join(", ");
+    } else {
+      primarySpeciality = "Materials & Equipment Supplier";
     }
     registrationNumber = `SUP-${Date.now().toString().slice(-6)}`;
   } else if (normalizedQ.participantCategory === "Government Officer") {
