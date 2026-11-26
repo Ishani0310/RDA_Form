@@ -188,16 +188,19 @@ export default function FormBuilderPage() {
         setEffectiveStatus(data.effectiveStatus || data.questionnaire.status);
         setHasUnsavedChanges(false);
 
-        // Pre-populate simulated values with interactive defaults so sections can be inspected immediately
-        const initialVals: Record<string, any> = {
-          organizationName: "Sri Lanka Infrastructure Corp",
-          contactNumber: "+94 11 234 5678",
-          email: "info@slic.lk",
-          willParticipate: "Yes",
-          participantCategory: "Contractor",
-          hasOngoingContracts: "Yes",
-          "supplierDetails.materialsSupplied": ["Bitumen / Asphalt", "Aggregates"],
-        };
+        // Pre-populate simulated values with interactive defaults for Form 1, or clean defaults for new forms
+        const initialVals: Record<string, any> =
+          data.questionnaire.code === "RDA-ICDP-CONTRACTOR-Q"
+            ? {
+                organizationName: "Sri Lanka Infrastructure Corp",
+                contactNumber: "+94 11 234 5678",
+                email: "info@slic.lk",
+                willParticipate: "Yes",
+                participantCategory: "Contractor",
+                hasOngoingContracts: "Yes",
+                "supplierDetails.materialsSupplied": ["Bitumen / Asphalt", "Aggregates"],
+              }
+            : {};
         fetchedSections.forEach((s: IFormSection) => {
           (s.questions || []).forEach((q: IFormQuestion) => {
             if (q.defaultValue !== undefined) {
@@ -264,6 +267,13 @@ export default function FormBuilderPage() {
 
   // Derived Statistics
   const stats = useMemo(() => computeQuestionnaireStats(sections), [sections]);
+
+  // Dynamic Form Sequence Number (Form 1, Form 2, Form N...)
+  const currentFormNumber = useMemo(() => {
+    if (!questionnaire?.code) return 1;
+    const idx = forms.findIndex((f) => f.code === questionnaire.code);
+    return idx >= 0 ? idx + 1 : 1;
+  }, [forms, questionnaire?.code]);
 
   // Handle live simulation field changes in Form View
   const handleSimulatedChange = (fieldId: string, val: any) => {
@@ -768,7 +778,7 @@ export default function FormBuilderPage() {
               <div style="font-size: 13px; font-weight: 900; color: #0b1f3a;">Road Development Authority</div>
               <div style="font-size: 10px; color: #64748b;">Inclusive Connectivity and Development Project (ICDP)</div>
               <div style="margin-top: 4px;">
-                <span class="badge">FORM 01</span>
+                <span class="badge">FORM ${currentFormNumber < 10 ? `0${currentFormNumber}` : currentFormNumber}</span>
                 <span style="font-family: monospace; font-size: 10px; font-weight: bold; color: #1e3a8a; margin-left: 4px;">${questionnaire.code}</span>
                 <span style="font-size: 10px; color: #64748b; margin-left: 4px;">v${questionnaire.version || "1.0"}</span>
               </div>
@@ -1101,16 +1111,16 @@ export default function FormBuilderPage() {
 
               <div className="flex items-center gap-2 flex-wrap text-xs">
                 <span className="font-mono font-black text-[10px] text-amber-950 bg-amber-400 px-2.5 py-0.5 rounded-full shadow-2xs">
-                  FORM 01
+                  FORM {currentFormNumber < 10 ? `0${currentFormNumber}` : currentFormNumber}
                 </span>
                 <span className="font-mono font-bold text-[10px] text-blue-900 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
                   {questionnaire?.code || "RDA-ICDP-CONTRACTOR-Q"}
                 </span>
                 <span className="font-bold text-slate-900 truncate max-w-xs">
-                  {questionnaire?.title || "Form 1: RDA Contractor Registration & Capacity Declaration Questionnaire"}
+                  {questionnaire?.title || `Form ${currentFormNumber}: RDA Questionnaire`}
                 </span>
                 <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
-                  {questionnaire?.category || "Contractor, Supplier & Public Sector"}
+                  {questionnaire?.category || "General"}
                 </span>
               </div>
             </div>
@@ -1118,12 +1128,12 @@ export default function FormBuilderPage() {
             <div className="flex items-center gap-2 text-xs">
               {/* Direct Link to Public Portal */}
               <a
-                href="/register"
+                href={questionnaire?.slug === "contractor" || questionnaire?.code === "RDA-ICDP-CONTRACTOR-Q" ? "/register" : `/register/${questionnaire?.slug || ""}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 font-bold text-blue-900 hover:text-blue-950 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg border border-blue-200 transition-colors"
               >
-                <span>/register (Public Portal)</span>
+                <span>/register{questionnaire?.slug === "contractor" || questionnaire?.code === "RDA-ICDP-CONTRACTOR-Q" ? "" : `/${questionnaire?.slug}`} (Public Portal)</span>
                 <ExternalLink className="w-3 h-3 text-blue-800" />
               </a>
 
@@ -1170,10 +1180,10 @@ export default function FormBuilderPage() {
                     <FormInput className="w-4 h-4" />
                   </div>
                   <span className="bg-amber-400 text-slate-900 font-black px-2.5 py-0.5 rounded-full text-[10px] tracking-wider uppercase shadow-2xs">
-                    FORM 01
+                    FORM {currentFormNumber < 10 ? `0${currentFormNumber}` : currentFormNumber}
                   </span>
                   <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                    {questionnaire?.title || "Form 1: RDA Contractor Registration & Capacity Declaration Questionnaire"}
+                    {questionnaire?.title || `Form ${currentFormNumber}: RDA Questionnaire`}
                   </h1>
 
                   {/* Status Badge */}
@@ -1402,7 +1412,9 @@ export default function FormBuilderPage() {
               </div>
             ) : (
               <>
-                {/* Official RDA ICDP Workshop Header Banner */}
+                {questionnaire?.code === "RDA-ICDP-CONTRACTOR-Q" ? (
+                  <>
+                    {/* Official RDA ICDP Workshop Header Banner */}
                 <div className="bg-[#0b1f3a] text-white p-4 sm:p-6 lg:p-8 rounded-2xl shadow-xl relative overflow-hidden">
                   <div className="absolute right-0 top-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
                   <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
@@ -1552,6 +1564,50 @@ export default function FormBuilderPage() {
                     </div>
                   )}
                 </div>
+                  </>
+                ) : (
+                  /* Custom Form Header for Form 2, Form 3, etc. */
+                  <div className="bg-[#0b1f3a] text-white p-4 sm:p-6 lg:p-7 rounded-2xl shadow-xl relative overflow-hidden">
+                    <div className="absolute right-0 top-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+                    <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+                      <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 p-0.5 shadow-md flex items-center justify-center shrink-0">
+                          <div className="w-full h-full bg-[#0b1f3a] rounded-[10px] flex items-center justify-center text-amber-400 font-black text-xs tracking-wider">
+                            RDA
+                          </div>
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[10px] tracking-widest font-bold text-amber-400 uppercase">
+                              Road Development Authority &bull; Sri Lanka
+                            </span>
+                            <span className="text-[10px] bg-white/10 text-slate-200 px-2 py-0.5 rounded font-semibold">
+                              {questionnaire?.category || "General"}
+                            </span>
+                          </div>
+                          <h2 className="text-base sm:text-lg lg:text-xl font-black tracking-tight mt-0.5 leading-snug">
+                            {questionnaire?.title || "Institutional Questionnaire"}
+                          </h2>
+                          <p className="text-xs text-slate-300 mt-0.5 leading-relaxed">
+                            {questionnaire?.description || "Official verified electronic questionnaire."}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                        <a
+                          href={`/register/${questionnaire?.slug || ""}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/10 hover:bg-white/20 text-slate-200 border border-white/20 transition-colors"
+                        >
+                          <span>Open Public View</span>
+                          <ExternalLink className="w-3.5 h-3.5 text-amber-400" />
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <DynamicFormRenderer
                   questionnaire={{ ...questionnaire, sections }}
@@ -1622,8 +1678,9 @@ export default function FormBuilderPage() {
         isOpen={createFormModalOpen}
         onClose={() => setCreateFormModalOpen(false)}
         onCreated={(newCode) => {
-          showNotification("success", `Created new form [${newCode}]. Opening editor...`);
+          showNotification("success", `Created new form [${newCode}]. Opening editor to add questions...`);
           loadFormsList();
+          setAdminMode("EDIT");
           handleOpenFormWorkspace(newCode);
         }}
         existingForms={forms}

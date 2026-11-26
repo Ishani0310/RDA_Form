@@ -632,7 +632,31 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
 
               {/* Render Section Questions */}
               <div className="space-y-4 text-xs">
-                {questionsToRender.map((question, qIdx) => {
+                {questionsToRender.length === 0 ? (
+                  adminEditMode ? (
+                    <div className="p-8 border-2 border-dashed border-slate-300 rounded-2xl text-center bg-slate-50/60 hover:bg-slate-50 transition-colors">
+                      <p className="text-xs font-semibold text-slate-700 mb-1">
+                        No questions in this section yet
+                      </p>
+                      <p className="text-[11px] text-slate-500 mb-3">
+                        Click below to add a separate question to this section.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => onAddQuestionToSection?.(section.id)}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-blue-900 hover:bg-blue-950 rounded-xl shadow-xs transition-all"
+                      >
+                        <Plus className="w-4 h-4 text-amber-400" />
+                        <span>Add Question to this Section</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="p-6 border border-slate-200 rounded-2xl text-center bg-slate-50/50 text-slate-500 text-xs italic">
+                      This section currently has no active questions.
+                    </div>
+                  )
+                ) : (
+                  questionsToRender.map((question, qIdx) => {
                   const isVisibleInPublic = isQuestionVisibleInForm(question, values);
 
                   return (
@@ -776,7 +800,7 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
                       )}
                     </div>
                   );
-                })}
+                }))}
               </div>
             </div>
           );

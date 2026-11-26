@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { IFormSummary } from "@/types/questionnaire";
-import { X, Plus, Copy, Sparkles, Layers, AlertCircle } from "lucide-react";
+import { X, Plus, Sparkles, AlertCircle } from "lucide-react";
 
 interface CreateFormModalProps {
   isOpen: boolean;
@@ -15,12 +15,7 @@ export const CreateFormModal: React.FC<CreateFormModalProps> = ({
   isOpen,
   onClose,
   onCreated,
-  existingForms,
 }) => {
-  const [templateType, setTemplateType] = useState<"blank" | "duplicate">("blank");
-  const [sourceFormCode, setSourceFormCode] = useState<string>(
-    existingForms[0]?.code || "RDA-ICDP-CONTRACTOR-Q"
-  );
   const [title, setTitle] = useState("");
   const [code, setCode] = useState("");
   const [slug, setSlug] = useState("");
@@ -65,8 +60,7 @@ export const CreateFormModal: React.FC<CreateFormModalProps> = ({
           category: category.trim(),
           description: description.trim(),
           instructions: instructions.trim(),
-          templateType,
-          sourceFormCode: templateType === "duplicate" ? sourceFormCode : undefined,
+          templateType: "blank",
         }),
       });
 
@@ -107,64 +101,16 @@ export const CreateFormModal: React.FC<CreateFormModalProps> = ({
           </button>
         </div>
 
-        {/* Template Selector Tabs */}
-        <div className="px-5 pt-3 border-b border-slate-200 bg-white flex items-center gap-4 text-xs font-bold">
-          <button
-            type="button"
-            onClick={() => setTemplateType("blank")}
-            className={`pb-2.5 border-b-2 flex items-center gap-1.5 transition-all ${
-              templateType === "blank"
-                ? "border-blue-900 text-blue-950 font-black"
-                : "border-transparent text-slate-500 hover:text-slate-800"
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Blank Template</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setTemplateType("duplicate")}
-            className={`pb-2.5 border-b-2 flex items-center gap-1.5 transition-all ${
-              templateType === "duplicate"
-                ? "border-blue-900 text-blue-950 font-black"
-                : "border-transparent text-slate-500 hover:text-slate-800"
-            }`}
-          >
-            <Copy className="w-3.5 h-3.5" />
-            <span>Duplicate Existing Form ({existingForms.length})</span>
-          </button>
+        {/* Info Banner */}
+        <div className="px-5 py-3 bg-blue-50/70 border-b border-blue-100 flex items-center gap-2 text-xs text-blue-900">
+          <Sparkles className="w-4 h-4 text-blue-700 shrink-0" />
+          <span>
+            <strong>Fresh Independent Form:</strong> Starts as a clean blank slate (0 existing questions) so you can add your own separate questions and sections.
+          </span>
         </div>
 
         {/* Modal Body */}
         <form onSubmit={handleSubmit} className="p-5 overflow-y-auto space-y-4 text-xs">
-          {error && (
-            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          {templateType === "duplicate" && (
-            <div>
-              <label className="block text-slate-700 font-bold mb-1">Source Form to Clone From</label>
-              <select
-                aria-label="Source form to clone"
-                value={sourceFormCode}
-                onChange={(e) => setSourceFormCode(e.target.value)}
-                className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-semibold"
-              >
-                {existingForms.map((f) => (
-                  <option key={f.code} value={f.code}>
-                    {f.title} [{f.code}] — {f.stats.totalSections} sections, {f.stats.totalQuestions} questions
-                  </option>
-                ))}
-              </select>
-              <p className="text-[11px] text-slate-500 mt-1">
-                All sections, questions, validation rules, and conditions from the selected form will be cloned.
-              </p>
-            </div>
-          )}
 
           <div>
             <label className="block text-slate-700 font-bold mb-1">Form Title *</label>

@@ -144,72 +144,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let initialSections: any[] = [];
-
-    if (templateType === "duplicate" && sourceFormCode) {
-      // Find latest version of source form
-      const sourceForm = await Questionnaire.findOne({ code: sourceFormCode }).sort({ versionNumber: -1 });
-      if (sourceForm && sourceForm.sections?.length) {
-        // Deep clone sections with regenerated IDs to prevent cross-contamination
-        initialSections = sourceForm.sections.map((sec: any) => ({
-          ...sec,
-          id: `sec_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
-          questions: (sec.questions || []).map((q: any) => ({
-            ...q,
-            id: `q_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
-          })),
-        }));
-      }
-    }
-
-    if (!initialSections.length) {
-      // Default blank template section
-      initialSections = [
-        {
-          id: `sec_${Date.now().toString(36)}`,
-          code: "SEC-01",
-          title: "1. General Information & Stakeholder Details",
-          description: "Please provide your primary organization and contact identification details.",
-          displayOrder: 1,
-          questions: [
-            {
-              id: `q_${Date.now().toString(36)}_1`,
-              code: "Q01",
-              number: 1,
-              text: "Name of Organization / Company",
-              description: "Official registered commercial or statutory name.",
-              placeholder: "e.g., Prime Lanka Logistics Ltd",
-              fieldType: "short_text",
-              displayOrder: 1,
-              isRequired: true,
-              validation: { minLength: 3, maxLength: 200 },
-            },
-            {
-              id: `q_${Date.now().toString(36)}_2`,
-              code: "Q02",
-              number: 2,
-              text: "Official Contact Telephone",
-              placeholder: "+94 11 000 0000",
-              fieldType: "telephone",
-              displayOrder: 2,
-              isRequired: true,
-              validation: { minLength: 9, maxLength: 20 },
-            },
-            {
-              id: `q_${Date.now().toString(36)}_3`,
-              code: "Q03",
-              number: 3,
-              text: "Official Contact Email",
-              placeholder: "info@organization.lk",
-              fieldType: "email",
-              displayOrder: 3,
-              isRequired: true,
-              validation: { minLength: 5, maxLength: 100 },
-            },
-          ],
-        },
-      ];
-    }
+    // Start fresh: New form must have its own separate questions (not existing questions from Form 1)
+    const initialSections = [
+      {
+        id: `sec_${Date.now().toString(36)}`,
+        code: "SEC-01",
+        title: "1. General Information",
+        description: "Configure separate questions for this section.",
+        displayOrder: 1,
+        questions: [], // Clean slate with 0 existing questions
+      },
+    ];
 
     const stats = computeQuestionnaireStats(initialSections);
 
