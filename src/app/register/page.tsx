@@ -2597,22 +2597,23 @@ function RegisterForm() {
                   <MapPin className="w-3 h-3 text-emerald-700 shrink-0" />
                   <span>Waters Edge (The Pavilion), Battaramulla</span>
                 </span>
-                <span className="text-slate-300 hidden sm:inline">&bull;</span>
-                <span className="inline-flex items-center gap-1 font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200/80">
-                  <Clock className="w-3 h-3 text-rose-600 shrink-0" />
-                  <span><strong>Deadline: 03 Dec 2026 (Before 11.00 PM)</strong></span>
-                </span>
               </div>
             </div>
           </div>
-          <div className="shrink-0 flex items-center gap-1 text-[11px] text-slate-500 mt-0.5 sm:mt-0">
-            <span className="hidden md:inline font-medium">{showWorkshopInfo ? "Hide Details" : "View Details"}</span>
-            <div className="p-1 rounded-md bg-white border border-slate-200 shadow-2xs">
-              {showWorkshopInfo ? (
-                <ChevronUp className="w-4 h-4 text-slate-700" />
-              ) : (
-                <ChevronDown className="w-4 h-4 text-slate-700" />
-              )}
+          <div className="shrink-0 flex items-center gap-2 sm:gap-2.5 text-[11px] text-slate-500 mt-0.5 sm:mt-0">
+            <span className="inline-flex items-center gap-1 font-bold text-rose-700 bg-rose-50 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg border border-rose-200/80 shadow-2xs">
+              <Clock className="w-3 h-3 text-rose-600 shrink-0" />
+              <span>Deadline: 03 Dec 2026 (Before 11.00 PM)</span>
+            </span>
+            <div className="flex items-center gap-1">
+              <span className="hidden md:inline font-medium">{showWorkshopInfo ? "Hide Details" : "View Details"}</span>
+              <div className="p-1 rounded-md bg-white border border-slate-200 shadow-2xs">
+                {showWorkshopInfo ? (
+                  <ChevronUp className="w-4 h-4 text-slate-700" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-slate-700" />
+                )}
+              </div>
             </div>
           </div>
         </button>

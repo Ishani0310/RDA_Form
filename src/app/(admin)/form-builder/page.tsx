@@ -1470,15 +1470,21 @@ export default function FormBuilderPage() {
                           About the Workshop &amp; Registration Instructions
                         </span>
                         <span className="text-[11px] text-slate-500">
-                          Date: 07 Dec 2026 (8.30 AM) &bull; Venue: Waters Edge (The Pavilion), Battaramulla &bull; <strong className="text-rose-700 font-bold">Deadline: 03 Dec 2026 (Before 11.00 PM)</strong> &bull; Click to {showWorkshopInfo ? "hide" : "view"} official details
+                          Date: 07 Dec 2026 (8.30 AM) &bull; Venue: Waters Edge (The Pavilion), Battaramulla &bull; Click to {showWorkshopInfo ? "hide" : "view"} official details
                         </span>
                       </div>
                     </div>
-                    {showWorkshopInfo ? (
-                      <ChevronUp className="w-4 h-4 text-slate-500 shrink-0" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4 text-slate-500 shrink-0" />
-                    )}
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="hidden sm:inline-flex items-center gap-1 font-bold text-[11px] text-rose-700 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200/80 shadow-2xs">
+                        <Clock className="w-3 h-3 text-rose-600 shrink-0" />
+                        <span>Deadline: 03 Dec 2026 (Before 11.00 PM)</span>
+                      </span>
+                      {showWorkshopInfo ? (
+                        <ChevronUp className="w-4 h-4 text-slate-500 shrink-0" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 text-slate-500 shrink-0" />
+                      )}
+                    </div>
                   </button>
 
                   {showWorkshopInfo && (
