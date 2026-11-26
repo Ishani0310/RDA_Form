@@ -6334,28 +6334,6 @@ function RegisterForm() {
               )}
             </fieldset>
           </div>
-
-          {/* Official ICDP Project Logo & Footer (After Form Down) */}
-          <div className="pt-6 pb-12 flex flex-col items-center justify-center text-center space-y-3 print:hidden">
-            <div className="p-3 bg-white rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-md transition-all flex items-center justify-center">
-              <img
-                src="/icdp-logo.jpg"
-                alt="Inclusive Connectivity and Development Project (ICDP)"
-                className="h-14 sm:h-16 w-auto object-contain"
-              />
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs sm:text-sm font-bold text-slate-800 tracking-wide">
-                Inclusive Connectivity and Development Project (ICDP)
-              </p>
-              <p className="text-[11px] text-slate-500 font-medium">
-                Road Development Authority &bull; Ministry of Transport, Highways and Urban Development
-              </p>
-              <p className="text-[10px] text-slate-400">
-                Democratic Socialist Republic of Sri Lanka &bull; Official Registration Portal
-              </p>
-            </div>
-          </div>
         </>
       )}
 
@@ -7234,6 +7212,99 @@ function RegisterForm() {
   );
 }
 
+function RegisterFooter() {
+  return (
+    <footer className="w-full bg-[#07162c] text-slate-300 border-t border-[#132c4a] mt-16 print:hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 lg:py-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 items-start">
+          {/* Col 1: ICDP & RDA Logo Showcase */}
+          <div className="lg:col-span-5 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-white rounded-xl p-1.5 shadow-md border border-white/20 shrink-0">
+                <img
+                  src="/icdp-logo.jpg"
+                  alt="Inclusive Connectivity and Development Project (ICDP)"
+                  className="h-11 sm:h-12 w-auto object-contain"
+                />
+              </div>
+              <div className="bg-white rounded-xl p-1.5 shadow-md border border-white/20 shrink-0">
+                <img
+                  src="/rda-logo.png"
+                  alt="Road Development Authority Sri Lanka"
+                  className="h-11 sm:h-12 w-auto object-contain"
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">
+                Government of Sri Lanka
+              </div>
+              <h3 className="text-sm font-black text-white tracking-tight leading-snug mt-0.5">
+                Inclusive Connectivity and Development Project (ICDP)
+              </h3>
+              <p className="text-[11px] text-slate-400 font-medium">
+                Road Development Authority &bull; Ministry of Transport, Highways and Urban Development
+              </p>
+            </div>
+
+            <p className="text-xs text-slate-400 leading-relaxed max-w-sm">
+              Official questionnaire registration portal for contractors, material suppliers, and public sector stakeholders under the ICDP Capacity Building initiative.
+            </p>
+          </div>
+
+          {/* Col 2: Project Secretariat & Location */}
+          <div className="lg:col-span-4 space-y-3">
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+              <MapPin className="w-3.5 h-3.5 text-amber-400" />
+              Project Secretariat &amp; Head Office
+            </h4>
+            <div className="text-xs text-slate-300 space-y-1.5 leading-relaxed">
+              <p className="font-semibold text-white">Road Development Authority (&quot;Maganeguma Mahamedura&quot;)</p>
+              <p className="text-slate-400">Denzil Kobbekaduwa Mawatha, Koswatta, Battaramulla, Sri Lanka</p>
+              <div className="pt-2 space-y-1 text-slate-300 text-[11px]">
+                <p className="flex items-center gap-2">
+                  <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <span>+94 11 286 2795 / +94 11 286 2796</span>
+                </p>
+                <p className="flex items-center gap-2">
+                  <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <span>icdp@rda.gov.lk &bull; info@rda.gov.lk</span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Col 3: Compliance & Security */}
+          <div className="lg:col-span-3 space-y-3">
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+              Official Portal Security
+            </h4>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              All questionnaire filings and contractor capacity records are collected and securely stored in compliance with government data protection standards.
+            </p>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[11px] text-emerald-400 font-semibold">
+              <Lock className="w-3.5 h-3.5" />
+              <span>Official Verified Filing Portal</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Strip */}
+        <div className="mt-8 pt-6 border-t border-[#132c4a] flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-slate-400">
+          <div>
+            &copy; 2026 Road Development Authority (RDA). Inclusive Connectivity and Development Project (ICDP).
+          </div>
+          <div className="text-slate-500 text-[10px]">
+            Democratic Socialist Republic of Sri Lanka
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
 export default function RegisterPage() {
   return (
     <Suspense
@@ -7246,8 +7317,11 @@ export default function RegisterPage() {
         </div>
       }
     >
-      <div className="min-h-screen bg-slate-50 text-slate-800">
-        <RegisterForm />
+      <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col justify-between">
+        <div className="flex-1">
+          <RegisterForm />
+        </div>
+        <RegisterFooter />
       </div>
     </Suspense>
   );
