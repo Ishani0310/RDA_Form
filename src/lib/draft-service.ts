@@ -218,7 +218,7 @@ export async function saveOrUpdateDraft(
               Submission.deleteOne({ _id: submission._id }),
               contractor.status === "Draft" ? Contractor.deleteOne({ _id: contractor._id }) : Promise.resolve(),
               DraftToken.deleteOne({ _id: draftTokenDoc._id }),
-            ]).catch(() => {});
+            ]).catch(() => { });
 
             throw new Error(
               `The email address "${candidateEmail}" has already been used for an official submission (${(existingSubmittedByEmail as any).submissionReference}). Each organization may only submit once per email address.`
@@ -401,7 +401,7 @@ export async function saveOrUpdateDraft(
             Submission.deleteMany({ _id: { $in: dupSubIds } }),
             DraftToken.deleteMany({ submission: { $in: dupSubIds } }),
             Contractor.deleteMany({ _id: { $in: dupContractorIds }, status: "Draft" }),
-          ]).catch(() => {});
+          ]).catch(() => { });
         }
       }
 
@@ -503,7 +503,7 @@ export async function saveOrUpdateDraft(
       submissionReference: permanentRef,
       category: payload.questionnaireData?.participantCategory || "Contractor",
     },
-  }).catch(() => {});
+  }).catch(() => { });
 
   return {
     token: rawToken,
@@ -865,7 +865,7 @@ export async function submitFinalDeclaration(
         Submission.deleteOne({ _id: submission._id }),
         contractor && contractor.status === "Draft" ? Contractor.deleteOne({ _id: contractor._id }) : Promise.resolve(),
         DraftToken.deleteOne({ _id: draftTokenDoc._id }),
-      ]).catch(() => {});
+      ]).catch(() => { });
 
       throw new Error(
         `The email address "${targetEmailToCheck}" has already been used for an official registration (${(duplicateEmailSub as any).submissionReference}). Each organization may only submit once per email address.`
@@ -914,7 +914,7 @@ export async function submitFinalDeclaration(
         Submission.deleteMany({ _id: { $in: draftIds } }),
         DraftToken.deleteMany({ submission: { $in: draftIds } }),
         Contractor.deleteMany({ _id: { $in: draftContractorIds }, status: "Draft" }),
-      ]).catch(() => {});
+      ]).catch(() => { });
     }
   }
 
@@ -950,7 +950,7 @@ export async function submitFinalDeclaration(
       category: rawQ.participantCategory || "Contractor",
       attendance: rawQ.willParticipate || "Yes",
     },
-  }).catch(() => {});
+  }).catch(() => { });
 
   return {
     submissionReference: officialSubmissionRef,
@@ -1077,13 +1077,13 @@ export async function submitDirectDeclaration(
       : Promise.resolve(null),
     candidateEmail
       ? Submission.findOne({
-          status: { $in: ["Submitted", "Under_Review", "Verified"] },
-          $or: [
-            { "questionnaireData.email": candidateEmail },
-            { "questionnaireData.participant1.email": candidateEmail },
-            { "questionnaireData._emailSentTo": candidateEmail },
-          ],
-        }).select("submissionReference").lean()
+        status: { $in: ["Submitted", "Under_Review", "Verified"] },
+        $or: [
+          { "questionnaireData.email": candidateEmail },
+          { "questionnaireData.participant1.email": candidateEmail },
+          { "questionnaireData._emailSentTo": candidateEmail },
+        ],
+      }).select("submissionReference").lean()
       : Promise.resolve(null),
   ]);
 
@@ -1156,7 +1156,7 @@ export async function submitDirectDeclaration(
         Submission.deleteMany({ _id: { $in: draftIds } }),
         DraftToken.deleteMany({ submission: { $in: draftIds } }),
         Contractor.deleteMany({ _id: { $in: draftContractorIds }, status: "Draft" }),
-      ]).catch(() => {});
+      ]).catch(() => { });
     }
   }
 
@@ -1190,7 +1190,7 @@ export async function submitDirectDeclaration(
       category: payload.questionnaireData?.participantCategory || "Contractor",
       attendance: payload.questionnaireData?.willParticipate || "Yes",
     },
-  }).catch(() => {});
+  }).catch(() => { });
 
   return {
     submissionReference: permanentRef,
@@ -1288,7 +1288,7 @@ export async function requestEditPermission(
       reason: effectiveReason,
       action: "EDIT_PERMISSION_REQUESTED",
     },
-  }).catch(() => {});
+  }).catch(() => { });
 
   // Record audit log
   recordActivityLog({
@@ -1300,7 +1300,7 @@ export async function requestEditPermission(
       submissionReference: submission.submissionReference,
       reason: effectiveReason,
     },
-  }).catch(() => {});
+  }).catch(() => { });
 
   return {
     success: true,
