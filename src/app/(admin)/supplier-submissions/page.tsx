@@ -31,6 +31,8 @@ interface SupplierSubmissionRecord {
   provincialOffice: string;
   status: string;
   category?: string;
+  formId?: string;
+  formSlug?: string;
   questionnaireData?: {
     organizationName?: string;
     contactNumber?: string;
@@ -67,7 +69,7 @@ export default function SupplierSubmissionsPage() {
   const fetchRecords = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/submissions?formFilter=RDA-SUPPLIER-Q&limit=5000&status=submitted");
+      const res = await fetch("/api/submissions?formId=RDA-SUPPLIER-Q&formFilter=RDA-SUPPLIER-Q&limit=5000&status=submitted");
       if (!res.ok) throw new Error("Failed to load supplier records");
       const json = await res.json();
       if (json.success && Array.isArray(json.data)) {
@@ -88,6 +90,8 @@ export default function SupplierSubmissionsPage() {
   const filteredRecords = useMemo(() => {
     return submissions.filter((s) => {
       if (s.ref?.startsWith("DFT-") || s.status === "Draft") return false;
+      // Strictly ONLY display Form 2 (RDA-SUPPLIER-Q) records - never Form 1
+      if (s.formId !== "RDA-SUPPLIER-Q" && s.formSlug !== "supplier") return false;
       const q = s.questionnaireData || {};
       const orgName = (s.contractor || q.organizationName || "").toLowerCase();
       if (orgName.includes("testing") || orgName.includes("dummy")) return false;

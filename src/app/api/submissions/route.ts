@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     const attendance = (searchParams.get("attendance") || "").trim();
     const viewStatus = (searchParams.get("viewStatus") || "").trim().toLowerCase();
     const ref = (searchParams.get("ref") || "").trim();
-    const formFilter = (searchParams.get("formId") || searchParams.get("form") || "").trim();
+    const formFilter = (searchParams.get("formFilter") || searchParams.get("formId") || searchParams.get("form") || "").trim();
     const startDateParam = (searchParams.get("startDate") || "").trim();
     const endDateParam = (searchParams.get("endDate") || "").trim();
     const cidaGrade = (searchParams.get("cidaGrade") || "").trim();
@@ -276,6 +276,19 @@ export async function GET(request: NextRequest) {
 
     if (excludeForm === "supplier") {
       baseQueryNoStatus.formId = { $ne: "RDA-SUPPLIER-Q" };
+    }
+
+    if (formFilter && formFilter !== "ALL") {
+      if (formFilter === "supplier" || formFilter === "RDA-SUPPLIER-Q") {
+        baseQueryNoStatus.$or = [{ formId: "RDA-SUPPLIER-Q" }, { formSlug: "supplier" }];
+      } else if (formFilter === "contractor" || formFilter === "RDA-ICDP-CONTRACTOR-Q") {
+        baseQueryNoStatus.$or = [
+          { formId: "RDA-ICDP-CONTRACTOR-Q" },
+          { formSlug: "contractor" },
+          { formId: { $exists: false } },
+          { formSlug: { $exists: false } },
+        ];
+      }
     }
 
     const [totalCount, submittedCount, draftCount, unseenCount, seenCount] = await Promise.all([
