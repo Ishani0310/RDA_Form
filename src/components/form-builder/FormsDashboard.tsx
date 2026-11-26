@@ -8,7 +8,6 @@ import {
   Edit2,
   History,
   Clock,
-  ArrowRight,
   ShieldCheck,
   FileText,
   ExternalLink,
@@ -54,24 +53,24 @@ export const FormsDashboard: React.FC<FormsDashboardProps> = ({
   }, [forms]);
 
   return (
-    <div className="space-y-4 max-w-4xl mx-auto">
-      {/* Top Compact Banner Header */}
+    <div className="space-y-5 max-w-4xl mx-auto">
+      {/* Top Banner Header */}
       <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-[#0b1f3a] text-amber-400 flex items-center justify-center font-bold shadow-2xs shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-[#0b1f3a] text-amber-400 flex items-center justify-center font-bold shadow-2xs shrink-0">
               <Layers className="w-4 h-4" />
             </div>
             <div>
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[9.5px] tracking-wider font-black text-blue-900 uppercase">
+                <span className="text-[10px] tracking-wider font-black text-blue-900 uppercase">
                   Road Development Authority &bull; Forms Hub
                 </span>
-                <span className="px-1.5 py-0.2 text-[9px] bg-blue-50 text-blue-800 font-bold rounded border border-blue-200">
-                  {orderedForms.length} {orderedForms.length === 1 ? "FORM" : "FORMS"}
+                <span className="px-2 py-0.5 text-[9.5px] bg-blue-50 text-blue-800 font-bold rounded-full border border-blue-200">
+                  {orderedForms.length} {orderedForms.length === 1 ? "FORM ACTIVE" : "FORMS ACTIVE"}
                 </span>
               </div>
-              <h1 className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-tight">
+              <h1 className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-tight mt-0.5">
                 Forms Selection &amp; Builder Hub
               </h1>
             </div>
@@ -83,7 +82,7 @@ export const FormsDashboard: React.FC<FormsDashboardProps> = ({
               <button
                 type="button"
                 onClick={onCreateNewForm}
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-[#0b1f3a] hover:bg-[#132f54] shadow-2xs transition-all"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-[#0b1f3a] hover:bg-[#132f54] shadow-2xs transition-all"
               >
                 <Plus className="w-3.5 h-3.5 text-amber-400" />
                 <span>Create Form N</span>
@@ -94,7 +93,7 @@ export const FormsDashboard: React.FC<FormsDashboardProps> = ({
               href="/register"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-all"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-all"
             >
               <span>Public /register</span>
               <ExternalLink className="w-3 h-3 text-blue-900" />
@@ -103,7 +102,7 @@ export const FormsDashboard: React.FC<FormsDashboardProps> = ({
         </div>
       </div>
 
-      {/* Forms Selection Grid */}
+      {/* Forms Selection List */}
       {loading ? (
         <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center space-y-2">
           <div className="w-6 h-6 border-2 border-blue-900 border-t-transparent rounded-full animate-spin mx-auto" />
@@ -128,7 +127,7 @@ export const FormsDashboard: React.FC<FormsDashboardProps> = ({
           )}
         </div>
       ) : (
-        <div className="space-y-3.5">
+        <div className="space-y-4">
           {orderedForms.map((form, index) => {
             const formNumber = index + 1;
             const isFormOne = formNumber === 1;
@@ -139,16 +138,15 @@ export const FormsDashboard: React.FC<FormsDashboardProps> = ({
             return (
               <div
                 key={form.code}
-                className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs hover:shadow-xs transition-all overflow-hidden flex flex-col"
+                className="bg-white rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col border-l-4 border-l-amber-500"
               >
-                {/* Compact Card Body */}
-                <div className="p-4 sm:p-5 space-y-3">
-                  {/* Top Badges Strip */}
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      {/* Form Number Badge */}
+                {/* Header & Main Info */}
+                <div className="p-5 sm:p-6 space-y-4">
+                  {/* Top Bar: Badges + Public Link */}
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span
-                        className={`font-mono font-black text-[10px] px-2.5 py-0.5 rounded-full shadow-2xs ${
+                        className={`font-mono font-black text-[11px] px-2.5 py-0.5 rounded-md shadow-2xs ${
                           isFormOne
                             ? "text-slate-950 bg-amber-400"
                             : "text-white bg-blue-900"
@@ -157,31 +155,29 @@ export const FormsDashboard: React.FC<FormsDashboardProps> = ({
                         FORM {formNumber < 10 ? `0${formNumber}` : formNumber}
                       </span>
 
-                      {/* Form Code */}
-                      <span className="font-mono font-bold text-[10px] text-blue-900 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                      <span className="font-mono font-bold text-[11px] text-blue-900 bg-blue-50/80 px-2.5 py-0.5 rounded-md border border-blue-200/80">
                         {form.code}
                       </span>
 
-                      {/* Category */}
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600">
+                      <span className="text-[11px] font-semibold text-slate-600 bg-slate-100 px-2.5 py-0.5 rounded-md">
                         {form.category || "General"}
                       </span>
 
                       {isFormOne && (
-                        <span className="text-[9.5px] font-bold px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                        <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/80">
                           PRIMARY FORM
                         </span>
                       )}
                     </div>
 
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-2">
                       <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full border flex items-center gap-1 ${
+                        className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border flex items-center gap-1.5 ${
                           isLive
-                            ? "bg-emerald-50 text-emerald-800 border-emerald-200 font-mono"
+                            ? "bg-emerald-50 text-emerald-800 border-emerald-300 font-mono"
                             : isDraftOnly
-                            ? "bg-amber-50 text-amber-800 border-amber-200"
-                            : "bg-slate-100 text-slate-700 border-slate-200"
+                            ? "bg-amber-50 text-amber-800 border-amber-300"
+                            : "bg-slate-100 text-slate-700 border-slate-300"
                         }`}
                       >
                         <span
@@ -191,139 +187,166 @@ export const FormsDashboard: React.FC<FormsDashboardProps> = ({
                         />
                         <span>{form.status || "PUBLISHED"}</span>
                       </span>
-                      <span className="text-[10px] font-mono font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+
+                      <span className="text-[11px] font-mono font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
                         v{form.publishedVersion || form.draftVersion || "1.0"}
                       </span>
                     </div>
                   </div>
 
-                  {/* Form Title & Description */}
-                  <div>
-                    <h2 className="text-sm sm:text-base font-black text-slate-900 tracking-tight leading-snug">
-                      {isFormOne
-                        ? form.title || "Form 1: RDA Contractor Registration & Capacity Declaration Questionnaire"
-                        : form.title.startsWith("Form ")
-                        ? form.title
-                        : `Form ${formNumber}: ${form.title}`}
-                    </h2>
-                    <p className="text-[11px] sm:text-xs text-slate-500 mt-1 leading-relaxed line-clamp-2">
-                      {form.description ||
-                        "Official Road Development Authority stakeholder questionnaire under the Inclusive Connectivity and Development Project (ICDP)."}
-                    </p>
-                  </div>
+                  {/* Title & Description */}
+                  <div className="space-y-1">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-snug">
+                          {isFormOne
+                            ? form.title || "Form 1: RDA Contractor Registration & Capacity Declaration Questionnaire"
+                            : form.title.startsWith("Form ")
+                            ? form.title
+                            : `Form ${formNumber}: ${form.title}`}
+                        </h2>
+                        <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                          {form.description ||
+                            "Official Road Development Authority stakeholder questionnaire under the Inclusive Connectivity and Development Project (ICDP)."}
+                        </p>
+                      </div>
 
-                  {/* Public Portal Reference Bar - Slim */}
-                  <div className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-[11px]">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span className="font-semibold text-slate-600">Public Route:</span>
-                      <span className="font-mono text-blue-900 font-bold truncate">
-                        {publicPath}
-                      </span>
+                      {/* Live Public Portal Pill */}
+                      <Link
+                        href={publicPath}
+                        target="_blank"
+                        className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-blue-900 bg-blue-50/80 hover:bg-blue-100/90 border border-blue-200/90 transition-all shrink-0 hover:shadow-2xs"
+                        title="Open live public form in new tab"
+                      >
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Route: {publicPath}</span>
+                        <ExternalLink className="w-3 h-3 text-blue-800 ml-0.5" />
+                      </Link>
                     </div>
-                    <Link
-                      href={publicPath}
-                      target="_blank"
-                      className="font-bold text-blue-900 hover:underline flex items-center gap-1 shrink-0 ml-2"
-                    >
-                      <span>Open Portal</span>
-                      <ArrowRight className="w-3 h-3" />
-                    </Link>
+
+                    {/* Mobile Portal Route Link */}
+                    <div className="md:hidden pt-1">
+                      <Link
+                        href={publicPath}
+                        target="_blank"
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-900 hover:underline"
+                      >
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Route: {publicPath}</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </Link>
+                    </div>
                   </div>
 
-                  {/* Compact Metrics Grid */}
-                  <div className="grid grid-cols-5 gap-2 pt-2 border-t border-slate-100 text-[11px]">
-                    <div className="bg-slate-50 p-1.5 rounded-lg border border-slate-200 text-center">
-                      <span className="text-[8.5px] font-bold text-slate-400 uppercase tracking-wider block">
+                  {/* Modern Unified Metrics Strip (Sleek Horizontal Segmented Card) */}
+                  <div className="bg-slate-50/90 border border-slate-200/90 rounded-xl p-2.5 grid grid-cols-2 sm:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-slate-200/80 text-center">
+                    <div className="p-1 sm:px-2">
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
                         Sections
                       </span>
-                      <span className="text-sm font-black text-slate-900 font-mono block">
+                      <span className="text-sm sm:text-base font-black text-slate-900 font-mono mt-0.5 block">
                         {form.stats?.totalSections || 12}
                       </span>
+                      <span className="text-[9.5px] text-slate-400">defined</span>
                     </div>
 
-                    <div className="bg-slate-50 p-1.5 rounded-lg border border-slate-200 text-center">
-                      <span className="text-[8.5px] font-bold text-slate-400 uppercase tracking-wider block">
+                    <div className="p-1 sm:px-2">
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
                         Questions
                       </span>
-                      <span className="text-sm font-black text-blue-950 font-mono block">
+                      <span className="text-sm sm:text-base font-black text-blue-950 font-mono mt-0.5 block">
                         {form.stats?.totalQuestions || 38}
                       </span>
+                      <span className="text-[9.5px] text-slate-400">fields</span>
                     </div>
 
-                    <div className="bg-slate-50 p-1.5 rounded-lg border border-slate-200 text-center">
-                      <span className="text-[8.5px] font-bold text-purple-600 uppercase tracking-wider block">
+                    <div className="p-1 sm:px-2">
+                      <span className="text-[9px] font-bold text-purple-600 uppercase tracking-wider block">
                         Conditional
                       </span>
-                      <span className="text-sm font-black text-purple-900 font-mono block">
+                      <span className="text-sm sm:text-base font-black text-purple-900 font-mono mt-0.5 block">
                         {form.stats?.conditionalQuestions || 34}
                       </span>
+                      <span className="text-[9.5px] text-purple-700/80">dynamic rules</span>
                     </div>
 
-                    <div className="bg-slate-50 p-1.5 rounded-lg border border-slate-200 text-center">
-                      <span className="text-[8.5px] font-bold text-slate-400 uppercase tracking-wider block">
+                    <div className="p-1 sm:px-2">
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
                         Submissions
                       </span>
                       <Link
                         href={`/submissions?formId=${form.code}`}
-                        className="text-sm font-black text-blue-900 hover:underline font-mono block"
+                        className="text-sm sm:text-base font-black text-blue-900 hover:underline font-mono mt-0.5 block"
                       >
                         {form.submissionsCount || 0} &rarr;
                       </Link>
+                      <span className="text-[9.5px] text-slate-400">responses</span>
                     </div>
 
-                    <div className="bg-slate-50 p-1.5 rounded-lg border border-slate-200 text-center">
-                      <span className="text-[8.5px] font-bold text-slate-400 uppercase tracking-wider block">
-                        Updated
+                    <div className="p-1 sm:px-2 col-span-2 sm:col-span-1">
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
+                        Last Updated
                       </span>
-                      <span className="text-[10px] font-bold text-slate-800 block truncate mt-0.5">
+                      <span className="text-xs font-bold text-slate-800 mt-0.5 block truncate">
                         {form.updatedAt
                           ? new Date(form.updatedAt).toLocaleDateString("en-GB", {
                               day: "2-digit",
                               month: "short",
+                              year: "numeric",
                             })
                           : "Active"}
+                      </span>
+                      <span className="text-[9.5px] text-slate-400 flex items-center justify-center gap-1 mt-0.5">
+                        <Clock className="w-2.5 h-2.5" />
+                        <span>
+                          {form.updatedAt
+                            ? new Date(form.updatedAt).toLocaleTimeString("en-GB", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
+                            : "Live"}
+                        </span>
                       </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Compact Actions Bar */}
-                <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-200/80 flex items-center justify-between gap-2 flex-wrap">
-                  <div className="text-[10.5px] text-slate-400 flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    <span>Click to open or edit Form {formNumber}</span>
+                {/* Footer Action Strip */}
+                <div className="px-5 py-3 bg-slate-50/80 border-t border-slate-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="text-[11px] text-slate-500 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                    <span>Official Verified Questionnaire &bull; Ready for Responses</span>
                   </div>
 
                   <div className="flex items-center gap-2">
-                    {/* Action 1: Open Exact Form (View Mode by default) */}
+                    {/* Primary Action: Open Form */}
                     <button
                       type="button"
                       onClick={() => onViewForm(form.code)}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-[#0b1f3a] hover:bg-[#132f54] rounded-lg shadow-2xs transition-all"
+                      className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-[#0b1f3a] hover:bg-[#132f54] rounded-xl shadow-xs transition-all hover:scale-[1.01] active:scale-[0.99]"
                       title={`Open Form ${formNumber} exact form view`}
                     >
                       <Eye className="w-3.5 h-3.5 text-amber-400" />
                       <span>Open Form {formNumber}</span>
                     </button>
 
-                    {/* Action 2: Edit Form */}
+                    {/* Secondary Action: Edit Form */}
                     <button
                       type="button"
                       onClick={() => onEditForm(form.code)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 rounded-lg shadow-2xs transition-all"
-                      title={`Edit Form ${formNumber} structure and fields`}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-800 bg-white hover:bg-slate-100 border border-slate-300 rounded-xl shadow-2xs transition-all"
+                      title={`Edit Form ${formNumber} structure and questions`}
                     >
                       <Edit2 className="w-3.5 h-3.5 text-blue-900" />
                       <span>Edit Form</span>
                     </button>
 
-                    {/* Action 3: History */}
+                    {/* Utility: History */}
                     <button
                       type="button"
                       onClick={() => onVersionHistory(form)}
-                      className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-slate-600 bg-white hover:bg-slate-100 border border-slate-300 rounded-lg shadow-2xs transition-all"
-                      title="View version revisions"
+                      className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-600 bg-white hover:bg-slate-100 border border-slate-300 rounded-xl shadow-2xs transition-all"
+                      title="View revision versions and audit log"
                     >
                       <History className="w-3.5 h-3.5 text-slate-500" />
                       <span>History</span>
