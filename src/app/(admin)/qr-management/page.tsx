@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   QrCode,
   Download,
@@ -12,7 +12,10 @@ import {
   Info,
   RefreshCw,
   AlertTriangle,
+  Lock,
+  Layers,
 } from "lucide-react";
+import { IFormSummary } from "@/types/questionnaire";
 
 interface PublicConfig {
   system: string;
@@ -25,15 +28,61 @@ interface PublicConfig {
 
 export default function QRManagementPage() {
   const [config, setConfig] = useState<PublicConfig | null>(null);
+  const [forms, setForms] = useState<IFormSummary[]>([]);
+  const [selectedFormCode, setSelectedFormCode] = useState<string>("RDA-ICDP-CONTRACTOR-Q");
   const [loading, setLoading] = useState(true);
+  const [formsLoading, setFormsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const fetchConfig = async () => {
+  // 1. Fetch available active forms
+  useEffect(() => {
+    const loadForms = async () => {
+      try {
+        setFormsLoading(true);
+        const res = await fetch("/api/forms");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.forms) {
+            setForms(data.forms);
+          }
+        }
+      } catch {
+        // Fallback silently
+      } finally {
+        setFormsLoading(false);
+      }
+    };
+    loadForms();
+  }, []);
+
+  const selectedForm = useMemo(() => {
+    return forms.find((f) => f.code === selectedFormCode) || forms[0] || null;
+  }, [forms, selectedFormCode]);
+
+  const selectedFormIndex = useMemo(() => {
+    if (!selectedForm) return 0;
+    const idx = forms.findIndex((f) => f.code === selectedForm.code);
+    return idx >= 0 ? idx : 0;
+  }, [forms, selectedForm]);
+
+  const formNumber = selectedFormIndex + 1;
+  const isForm1 =
+    !selectedForm ||
+    selectedForm.code === "RDA-ICDP-CONTRACTOR-Q" ||
+    selectedForm.isDefault ||
+    selectedForm.slug === "contractor";
+
+  // 2. Fetch QR config for the chosen form
+  const fetchConfig = async (formSlug?: string) => {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch("/api/public/config");
+      const url =
+        !formSlug || formSlug === "contractor"
+          ? "/api/public/config"
+          : `/api/public/config?slug=${encodeURIComponent(formSlug)}`;
+      const res = await fetch(url);
       if (!res.ok) {
         throw new Error(`Failed to load QR configuration (HTTP ${res.status})`);
       }
@@ -47,8 +96,12 @@ export default function QRManagementPage() {
   };
 
   useEffect(() => {
-    fetchConfig();
-  }, []);
+    if (selectedForm) {
+      fetchConfig(isForm1 ? undefined : selectedForm.slug);
+    } else {
+      fetchConfig();
+    }
+  }, [selectedFormCode, forms]);
 
   const handleCopyUrl = async () => {
     if (!config?.registrationUrl) return;
@@ -65,7 +118,9 @@ export default function QRManagementPage() {
     if (!config?.qrCodeDataUrl) return;
     const a = document.createElement("a");
     a.href = config.qrCodeDataUrl;
-    a.download = "RDA-Official-Contractor-Intake-QR.png";
+    a.download = isForm1
+      ? "RDA-Official-Contractor-Intake-Form01-QR.png"
+      : `RDA-Official-Form0${formNumber}-${selectedForm?.slug || "form"}-QR.png`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -83,18 +138,18 @@ export default function QRManagementPage() {
           <div className="flex items-center gap-2">
             <QrCode className="w-5 h-5 text-blue-900" />
             <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
-              Official Contractor Intake QR System
+              Official Questionnaire QR System
             </h1>
           </div>
           <p className="text-xs sm:text-sm text-slate-600 mt-1">
-            Permanent, unified QR access portal for nationwide contractor intake and questionnaire registration.
+            Access, display, and download official high-resolution QR codes for each RDA questionnaire.
           </p>
         </div>
 
         <div className="flex items-center gap-2.5">
           <button
             type="button"
-            onClick={fetchConfig}
+            onClick={() => fetchConfig(isForm1 ? undefined : selectedForm?.slug)}
             disabled={loading}
             className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 shadow-sm transition-all disabled:opacity-60"
           >
@@ -122,19 +177,89 @@ export default function QRManagementPage() {
         </div>
       </div>
 
-      {/* Operational Policy Banner */}
-      <div className="bg-amber-50 border border-amber-200/80 rounded-2xl p-4 flex items-start gap-3 text-amber-900">
-        <Info className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-        <div className="text-xs space-y-1">
-          <p className="font-bold text-amber-950">
-            RDA Universal Common QR Architecture (National Standard)
-          </p>
-          <p className="text-amber-800/90 leading-relaxed">
-            All contractors across all 9 provinces use <strong>one common official QR code</strong>. This QR does not contain individual contractor identifiers. 
-            When scanned, contractors are routed to the public RDA intake portal where a cryptographically secure 64-character resume token is generated client-side upon drafting.
-          </p>
+      {/* Form Selector Card */}
+      <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-sm space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <label className="text-xs font-bold text-slate-800 uppercase tracking-wider block">
+              Select Questionnaire for QR Code
+            </label>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              Each form receives its own dedicated QR code. Form 1&apos;s published QR code remains permanently locked and untouched.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <select
+              aria-label="Select Form for QR Code"
+              value={selectedFormCode}
+              onChange={(e) => setSelectedFormCode(e.target.value)}
+              className="px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-900 focus:bg-white min-w-[280px]"
+            >
+              {forms.map((f, idx) => (
+                <option key={f.code} value={f.code}>
+                  Form {idx + 1}: {f.title} {f.code === "RDA-ICDP-CONTRACTOR-Q" ? "(Permanent Distributed Form)" : ""}
+                </option>
+              ))}
+              {forms.length === 0 && (
+                <option value="RDA-ICDP-CONTRACTOR-Q">
+                  Form 1: RDA Contractor Registration Questionnaire (Permanent Distributed Form)
+                </option>
+              )}
+            </select>
+          </div>
+        </div>
+
+        {/* Selected Form Status Strip */}
+        <div className="flex items-center gap-2 pt-2 border-t border-slate-100 flex-wrap text-xs">
+          <span className="font-mono font-black text-[10px] text-amber-950 bg-amber-400 px-2.5 py-0.5 rounded-full shadow-2xs">
+            FORM {formNumber < 10 ? `0${formNumber}` : formNumber}
+          </span>
+          <span className="font-bold text-slate-900 truncate max-w-md">
+            {selectedForm?.title || "Form 1: RDA Contractor Registration & Capacity Declaration Questionnaire"}
+          </span>
+          {isForm1 ? (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+              <Lock className="w-3 h-3 text-emerald-700" />
+              <span>PERMANENT DISTRIBUTED QR (LOCKED &amp; PROTECTED)</span>
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-900 bg-blue-50 border border-blue-200 px-2.5 py-0.5 rounded-full">
+              <QrCode className="w-3 h-3 text-blue-700" />
+              <span>DEDICATED SEPARATE FORM QR</span>
+            </span>
+          )}
         </div>
       </div>
+
+      {/* Operational Policy Banner */}
+      {isForm1 ? (
+        <div className="bg-amber-50 border border-amber-200/80 rounded-2xl p-4 flex items-start gap-3 text-amber-900">
+          <Lock className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+          <div className="text-xs space-y-1">
+            <p className="font-bold text-amber-950">
+              Form 1 Permanent National QR Code &bull; Officially Distributed &amp; Preserved
+            </p>
+            <p className="text-amber-800/90 leading-relaxed">
+              This is the official published QR code for Form 1 that has already been distributed nationwide to contractors, suppliers, and government officers. 
+              Its target destination permanently resolves to <strong>/register</strong> and is locked against changes.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-blue-50 border border-blue-200/80 rounded-2xl p-4 flex items-start gap-3 text-blue-900">
+          <QrCode className="w-5 h-5 text-blue-700 shrink-0 mt-0.5" />
+          <div className="text-xs space-y-1">
+            <p className="font-bold text-blue-950">
+              Form {formNumber} Dedicated Independent QR Code
+            </p>
+            <p className="text-blue-800/90 leading-relaxed">
+              This is the distinct QR code generated exclusively for <strong>&quot;{selectedForm?.title}&quot;</strong> pointing to <strong>/register/{selectedForm?.slug}</strong>. 
+              Using this QR code does not affect Form 1&apos;s published QR code in any way.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Error state */}
       {error && (
@@ -150,11 +275,11 @@ export default function QRManagementPage() {
         <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 flex flex-col items-center text-center">
           <div className="w-full flex items-center justify-between border-b border-slate-100 pb-3 mb-5">
             <span className="text-[11px] font-bold text-blue-950 uppercase tracking-wider">
-              Official RDA Display Badge
+              {isForm1 ? "Form 01 Official Display Badge" : `Form 0${formNumber} Display Badge`}
             </span>
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-              Live &amp; Verified
+              {isForm1 ? "Permanent Locked" : "Dedicated Active"}
             </span>
           </div>
 
@@ -168,12 +293,12 @@ export default function QRManagementPage() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={config.qrCodeDataUrl}
-                alt="RDA Official Contractor Intake QR Code"
+                alt={`RDA Official Form ${formNumber} QR Code`}
                 className="w-64 h-64 object-contain rounded-lg"
               />
               <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-center gap-1.5 text-[11px] font-bold text-slate-800">
                 <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                <span>RDA Verified Government Access</span>
+                <span>RDA Verified Government Access &bull; Form {formNumber}</span>
               </div>
             </div>
           ) : (

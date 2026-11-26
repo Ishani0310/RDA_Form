@@ -13,6 +13,7 @@ import {
   ExternalLink,
   Plus,
   Trash2,
+  QrCode,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -36,6 +37,7 @@ export const FormsDashboard: React.FC<FormsDashboardProps> = ({
   onEditForm,
   onVersionHistory,
   onDeleteForm,
+  onOpenQr,
   onCreateNewForm,
 }) => {
   // Ensure Form 1 (authoritative registration form at /register) is always first
@@ -354,6 +356,19 @@ export const FormsDashboard: React.FC<FormsDashboardProps> = ({
                       <History className="w-3.5 h-3.5 text-slate-500" />
                       <span>History</span>
                     </button>
+
+                    {/* QR Code Action */}
+                    {onOpenQr && (
+                      <button
+                        type="button"
+                        onClick={() => onOpenQr(form)}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl shadow-2xs transition-all hover:scale-[1.01] active:scale-[0.99]"
+                        title={`View and download QR Code for Form ${formNumber}`}
+                      >
+                        <QrCode className="w-3.5 h-3.5 text-blue-800" />
+                        <span>QR Code</span>
+                      </button>
+                    )}
 
                     {/* Delete Form Button */}
                     {onDeleteForm && (
