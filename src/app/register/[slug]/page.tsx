@@ -690,58 +690,65 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
                 </p>
               )}
             </div>
+          </div>
 
-            {/* Question 4: Supplier Type Dropdown */}
-            <div className="space-y-1.5 pt-3 border-t border-slate-100">
-              <label htmlFor="input-supplier-type" className="block font-bold text-slate-800">
-                4. Supplier Type <span className="text-rose-500">*</span>
-              </label>
-              <p className="text-[11px] text-slate-500">
-                Please select the primary supply category provided by your organization (Material, Labour, or Equipment).
+          {/* SECTION 2: SUPPLIER DETAILS */}
+          <div className="pt-6 border-t border-slate-200 space-y-5">
+            <div className="border-b border-slate-100 pb-3">
+              <h2 className="text-sm font-black text-slate-900 uppercase tracking-wide flex items-center gap-2">
+                <Truck className="w-4 h-4 text-blue-900" />
+                <span>2. Supplier Details</span>
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Select your supplier category and provide specific operational capacity details.
               </p>
-              <div className="relative">
-                <Package className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
-                <select
-                  id="input-supplier-type"
-                  value={formData.supplierType}
-                  onChange={(e) => handleChange("supplierType", e.target.value)}
-                  className={`w-full pl-9 pr-8 py-2.5 bg-slate-50 border rounded-xl font-medium focus:bg-white focus:outline-hidden focus:ring-2 transition-all cursor-pointer text-slate-900 ${
-                    fieldErrors.supplierType
-                      ? "border-rose-400 focus:ring-rose-200 text-rose-950"
-                      : "border-slate-300 focus:ring-blue-900/30"
-                  }`}
-                  required
-                >
-                  <option value="" disabled>-- Select Supplier Type --</option>
-                  <option value="Material">Material (Bitumen, asphalt premix, aggregate, cement, steel, etc.)</option>
-                  <option value="Labour">Labour (Skilled/unskilled labour force, site crews, technical personnel)</option>
-                  <option value="Equipment">Equipment (Heavy machinery, pavers, rollers, excavators, transport fleet)</option>
-                </select>
-              </div>
-
-              {fieldErrors.supplierType && (
-                <p className="text-xs text-rose-600 font-semibold flex items-center gap-1 mt-1.5">
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                  <span>{fieldErrors.supplierType}</span>
-                </p>
-              )}
             </div>
 
-            {/* Conditionally Show Section 4: Supplier Details when Material is selected */}
-            {formData.supplierType === "Material" && (
-              <div className="space-y-4 pt-4 border-t border-slate-100 animate-fadeIn">
-                <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-                  <Truck className="w-4 h-4 text-blue-900" />
-                  <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
-                    Section 4: Supplier Details
-                  </h2>
+            <div className="space-y-5 text-xs">
+              {/* Supplier Type Selection */}
+              <div className="space-y-1.5">
+                <label htmlFor="input-supplier-type" className="block font-bold text-slate-800">
+                  Supplier Type <span className="text-rose-500">*</span>
+                </label>
+                <p className="text-[11px] text-slate-500">
+                  Please select the primary supply category provided by your organization (Material, Labour, or Equipment).
+                </p>
+                <div className="relative">
+                  <Package className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
+                  <select
+                    id="input-supplier-type"
+                    value={formData.supplierType}
+                    onChange={(e) => handleChange("supplierType", e.target.value)}
+                    className={`w-full pl-9 pr-8 py-2.5 bg-slate-50 border rounded-xl font-medium focus:bg-white focus:outline-hidden focus:ring-2 transition-all cursor-pointer text-slate-900 ${
+                      fieldErrors.supplierType
+                        ? "border-rose-400 focus:ring-rose-200 text-rose-950"
+                        : "border-slate-300 focus:ring-blue-900/30"
+                    }`}
+                    required
+                  >
+                    <option value="" disabled>-- Select Supplier Type --</option>
+                    <option value="Material">Material (Bitumen, asphalt premix, aggregate, cement, steel, etc.)</option>
+                    <option value="Labour">Labour (Skilled/unskilled labour force, site crews, technical personnel)</option>
+                    <option value="Equipment">Equipment (Heavy machinery, pavers, rollers, excavators, transport fleet)</option>
+                  </select>
                 </div>
 
-                <div className="p-3.5 bg-blue-50 border border-blue-200/80 rounded-xl text-xs text-blue-950">
-                  <p className="leading-relaxed">
-                    Please provide details of the materials you supply and your production/supply capacity.
+                {fieldErrors.supplierType && (
+                  <p className="text-xs text-rose-600 font-semibold flex items-center gap-1 mt-1.5">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{fieldErrors.supplierType}</span>
                   </p>
-                </div>
+                )}
+              </div>
+
+              {/* Conditionally Show Material Details when Material is selected */}
+              {formData.supplierType === "Material" && (
+                <div className="space-y-4 pt-3 border-t border-slate-100 animate-fadeIn">
+                  <div className="p-3.5 bg-blue-50 border border-blue-200/80 rounded-xl text-xs text-blue-950">
+                    <p className="leading-relaxed">
+                      Please provide details of the materials you supply and your production/supply capacity.
+                    </p>
+                  </div>
 
                 <div className="space-y-4 text-xs">
                   {/* Material Selection Checkboxes */}
@@ -992,6 +999,7 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
                 </div>
               </div>
             )}
+            </div>
           </div>
 
           {/* Submission Notice & Submit Button */}
