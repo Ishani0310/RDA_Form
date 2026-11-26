@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Questionnaire } from "@/models/Questionnaire";
-import { seedDefaultQuestionnaire, DEFAULT_QUESTIONNAIRE_CODE } from "@/lib/questionnaire-seed";
+import { seedDefaultQuestionnaire, seedSupplierQuestionnaire, DEFAULT_QUESTIONNAIRE_CODE } from "@/lib/questionnaire-seed";
 
 /**
  * GET /api/public/questionnaire
@@ -30,6 +30,11 @@ export async function GET(request: NextRequest) {
         ],
         status: "PUBLISHED",
       }).lean();
+
+      if (!published && (formParam.toLowerCase() === "supplier" || formParam.toUpperCase() === "RDA-SUPPLIER-Q")) {
+        const seeded = await seedSupplierQuestionnaire();
+        published = seeded.toObject ? seeded.toObject() : seeded;
+      }
 
       if (!published) {
         return NextResponse.json(

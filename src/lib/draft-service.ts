@@ -47,22 +47,20 @@ export function isValidTokenFormat(token: string): boolean {
   return typeof token === "string" && /^[a-f0-9]{64}$/i.test(token.trim());
 }
 
-// In-memory cache for published questionnaire schema (60s TTL) to eliminate redundant DB lookups on submit
-let cachedPublishedQuestionnaire: {
-  item: { _id: any; version: string; code: string; slug: string } | null;
-  timestamp: number;
-} | null = null;
+// In-memory cache for published questionnaire schema (60s TTL) keyed by form identifier
+const publishedQuestionnaireCache = new Map<string, { item: any; timestamp: number }>();
 
 export async function getCachedPublishedQuestionnaire(identifier: string) {
   const now = Date.now();
-  if (cachedPublishedQuestionnaire && (now - cachedPublishedQuestionnaire.timestamp < 60000)) {
-    return cachedPublishedQuestionnaire.item;
+  const cached = publishedQuestionnaireCache.get(identifier);
+  if (cached && now - cached.timestamp < 60000) {
+    return cached.item;
   }
   const item = await Questionnaire.findOne({
     $or: [{ code: identifier }, { slug: identifier }],
     status: "PUBLISHED",
   }).select("_id version code slug").lean();
-  cachedPublishedQuestionnaire = { item: item as any, timestamp: now };
+  publishedQuestionnaireCache.set(identifier, { item, timestamp: now });
   return item;
 }
 

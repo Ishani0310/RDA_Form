@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const email = (searchParams.get("email") || "").trim().toLowerCase();
     const token = (searchParams.get("token") || "").trim();
+    const formSlug = (searchParams.get("slug") || searchParams.get("formId") || "").trim();
 
     if (!email) {
       return NextResponse.json(
@@ -46,6 +47,19 @@ export async function GET(request: NextRequest) {
         { "questionnaireData._emailSentTo": { $regex: new RegExp(`^${escapeRegex(email)}$`, "i") } },
       ],
     };
+
+    if (formSlug) {
+      query.$and = [
+        {
+          $or: [
+            { formId: formSlug },
+            { formSlug: formSlug },
+            { formId: formSlug.toUpperCase() },
+            { formSlug: formSlug.toLowerCase() },
+          ],
+        },
+      ];
+    }
 
     if (currentSubmissionId) {
       query._id = { $ne: currentSubmissionId };

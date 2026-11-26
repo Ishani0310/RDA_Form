@@ -806,8 +806,8 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
           );
         })}
 
-        {/* Mode A Interactive Submission Simulator at bottom of Form View */}
-        {!adminEditMode && (
+        {/* Mode A Interactive Submission Simulator at bottom of Form View (Admin simulation only) */}
+        {!adminEditMode && previewMode && (
           <div className="pt-6 border-t border-slate-200">
             <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-blue-900 to-[#0b1f3a] text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-md">
               <div className="space-y-1 text-center sm:text-left">

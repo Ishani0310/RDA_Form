@@ -1195,3 +1195,90 @@ export async function seedAdditionalBaselineForms(): Promise<void> {
     });
   }
 }
+
+export const SUPPLIER_QUESTIONNAIRE_CODE = "RDA-SUPPLIER-Q";
+
+export function getSupplierSections(): IFormSection[] {
+  return [
+    {
+      id: "sec-supplier-details",
+      code: "SEC-01",
+      title: "1. Supplier Organization & Contact Details",
+      description: "Please enter verified commercial details for your materials supply organization. All fields are mandatory and email must be unique.",
+      displayOrder: 1,
+      questions: [
+        {
+          id: "organizationName",
+          code: "Q01",
+          number: 1,
+          text: "Name of Supplier Organization / Company",
+          description: "Official registered corporate or commercial trading name of the supplier.",
+          placeholder: "e.g., Lanka Asphalt & Aggregates (Pvt) Ltd",
+          fieldType: "short_text",
+          displayOrder: 1,
+          isRequired: true,
+          validation: { minLength: 3, maxLength: 200 },
+        },
+        {
+          id: "contactNumber",
+          code: "Q02",
+          number: 2,
+          text: "Organization Contact Telephone / Mobile Number",
+          description: "Active official telephone or mobile number for institutional correspondence.",
+          placeholder: "+94 11 234 5678 / 077 123 4567",
+          fieldType: "telephone",
+          displayOrder: 2,
+          isRequired: true,
+          validation: { minLength: 9, maxLength: 20 },
+        },
+        {
+          id: "email",
+          code: "Q03",
+          number: 3,
+          text: "Official Organization Email Address",
+          description: "Primary verified institutional email. Official registration confirmation and tracking reference will be dispatched to this address. Must be unique per supplier.",
+          placeholder: "e.g., supplier@organization.lk",
+          fieldType: "email",
+          displayOrder: 3,
+          isRequired: true,
+          validation: { minLength: 5, maxLength: 100 },
+        },
+      ],
+    },
+  ];
+}
+
+export async function seedSupplierQuestionnaire(): Promise<IQuestionnaire> {
+  await connectToDatabase();
+
+  const existing = await Questionnaire.findOne({
+    $or: [{ code: SUPPLIER_QUESTIONNAIRE_CODE }, { slug: "supplier" }],
+  });
+
+  if (existing) {
+    return existing;
+  }
+
+  const supplierSections = getSupplierSections();
+  const stats = computeQuestionnaireStats(supplierSections);
+
+  const supplierForm = await Questionnaire.create({
+    title: "RDA Supplier Registration & Capacity Questionnaire",
+    code: SUPPLIER_QUESTIONNAIRE_CODE,
+    slug: "supplier",
+    category: "Supplier",
+    isDefault: false,
+    version: "1.0",
+    versionNumber: 1,
+    status: "PUBLISHED",
+    isPublished: true,
+    isLocked: false,
+    publishedAt: new Date(),
+    description: "Official institutional questionnaire for collecting materials supplier capacity, supply profiles, and business registration details under the Inclusive Connectivity and Development Project (ICDP).",
+    instructions: "Please enter your verified supplier organization details, official telephone number, and primary email address. Each organization must submit using a unique email address.",
+    sections: supplierSections,
+    stats,
+  });
+
+  return supplierForm;
+}

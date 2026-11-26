@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentOfficerSession } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Questionnaire, computeQuestionnaireStats } from "@/models/Questionnaire";
-import { seedDefaultQuestionnaire, getBaselineOfficialSections, DEFAULT_QUESTIONNAIRE_CODE } from "@/lib/questionnaire-seed";
+import {
+  seedDefaultQuestionnaire,
+  seedSupplierQuestionnaire,
+  getBaselineOfficialSections,
+  DEFAULT_QUESTIONNAIRE_CODE,
+  SUPPLIER_QUESTIONNAIRE_CODE,
+} from "@/lib/questionnaire-seed";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -51,6 +57,9 @@ export async function GET(request: NextRequest) {
     // If still not found and no specific code requested or default requested, seed default
     if (!draft && !published && (!requestedCode || requestedCode === DEFAULT_QUESTIONNAIRE_CODE)) {
       const seeded = await seedDefaultQuestionnaire();
+      published = seeded.toObject ? seeded.toObject() : seeded;
+    } else if (!draft && !published && (targetCode === SUPPLIER_QUESTIONNAIRE_CODE || targetCode.toLowerCase() === "supplier")) {
+      const seeded = await seedSupplierQuestionnaire();
       published = seeded.toObject ? seeded.toObject() : seeded;
     }
 

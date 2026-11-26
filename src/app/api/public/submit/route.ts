@@ -102,6 +102,8 @@ export async function POST(request: NextRequest) {
         cidaGrade: body.cidaGrade || latestQData?.cidaGrade,
         province: body.province || latestQData?.supplierDetails?.province || "Western Province",
         district: body.district || latestQData?.supplierDetails?.district,
+        formId: body.formId || latestQData?.formId,
+        formSlug: body.formSlug || latestQData?.formSlug || body.slug,
         contactOfficer: body.contactOfficer || {
           name: latestQData?.participant1?.fullName || "Authorized Representative",
           phone: latestQData?.participant1?.mobileNumber || latestQData?.contactNumber || "+94 11 000 0000",

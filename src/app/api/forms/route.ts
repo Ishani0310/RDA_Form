@@ -6,6 +6,7 @@ import { Submission } from "@/models/Submission";
 import { recordActivityLog } from "@/lib/audit";
 import {
   DEFAULT_QUESTIONNAIRE_CODE,
+  seedSupplierQuestionnaire,
 } from "@/lib/questionnaire-seed";
 
 /**
@@ -31,6 +32,15 @@ export async function GET(request: NextRequest) {
       list.push(q);
       formsMap.set(q.code, list);
     });
+
+    // Ensure the new Supplier Registration Form is automatically seeded if not present
+    if (!formsMap.has("RDA-SUPPLIER-Q")) {
+      await seedSupplierQuestionnaire().catch(() => {});
+      const supplierDoc = await Questionnaire.findOne({ code: "RDA-SUPPLIER-Q", status: { $ne: "ARCHIVED" } }).lean();
+      if (supplierDoc) {
+        formsMap.set("RDA-SUPPLIER-Q", [supplierDoc as any]);
+      }
+    }
 
     const formSummaries: IFormSummary[] = [];
 
