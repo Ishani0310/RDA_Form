@@ -193,18 +193,16 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
 
       const data = await res.json();
       if (res.ok && data.success) {
-        setIsRedirecting(true);
+        setIsRedirecting(false);
 
-        // If this is the supplier registration form, redirect immediately to the supplier page as requested
-        if (slug === "supplier" || questionnaire?.slug === "supplier" || questionnaire?.category === "Supplier") {
-          setTimeout(() => {
-            window.location.href = "/supplier-submissions";
-          }, 600);
-          return;
-        }
+        const refNo =
+          data.submissionReference ||
+          data.submission?.reference ||
+          data.reference ||
+          "";
 
         setSubmissionSuccess({
-          reference: data.reference,
+          reference: refNo,
           organizationName: formData.organizationName.trim(),
           contactNumber: formData.contactNumber.trim(),
           email: formData.email.trim().toLowerCase(),
@@ -286,10 +284,10 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
               <CheckCircle2 className="w-8 h-8 text-emerald-600" />
             </div>
             <h1 className="text-xl sm:text-2xl font-black text-slate-900">
-              Registration Successfully Filed
+              Thank You for Your Submission!
             </h1>
             <p className="text-xs text-slate-500 max-w-md mx-auto">
-              Your official declaration has been securely recorded and dispatched to the Provincial Review Queue.
+              Your official supplier registration has been successfully recorded in the Road Development Authority system.
             </p>
           </div>
 

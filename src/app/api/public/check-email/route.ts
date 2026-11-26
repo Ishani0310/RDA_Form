@@ -49,16 +49,12 @@ export async function GET(request: NextRequest) {
     };
 
     if (formSlug) {
-      query.$and = [
-        {
-          $or: [
-            { formId: formSlug },
-            { formSlug: formSlug },
-            { formId: formSlug.toUpperCase() },
-            { formSlug: formSlug.toLowerCase() },
-          ],
-        },
-      ];
+      const isSupplier = formSlug.toLowerCase() === "supplier" || formSlug.toUpperCase() === "RDA-SUPPLIER-Q";
+      if (isSupplier) {
+        query.formId = "RDA-SUPPLIER-Q";
+      } else {
+        query.formId = { $ne: "RDA-SUPPLIER-Q" };
+      }
     }
 
     if (currentSubmissionId) {

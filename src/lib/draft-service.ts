@@ -1078,6 +1078,9 @@ export async function submitDirectDeclaration(
     candidateEmail
       ? Submission.findOne({
         status: { $in: ["Submitted", "Under_Review", "Verified"] },
+        ...(isNewForm2
+          ? { $or: [{ formId: "RDA-SUPPLIER-Q" }, { formSlug: "supplier" }] }
+          : { formId: { $ne: "RDA-SUPPLIER-Q" } }),
         $or: [
           { "questionnaireData.email": candidateEmail },
           { "questionnaireData.participant1.email": candidateEmail },

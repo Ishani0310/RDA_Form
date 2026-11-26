@@ -94,7 +94,6 @@ export default function SupplierSubmissionsPage() {
       if (s.formId !== "RDA-SUPPLIER-Q" && s.formSlug !== "supplier") return false;
       const q = s.questionnaireData || {};
       const orgName = (s.contractor || q.organizationName || "").toLowerCase();
-      if (orgName.includes("testing") || orgName.includes("dummy")) return false;
 
       if (searchTerm.trim()) {
         const term = searchTerm.toLowerCase();

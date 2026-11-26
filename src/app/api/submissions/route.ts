@@ -144,15 +144,12 @@ export async function GET(request: NextRequest) {
 
     // Specific Form Filter
     if (formFilter && formFilter !== "ALL") {
-      if (formFilter === "contractor" || formFilter === "RDA-ICDP-CONTRACTOR-Q") {
-        query.$or = [
-          { formId: "RDA-ICDP-CONTRACTOR-Q" },
-          { formSlug: "contractor" },
-          { formId: { $exists: false } },
-          { formSlug: { $exists: false } },
-        ];
+      if (formFilter === "supplier" || formFilter === "RDA-SUPPLIER-Q") {
+        query.formId = "RDA-SUPPLIER-Q";
+      } else if (formFilter === "contractor" || formFilter === "RDA-ICDP-CONTRACTOR-Q") {
+        query.formId = { $ne: "RDA-SUPPLIER-Q" };
       } else {
-        query.$or = [{ formId: formFilter }, { formSlug: formFilter }];
+        query.formId = formFilter;
       }
     }
 
@@ -280,14 +277,11 @@ export async function GET(request: NextRequest) {
 
     if (formFilter && formFilter !== "ALL") {
       if (formFilter === "supplier" || formFilter === "RDA-SUPPLIER-Q") {
-        baseQueryNoStatus.$or = [{ formId: "RDA-SUPPLIER-Q" }, { formSlug: "supplier" }];
+        baseQueryNoStatus.formId = "RDA-SUPPLIER-Q";
       } else if (formFilter === "contractor" || formFilter === "RDA-ICDP-CONTRACTOR-Q") {
-        baseQueryNoStatus.$or = [
-          { formId: "RDA-ICDP-CONTRACTOR-Q" },
-          { formSlug: "contractor" },
-          { formId: { $exists: false } },
-          { formSlug: { $exists: false } },
-        ];
+        baseQueryNoStatus.formId = { $ne: "RDA-SUPPLIER-Q" };
+      } else {
+        baseQueryNoStatus.formId = formFilter;
       }
     }
 
