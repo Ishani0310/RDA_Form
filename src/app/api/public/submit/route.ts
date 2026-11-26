@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
           participant1Name: result.questionnaireData?.participant1?.fullName || result.contactOfficer?.name,
           participant1Designation: result.questionnaireData?.participant1?.designation || result.contactOfficer?.designation,
           workshopDate: "07 December 2026",
-          workshopTime: "9:00 AM",
+          workshopTime: "8:30 AM",
           submittedAt: result.submittedAt,
           questionnaireData: result.questionnaireData || latestQData,
         })

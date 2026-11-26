@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       participant1Name: officerName,
       participant1Designation: "Quality Assurance Engineer",
       workshopDate: "07 December 2026",
-      workshopTime: "9:00 AM",
+      workshopTime: "8:30 AM",
       submittedAt: new Date(),
       questionnaireData: {
         organizationName: "RDA Test Participant Ltd",

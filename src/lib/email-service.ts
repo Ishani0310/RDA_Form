@@ -133,7 +133,7 @@ export async function sendRegistrationConfirmationEmail(
     participant1Name,
     participant1Designation,
     workshopDate = "07 December 2026",
-    workshopTime = "9:00 AM",
+    workshopTime = "8:30 AM",
     submittedAt = new Date(),
     questionnaireData = {},
   } = params;
