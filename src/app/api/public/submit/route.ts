@@ -196,7 +196,7 @@ export async function POST(request: NextRequest) {
                   },
                 }
               );
-            } catch {}
+            } catch { }
           });
       });
     }
