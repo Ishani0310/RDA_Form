@@ -21,8 +21,8 @@ export async function GET(request: NextRequest) {
 
     await connectToDatabase();
 
-    // Fetch only existing questionnaires sorted by code and versionNumber
-    const allQuestionnaires = await Questionnaire.find().sort({ code: 1, versionNumber: -1 }).lean();
+    // Fetch only active questionnaires (exclude deleted/archived) sorted by code and versionNumber
+    const allQuestionnaires = await Questionnaire.find({ status: { $ne: "ARCHIVED" } }).sort({ code: 1, versionNumber: -1 }).lean();
 
     // Group by unique code (Form ID)
     const formsMap = new Map<string, typeof allQuestionnaires>();

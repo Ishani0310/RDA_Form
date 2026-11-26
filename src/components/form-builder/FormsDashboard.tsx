@@ -12,6 +12,7 @@ import {
   FileText,
   ExternalLink,
   Plus,
+  Trash2,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -23,6 +24,7 @@ interface FormsDashboardProps {
   onPreviewForm: (form: IFormSummary) => void;
   onVersionHistory: (form: IFormSummary) => void;
   onPublishChanges: (form: IFormSummary) => void;
+  onDeleteForm?: (form: IFormSummary) => void;
   onOpenQr?: (form: IFormSummary) => void;
   onCreateNewForm?: () => void;
 }
@@ -33,6 +35,7 @@ export const FormsDashboard: React.FC<FormsDashboardProps> = ({
   onViewForm,
   onEditForm,
   onVersionHistory,
+  onDeleteForm,
   onCreateNewForm,
 }) => {
   // Ensure Form 1 (authoritative registration form at /register) is always first
@@ -351,6 +354,19 @@ export const FormsDashboard: React.FC<FormsDashboardProps> = ({
                       <History className="w-3.5 h-3.5 text-slate-500" />
                       <span>History</span>
                     </button>
+
+                    {/* Delete Form Button */}
+                    {onDeleteForm && (
+                      <button
+                        type="button"
+                        onClick={() => onDeleteForm(form)}
+                        className="inline-flex items-center gap-1 px-2.5 py-2 text-xs font-semibold text-rose-700 bg-white hover:bg-rose-50 border border-rose-200 hover:border-rose-300 rounded-xl shadow-2xs transition-all hover:scale-[1.01] active:scale-[0.99]"
+                        title={`Delete Form ${formNumber}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                        <span>Delete</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

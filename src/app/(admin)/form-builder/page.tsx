@@ -111,12 +111,14 @@ export default function FormBuilderPage() {
     canLock: boolean;
     canImport: boolean;
     canExport: boolean;
+    canDelete?: boolean;
   }>({
     canEdit: false,
     canPublish: false,
     canLock: false,
     canImport: false,
     canExport: true,
+    canDelete: true,
   });
   const [effectiveStatus, setEffectiveStatus] = useState<string>("DRAFT");
 
@@ -1055,6 +1057,14 @@ export default function FormBuilderPage() {
             setAdminMode("EDIT");
             handleOpenFormWorkspace(formCode);
           }}
+          onDeleteForm={(form) => {
+            setDeleteConfirm({
+              type: "form",
+              targetId: form.code,
+              targetName: form.title,
+              count: form.submissionsCount,
+            });
+          }}
           onPreviewForm={(form) => {
             handleOpenFormWorkspace(form.code);
             setPreviewModalOpen(true);
@@ -1125,6 +1135,29 @@ export default function FormBuilderPage() {
               >
                 Submissions
               </Link>
+
+              {permissions.canDelete && questionnaire && (
+                <>
+                  <div className="h-4 w-px bg-slate-200" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const formSummary = forms.find((f) => f.code === questionnaire.code);
+                      setDeleteConfirm({
+                        type: "form",
+                        targetId: questionnaire.code,
+                        targetName: questionnaire.title,
+                        count: formSummary?.submissionsCount || 0,
+                      });
+                    }}
+                    className="inline-flex items-center gap-1 font-bold text-rose-600 hover:text-rose-800 transition-colors"
+                    title="Delete or safely archive this form"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                    <span>Delete</span>
+                  </button>
+                </>
+              )}
             </div>
           </div>
 

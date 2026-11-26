@@ -174,15 +174,6 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     const { code } = await params;
-
-    // Baseline protection
-    if (code === DEFAULT_QUESTIONNAIRE_CODE) {
-      return NextResponse.json(
-        { success: false, message: "The baseline RDA Contractor Registration Form is protected and cannot be deleted." },
-        { status: 400 }
-      );
-    }
-
     await connectToDatabase();
 
     const forms = await Questionnaire.find({ code });
