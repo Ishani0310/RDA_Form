@@ -16,7 +16,6 @@ import {
   HelpCircle,
   Copy,
   ArrowRight,
-  Truck,
 } from "lucide-react";
 import Link from "next/link";
 import { IQuestionnaireData, IFormSection, IFormQuestion } from "@/types/questionnaire";
@@ -330,20 +329,12 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-            <Link
-              href="/supplier-submissions"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 text-xs font-bold text-white bg-purple-700 hover:bg-purple-800 rounded-xl shadow-xs transition-all"
-            >
-              <Truck className="w-4 h-4" />
-              <span>Go to Supplier Submissions</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
             <button
               type="button"
               onClick={() => window.print()}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 text-xs font-bold text-slate-800 bg-white hover:bg-slate-100 border border-slate-300 rounded-xl shadow-xs transition-all"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-xl shadow-xs transition-all"
             >
-              <Printer className="w-4 h-4 text-slate-600" />
+              <Printer className="w-4 h-4 text-white" />
               <span>Print Official Receipt</span>
             </button>
             <Link
@@ -352,7 +343,7 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
                 setSubmissionSuccess(null);
                 setFormData({ organizationName: "", contactNumber: "", email: "" });
               }}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl shadow-xs transition-all"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl shadow-xs transition-all"
             >
               <span>Submit Another</span>
             </Link>
