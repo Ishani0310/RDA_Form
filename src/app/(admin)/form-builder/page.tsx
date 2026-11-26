@@ -40,6 +40,7 @@ import {
   HelpCircle,
   Trash2,
   Edit2,
+  Printer,
   ArrowUp,
   ArrowDown,
   RefreshCw,
@@ -654,6 +655,160 @@ export default function FormBuilderPage() {
     showNotification("success", `Exported schema JSON.`);
   };
 
+  // Download Full Form as PDF
+  const handleDownloadPDF = () => {
+    if (!questionnaire) return;
+
+    const printWin = window.open("", "_blank");
+    if (!printWin) {
+      window.print();
+      return;
+    }
+
+    const sectionsHtml = (sections || [])
+      .map((sec, sIdx) => {
+        const questionsHtml = (sec.questions || [])
+          .map((q) => {
+            let optionsHtml = "";
+            if (q.options && q.options.length > 0) {
+              optionsHtml = `
+                <div style="margin-top: 6px; display: flex; flex-wrap: wrap; gap: 14px;">
+                  ${q.options
+                    .map(
+                      (opt) => `
+                    <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: #1e293b;">
+                      <span style="display: inline-block; width: 14px; height: 14px; border: 1.5px solid #64748b; border-radius: ${
+                        q.fieldType === "radio" ? "50%" : "3px"
+                      };"></span>
+                      <span>${opt.label || opt.value}</span>
+                    </label>
+                  `
+                    )
+                    .join("")}
+                </div>
+              `;
+            } else {
+              optionsHtml = `
+                <div style="margin-top: 6px; height: 26px; border-bottom: 1px dashed #94a3b8; width: 100%; max-width: 500px;"></div>
+              `;
+            }
+
+            return `
+              <div style="margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #f1f5f9;">
+                <div style="display: flex; align-items: flex-start; gap: 8px;">
+                  <span style="font-weight: 700; color: #1e3a8a; font-size: 11px; min-width: 32px;">${q.code || `Q${q.number}`}</span>
+                  <div style="flex: 1;">
+                    <div style="font-size: 12px; font-weight: 600; color: #0f172a;">
+                      ${q.text} ${
+              q.isRequired
+                ? '<span style="color: #dc2626;">*</span>'
+                : '<span style="color: #64748b; font-size: 10px; font-weight: normal;">(Optional)</span>'
+            }
+                    </div>
+                    ${
+                      q.description
+                        ? `<div style="font-size: 10.5px; color: #64748b; margin-top: 2px;">${q.description}</div>`
+                        : ""
+                    }
+                    ${optionsHtml}
+                  </div>
+                </div>
+              </div>
+            `;
+          })
+          .join("");
+
+        return `
+          <div style="margin-bottom: 24px; page-break-inside: avoid;">
+            <div style="background: #0b1f3a; color: white; padding: 6px 12px; font-size: 12px; font-weight: bold; border-radius: 4px; margin-bottom: 12px; display: flex; justify-content: space-between;">
+              <span>${sec.title || `SECTION ${sIdx + 1}`}</span>
+              <span style="font-size: 10px; opacity: 0.8;">${sec.code || ""}</span>
+            </div>
+            ${
+              sec.description
+                ? `<p style="font-size: 11px; color: #475569; margin-bottom: 10px; font-style: italic;">${sec.description}</p>`
+                : ""
+            }
+            <div style="padding-left: 6px;">
+              ${questionsHtml}
+            </div>
+          </div>
+        `;
+      })
+      .join("");
+
+    const fullHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${questionnaire.title} - Official Form</title>
+          <style>
+            @page { size: A4; margin: 15mm; }
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color: #0f172a; margin: 0; padding: 12px; font-size: 12px; line-height: 1.4; }
+            .header { border-bottom: 2px solid #0b1f3a; padding-bottom: 12px; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; }
+            .logos { display: flex; align-items: center; gap: 10px; }
+            .logos img { height: 42px; width: auto; object-fit: contain; }
+            .meta { text-align: right; }
+            .badge { display: inline-block; background: #fbbf24; color: #0f172a; font-weight: 800; font-size: 9px; padding: 2px 6px; border-radius: 4px; }
+            .footer-sign { margin-top: 30px; border-top: 1px solid #cbd5e1; padding-top: 15px; display: flex; justify-content: space-between; page-break-inside: avoid; }
+            .sign-box { width: 45%; border-top: 1px dashed #64748b; padding-top: 6px; font-size: 10px; color: #475569; text-align: center; margin-top: 35px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="logos">
+              <img src="/ministry-logo.png" alt="Ministry Logo" />
+              <img src="/rda-logo.png" alt="RDA Logo" />
+              <img src="/icdp-logo.jpg" alt="ICDP Logo" />
+            </div>
+            <div class="meta">
+              <div style="font-size: 9px; font-weight: bold; color: #d97706; text-transform: uppercase;">Government of Sri Lanka</div>
+              <div style="font-size: 13px; font-weight: 900; color: #0b1f3a;">Road Development Authority</div>
+              <div style="font-size: 10px; color: #64748b;">Inclusive Connectivity and Development Project (ICDP)</div>
+              <div style="margin-top: 4px;">
+                <span class="badge">FORM 01</span>
+                <span style="font-family: monospace; font-size: 10px; font-weight: bold; color: #1e3a8a; margin-left: 4px;">${questionnaire.code}</span>
+                <span style="font-size: 10px; color: #64748b; margin-left: 4px;">v${questionnaire.version || "1.0"}</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 20px;">
+            <h1 style="font-size: 16px; font-weight: 900; color: #0b1f3a; margin: 0 0 4px 0;">${questionnaire.title}</h1>
+            <p style="font-size: 11px; color: #475569; margin: 0;">${questionnaire.description || ""}</p>
+          </div>
+
+          ${sectionsHtml}
+
+          <div class="footer-sign">
+            <div class="sign-box">
+              Authorized Representative Signature &amp; Date
+            </div>
+            <div class="sign-box">
+              Official Corporate / Institutional Seal
+            </div>
+          </div>
+
+          <div style="margin-top: 25px; text-align: center; font-size: 9px; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 8px;">
+            &copy; 2026 Road Development Authority (RDA). Inclusive Connectivity and Development Project (ICDP). Democratic Socialist Republic of Sri Lanka.
+          </div>
+
+          <script>
+            window.onload = function() {
+              setTimeout(function() {
+                window.print();
+              }, 300);
+            };
+          </script>
+        </body>
+      </html>
+    `;
+
+    printWin.document.open();
+    printWin.document.write(fullHtml);
+    printWin.document.close();
+  };
+
   // Delete Confirm Action
   const handleConfirmDelete = async () => {
     if (!deleteConfirm) return;
@@ -1022,155 +1177,42 @@ export default function FormBuilderPage() {
                 </p>
               </div>
 
-              {/* Action Toolbar */}
-              <div className="flex items-center gap-2 flex-wrap">
-                {/* Two Admin Modes Segmented Control */}
-                <div className="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold">
-                  <button
-                    type="button"
-                    onClick={() => setAdminMode("VIEW")}
-                    className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all ${
-                      adminMode === "VIEW"
-                        ? "bg-[#0b1f3a] text-white shadow-xs"
-                        : "text-slate-600 hover:text-slate-900"
-                    }`}
-                    title="Mode A: Form View (Interactive simulation of the public form)"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                    <span>Mode A: Form View</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setAdminMode("EDIT")}
-                    className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all ${
-                      adminMode === "EDIT"
-                        ? "bg-[#0b1f3a] text-white shadow-xs"
-                        : "text-slate-600 hover:text-slate-900"
-                    }`}
-                    title="Mode B: Edit Mode (Same form design with inline administration controls)"
-                  >
-                    <Edit2 className="w-3.5 h-3.5" />
-                    <span>Mode B: Edit Mode</span>
-                  </button>
-                </div>
-
-                {/* Add Section Button (in Edit Mode) */}
-                {adminMode === "EDIT" && permissions.canEdit && !questionnaire?.isLocked && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingSection(null);
-                      setSectionModalOpen(true);
-                    }}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-blue-900 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 shadow-2xs"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Add Section</span>
-                  </button>
-                )}
-
-                {/* Save Draft Button */}
-                {permissions.canEdit && (
-                  <button
-                    type="button"
-                    onClick={handleSaveDraft}
-                    disabled={saving || questionnaire?.isLocked}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-slate-800 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg shadow-2xs disabled:opacity-50"
-                  >
-                    <Save className="w-3.5 h-3.5 text-blue-900" />
-                    <span>{saving ? "Saving..." : "Save Draft"}</span>
-                  </button>
-                )}
-
-                {/* Publish Live Button */}
-                {permissions.canPublish && (
-                  <button
-                    type="button"
-                    onClick={handlePublish}
-                    disabled={publishing || questionnaire?.isLocked}
-                    className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold text-white bg-[#0b1f3a] hover:bg-[#132f54] rounded-lg shadow-sm disabled:opacity-50"
-                  >
-                    <Send className="w-3.5 h-3.5 text-amber-400" />
-                    <span>{publishing ? "Publishing..." : "Publish Live"}</span>
-                  </button>
-                )}
-
-                {/* Version History Drawer Trigger */}
+              {/* Action Toolbar: Exactly 3 buttons (Save Draft, Publish Live, Download as PDF) */}
+              <div className="flex items-center gap-2.5 flex-wrap">
+                {/* 1. Save Draft Button */}
                 <button
                   type="button"
-                  onClick={() => setVersionDrawerOpen(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg shadow-2xs"
+                  onClick={handleSaveDraft}
+                  disabled={saving || questionnaire?.isLocked}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-800 bg-white border border-slate-300 hover:bg-slate-50 rounded-xl shadow-2xs transition-all disabled:opacity-50"
+                  title="Save current questionnaire state as draft"
                 >
-                  <History className="w-3.5 h-3.5 text-slate-500" />
-                  <span>Version History</span>
+                  <Save className="w-4 h-4 text-blue-900" />
+                  <span>{saving ? "Saving..." : "Save Draft"}</span>
                 </button>
 
-                {/* Sync with Official Baseline Schema */}
-                {permissions.canEdit && (
-                  <button
-                    type="button"
-                    onClick={handleSyncBaseline}
-                    disabled={questionnaire?.isLocked || workspaceLoading}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-900 bg-blue-50 border border-blue-200 hover:bg-blue-100 rounded-lg shadow-2xs transition-all disabled:opacity-50"
-                    title="Synchronize Form Builder with the latest official registration form schema"
-                  >
-                    <RefreshCw className={`w-3.5 h-3.5 text-blue-800 ${workspaceLoading ? "animate-spin" : ""}`} />
-                    <span>Sync Latest Form</span>
-                  </button>
-                )}
-
-                {/* Schema Validator Button */}
+                {/* 2. Publish Live Button */}
                 <button
                   type="button"
-                  onClick={handleValidateSchema}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg shadow-2xs"
+                  onClick={handlePublish}
+                  disabled={publishing || questionnaire?.isLocked}
+                  className="inline-flex items-center gap-2 px-5 py-2 text-xs font-bold text-white bg-[#0b1f3a] hover:bg-[#132f54] rounded-xl shadow-xs transition-all disabled:opacity-50"
+                  title="Publish questionnaire live to the public portal"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                  <span>Validate Schema</span>
+                  <Send className="w-4 h-4 text-amber-400" />
+                  <span>{publishing ? "Publishing..." : "Publish Live"}</span>
                 </button>
 
-                {/* Export Schema JSON */}
-                {permissions.canExport && (
-                  <button
-                    type="button"
-                    onClick={handleExportSchema}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg shadow-2xs"
-                    title="Export Schema JSON"
-                  >
-                    <Download className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Export</span>
-                  </button>
-                )}
-
-                {/* Import Schema JSON */}
-                {permissions.canImport && (
-                  <button
-                    type="button"
-                    onClick={() => setImportModalOpen(true)}
-                    disabled={questionnaire?.isLocked}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg shadow-2xs disabled:opacity-50"
-                    title="Import Schema JSON"
-                  >
-                    <Upload className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Import</span>
-                  </button>
-                )}
-
-                {/* Policy Lock Toggle (Super Admin Only) */}
-                {permissions.canLock && (
-                  <button
-                    type="button"
-                    onClick={handleToggleLock}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg shadow-2xs border ${
-                      questionnaire?.isLocked
-                        ? "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100"
-                        : "bg-slate-50 text-slate-700 border-slate-300 hover:bg-slate-100"
-                    }`}
-                  >
-                    {questionnaire?.isLocked ? <Unlock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
-                    <span>{questionnaire?.isLocked ? "Unlock Policy" : "Lock Schema"}</span>
-                  </button>
-                )}
+                {/* 3. Download as PDF Button */}
+                <button
+                  type="button"
+                  onClick={handleDownloadPDF}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl shadow-2xs transition-all"
+                  title="Download and print full form as PDF"
+                >
+                  <Printer className="w-4 h-4 text-blue-900" />
+                  <span>Download as PDF</span>
+                </button>
               </div>
             </div>
 
