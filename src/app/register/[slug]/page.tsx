@@ -1063,15 +1063,15 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex flex-col gap-2 text-left">
             {/* Logos Row */}
-            <div className="flex items-center gap-3 sm:gap-4">
+            <div className="flex items-center gap-3.5 sm:gap-5">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/ministry-logo.png" alt="Ministry of Transport" className="h-7 sm:h-8 w-auto object-contain" />
-              <div className="h-6 w-px bg-slate-200" />
+              <img src="/ministry-logo.png" alt="Ministry of Transport" className="h-9 sm:h-11 w-auto object-contain" />
+              <div className="h-8 sm:h-9 w-px bg-slate-200" />
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/rda-logo.png" alt="Road Development Authority" className="h-7 sm:h-8 w-auto object-contain" />
-              <div className="h-6 w-px bg-slate-200" />
+              <img src="/rda-logo.png" alt="Road Development Authority" className="h-9 sm:h-11 w-auto object-contain" />
+              <div className="h-8 sm:h-9 w-px bg-slate-200" />
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/icdp-logo.jpg" alt="ICDP" className="h-7 sm:h-8 w-auto object-contain" />
+              <img src="/icdp-logo.jpg" alt="ICDP" className="h-9 sm:h-11 w-auto object-contain" />
             </div>
 
             {/* Positioned directly down under the logos */}
