@@ -109,6 +109,48 @@ export async function generatePermanentRegistrationReference(
 }
 
 /**
+ * Generate permanent registration reference number for Form 2 (Supplier Registration)
+ * Format: Supplier-YYYY-XXXX (e.g. Supplier-2026-0001)
+ */
+export async function generateSupplierRegistrationReference(
+  year: number = new Date().getFullYear()
+): Promise<string> {
+  await connectToDatabase();
+  const prefix = `Supplier-${year}-`;
+
+  // Find the highest sequential reference matching prefix
+  const highestSub = await Submission.findOne(
+    { submissionReference: { $regex: new RegExp(`^${prefix}\\d+`, "i") } },
+    { submissionReference: 1 }
+  )
+    .sort({ submissionReference: -1 })
+    .lean();
+
+  let nextSeq = 1;
+  if (highestSub?.submissionReference) {
+    const parts = highestSub.submissionReference.split("-");
+    const numPart = parseInt(parts[parts.length - 1], 10);
+    if (!isNaN(numPart)) {
+      nextSeq = numPart + 1;
+    }
+  } else {
+    const count = await Submission.countDocuments({
+      $or: [{ formId: "RDA-SUPPLIER-Q" }, { formSlug: "supplier" }],
+    });
+    nextSeq = count + 1;
+  }
+
+  while (true) {
+    const candidate = `${prefix}${String(nextSeq).padStart(4, "0")}`;
+    const exists = await Submission.exists({ submissionReference: candidate });
+    if (!exists) {
+      return candidate;
+    }
+    nextSeq++;
+  }
+}
+
+/**
  * Initialize a new draft or update an existing progress draft using a secure resume token
  */
 export async function saveOrUpdateDraft(
@@ -450,15 +492,18 @@ export async function saveOrUpdateDraft(
     });
   }
 
-  // Generate permanent registration reference number (retained through full lifecycle)
-  const permanentRef = await generatePermanentRegistrationReference(new Date().getFullYear());
-
   // Check active published questionnaire from fast in-memory cache
   const targetFormIdentifier = (payload.formId || payload.formSlug || DEFAULT_QUESTIONNAIRE_CODE).trim();
   const activePublished = await getCachedPublishedQuestionnaire(targetFormIdentifier);
 
   const effectiveFormId = activePublished?.code || (payload.formId || DEFAULT_QUESTIONNAIRE_CODE);
   const effectiveFormSlug = activePublished?.slug || (payload.formSlug || "contractor");
+  const isSupplierForm = effectiveFormId === "RDA-SUPPLIER-Q" || effectiveFormSlug === "supplier";
+
+  // Generate permanent registration reference number (retained through full lifecycle)
+  const permanentRef = isSupplierForm
+    ? await generateSupplierRegistrationReference(new Date().getFullYear())
+    : await generatePermanentRegistrationReference(new Date().getFullYear());
 
   const submission = await Submission.create({
     submissionReference: permanentRef,
@@ -1070,7 +1115,9 @@ export async function submitDirectDeclaration(
   ).trim().toLowerCase();
 
   const [permanentRef, activePublished, duplicateCheck, duplicateEmailCheck] = await Promise.all([
-    generatePermanentRegistrationReference(new Date().getFullYear()),
+    isNewForm2
+      ? generateSupplierRegistrationReference(new Date().getFullYear())
+      : generatePermanentRegistrationReference(new Date().getFullYear()),
     getCachedPublishedQuestionnaire(targetFormCode),
     normalizedQ.participantCategory === "Contractor" && registrationNumber && !registrationNumber.startsWith("REG-")
       ? Contractor.findOne({ registrationNumber, status: { $in: ["Verified", "Pending_Review"] } }).select("_id").lean()

@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
       const emailList = Array.from(submittedEmails);
       await Submission.deleteMany({
         status: "Draft",
-        submissionReference: { $not: /^RDA-ICDP-/ },
+        submissionReference: { $not: /^(?:RDA-ICDP-|Supplier-)/ },
         $or: [
           { "questionnaireData.email": { $in: emailList } },
           { "questionnaireData.participant1.email": { $in: emailList } },
@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
 
     // Prevent duplicate draft records: If multiple drafts exist for the same company name, retain only the newest draft
     try {
-      const allDrafts = await Submission.find({ status: "Draft", submissionReference: { $not: /^RDA-ICDP-/ } })
+      const allDrafts = await Submission.find({ status: "Draft", submissionReference: { $not: /^(?:RDA-ICDP-|Supplier-)/ } })
         .select("_id contractor questionnaireData.organizationName questionnaireData.supplierDetails.companyName createdAt")
         .sort({ createdAt: -1 })
         .lean();
