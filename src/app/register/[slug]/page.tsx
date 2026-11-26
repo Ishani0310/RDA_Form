@@ -17,8 +17,6 @@ import {
   Copy,
   ArrowRight,
   Package,
-  Users,
-  Wrench,
 } from "lucide-react";
 import Link from "next/link";
 import { IQuestionnaireData, IFormSection, IFormQuestion } from "@/types/questionnaire";
@@ -576,82 +574,32 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
               )}
             </div>
 
-            {/* Question 4: Supplier Type */}
-            <div className="space-y-2 pt-3 border-t border-slate-100">
-              <label className="block font-bold text-slate-800">
+            {/* Question 4: Supplier Type Dropdown */}
+            <div className="space-y-1.5 pt-3 border-t border-slate-100">
+              <label htmlFor="input-supplier-type" className="block font-bold text-slate-800">
                 4. Supplier Type <span className="text-rose-500">*</span>
               </label>
               <p className="text-[11px] text-slate-500">
                 Please select the primary supply category provided by your organization (Material, Labour, or Equipment).
               </p>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                {[
-                  {
-                    type: "Material",
-                    label: "Material",
-                    desc: "Bitumen, asphalt premix, aggregate, cement, steel, etc.",
-                    icon: Package,
-                    color: "text-blue-700",
-                    borderSelected: "border-blue-600 bg-blue-50/70 ring-2 ring-blue-600/30",
-                  },
-                  {
-                    type: "Labour",
-                    label: "Labour",
-                    desc: "Skilled/unskilled labour force, site crews, technical personnel.",
-                    icon: Users,
-                    color: "text-amber-700",
-                    borderSelected: "border-amber-600 bg-amber-50/70 ring-2 ring-amber-600/30",
-                  },
-                  {
-                    type: "Equipment",
-                    label: "Equipment",
-                    desc: "Heavy machinery, pavers, rollers, excavators, transport fleet.",
-                    icon: Wrench,
-                    color: "text-emerald-700",
-                    borderSelected: "border-emerald-600 bg-emerald-50/70 ring-2 ring-emerald-600/30",
-                  },
-                ].map((item) => {
-                  const isSelected = formData.supplierType === item.type;
-                  const Icon = item.icon;
-                  return (
-                    <button
-                      key={item.type}
-                      type="button"
-                      onClick={() => handleChange("supplierType", item.type)}
-                      className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer relative flex flex-col justify-between ${
-                        isSelected
-                          ? item.borderSelected
-                          : "bg-slate-50/90 border-slate-200 hover:border-slate-300 hover:bg-slate-100/70"
-                      }`}
-                    >
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                            isSelected ? "bg-white shadow-xs" : "bg-slate-200/70"
-                          }`}>
-                            <Icon className={`w-4 h-4 ${isSelected ? item.color : "text-slate-600"}`} />
-                          </div>
-                          <span
-                            className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
-                              isSelected
-                                ? "border-blue-900 bg-blue-900"
-                                : "border-slate-300 bg-white"
-                            }`}
-                          >
-                            {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
-                          </span>
-                        </div>
-                        <span className="font-bold text-slate-900 block text-xs">
-                          {item.label}
-                        </span>
-                        <span className="text-[10px] text-slate-500 leading-tight block mt-1">
-                          {item.desc}
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
+              <div className="relative">
+                <Package className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
+                <select
+                  id="input-supplier-type"
+                  value={formData.supplierType}
+                  onChange={(e) => handleChange("supplierType", e.target.value)}
+                  className={`w-full pl-9 pr-8 py-2.5 bg-slate-50 border rounded-xl font-medium focus:bg-white focus:outline-hidden focus:ring-2 transition-all cursor-pointer text-slate-900 ${
+                    fieldErrors.supplierType
+                      ? "border-rose-400 focus:ring-rose-200 text-rose-950"
+                      : "border-slate-300 focus:ring-blue-900/30"
+                  }`}
+                  required
+                >
+                  <option value="" disabled>-- Select Supplier Type --</option>
+                  <option value="Material">Material (Bitumen, asphalt premix, aggregate, cement, steel, etc.)</option>
+                  <option value="Labour">Labour (Skilled/unskilled labour force, site crews, technical personnel)</option>
+                  <option value="Equipment">Equipment (Heavy machinery, pavers, rollers, excavators, transport fleet)</option>
+                </select>
               </div>
 
               {fieldErrors.supplierType && (

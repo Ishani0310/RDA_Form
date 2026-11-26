@@ -1250,7 +1250,7 @@ export function getSupplierSections(): IFormSection[] {
           text: "Supplier Type",
           description: "Select supplier specialization category: Material, Labour, or Equipment.",
           placeholder: "Select Supplier Type",
-          fieldType: "radio",
+          fieldType: "dropdown",
           options: [
             { id: "opt_mat", label: "Material", value: "Material", displayOrder: 1, isActive: true },
             { id: "opt_lab", label: "Labour", value: "Labour", displayOrder: 2, isActive: true },
