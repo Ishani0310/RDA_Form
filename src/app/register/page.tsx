@@ -7217,20 +7217,20 @@ function RegisterFooter() {
     <footer className="w-full bg-[#07162c] text-slate-300 border-t border-[#132c4a] mt-12 sm:mt-16 print:hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 lg:py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-10 items-start">
-          {/* Col 1: ICDP & RDA Logo Showcase (Full on mobile, 5 cols on lg) */}
+          {/* Col 1: Official Ministry, RDA & ICDP Logo Hierarchy (Full on mobile, 5 cols on lg) */}
           <div className="lg:col-span-5 space-y-3.5 sm:space-y-4">
             <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
-              {/* ICDP Official Logo */}
-              <div className="bg-white rounded-xl p-1 sm:p-1.5 shadow-md border border-white/20 shrink-0">
+              {/* 1. Ministry Official Logo (FIRST) */}
+              <div className="bg-white rounded-xl p-1.5 sm:p-2 shadow-md border border-white/20 shrink-0">
                 <img
-                  src="/icdp-logo.jpg"
-                  alt="Inclusive Connectivity and Development Project (ICDP)"
+                  src="/ministry-logo.png"
+                  alt="Ministry of Transport, Highways and Urban Development"
                   className="h-9 sm:h-11 lg:h-12 w-auto object-contain"
                 />
               </div>
 
-              {/* RDA Official Logo */}
-              <div className="bg-white rounded-xl p-1 sm:p-1.5 shadow-md border border-white/20 shrink-0">
+              {/* 2. RDA Official Logo (SECOND) */}
+              <div className="bg-white rounded-xl p-1.5 sm:p-2 shadow-md border border-white/20 shrink-0">
                 <img
                   src="/rda-logo.png"
                   alt="Road Development Authority Sri Lanka"
@@ -7238,11 +7238,11 @@ function RegisterFooter() {
                 />
               </div>
 
-              {/* Ministry Official Logo */}
-              <div className="bg-white rounded-xl p-1 sm:p-1.5 shadow-md border border-white/20 shrink-0 hidden min-[400px]:block">
+              {/* 3. ICDP Official Logo (THIRD) */}
+              <div className="bg-white rounded-xl p-1.5 sm:p-2 shadow-md border border-white/20 shrink-0">
                 <img
-                  src="/ministry-logo.png"
-                  alt="Ministry of Transport, Highways and Urban Development"
+                  src="/icdp-logo.jpg"
+                  alt="Inclusive Connectivity and Development Project (ICDP)"
                   className="h-9 sm:h-11 lg:h-12 w-auto object-contain"
                 />
               </div>
