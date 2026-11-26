@@ -1058,7 +1058,7 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
         </div>
       )}
 
-      <div className="max-w-3xl mx-auto space-y-6">
+      <div className={`max-w-3xl mx-auto space-y-6 ${lang === "si" ? "lang-si font-sinhala" : lang === "ta" ? "lang-ta font-tamil" : ""}`}>
         {/* Top Government Letterhead Bar with Language Switcher */}
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex flex-col gap-2 text-left">
@@ -1076,10 +1076,10 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
 
             {/* Positioned directly down under the logos */}
             <div className="pt-0.5">
-              <span className="text-[10px] font-bold text-amber-700 uppercase tracking-widest block leading-tight">
+              <span className={`text-[10px] font-bold text-amber-700 block ${lang === "en" ? "uppercase tracking-widest leading-tight" : "tracking-normal leading-snug"}`}>
                 {t.govSriLanka}
               </span>
-              <span className="text-xs font-black text-blue-950 block leading-tight">
+              <span className={`text-xs block ${lang === "en" ? "font-black text-blue-950 leading-tight" : "font-bold text-blue-950 leading-snug"}`}>
                 {t.rda}
               </span>
             </div>
@@ -1131,7 +1131,7 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
           <div className="absolute right-0 top-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
           <div className="relative z-10 space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-mono font-black text-[10px] text-amber-950 bg-amber-400 px-2.5 py-0.5 rounded-full shadow-2xs">
+              <span className={`text-[10px] text-amber-950 bg-amber-400 px-2.5 py-0.5 rounded-full shadow-2xs ${lang === "en" ? "font-mono font-black" : "font-bold tracking-normal"}`}>
                 {t.formCode}
               </span>
               <span className="font-mono font-bold text-[10px] text-blue-200 bg-blue-900/60 border border-blue-700/60 px-2 py-0.5 rounded">
@@ -1142,11 +1142,11 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
               </span>
             </div>
 
-            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">
+            <h1 className={`text-xl sm:text-2xl text-white ${lang === "en" ? "font-black tracking-tight leading-tight" : "font-bold tracking-normal leading-relaxed"}`}>
               {lang === "en" ? questionnaire.title : t.formTitle}
             </h1>
 
-            <p className="text-xs text-slate-300 leading-relaxed max-w-2xl">
+            <p className={`text-xs text-slate-300 max-w-2xl ${lang === "en" ? "leading-relaxed" : "leading-relaxed font-normal"}`}>
               {lang === "en" ? (questionnaire.description || t.formDesc) : t.formDesc}
             </p>
 
@@ -1160,7 +1160,7 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
         {/* Registration Form Card */}
         <form onSubmit={handleSubmit} className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
           <div className="border-b border-slate-100 pb-3">
-            <h2 className="text-sm font-black text-slate-900 uppercase tracking-wide flex items-center gap-2">
+            <h2 className={`text-sm font-bold text-slate-900 flex items-center gap-2 ${lang === "en" ? "uppercase tracking-wide font-black" : "tracking-normal"}`}>
               <Building2 className="w-4 h-4 text-blue-900" />
               <span>{t.sec1Title}</span>
             </h2>
@@ -1285,7 +1285,7 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
           {/* SECTION 2: SUPPLIER DETAILS */}
           <div className="pt-6 border-t border-slate-200 space-y-5">
             <div className="border-b border-slate-100 pb-3">
-              <h2 className="text-sm font-black text-slate-900 uppercase tracking-wide flex items-center gap-2">
+              <h2 className={`text-sm font-bold text-slate-900 flex items-center gap-2 ${lang === "en" ? "uppercase tracking-wide font-black" : "tracking-normal"}`}>
                 <Truck className="w-4 h-4 text-blue-900" />
                 <span>{t.sec2Title}</span>
               </h2>
