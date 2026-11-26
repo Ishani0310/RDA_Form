@@ -6334,6 +6334,28 @@ function RegisterForm() {
               )}
             </fieldset>
           </div>
+
+          {/* Official ICDP Project Logo & Footer (After Form Down) */}
+          <div className="pt-6 pb-12 flex flex-col items-center justify-center text-center space-y-3 print:hidden">
+            <div className="p-3 bg-white rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-md transition-all flex items-center justify-center">
+              <img
+                src="/icdp-logo.jpg"
+                alt="Inclusive Connectivity and Development Project (ICDP)"
+                className="h-14 sm:h-16 w-auto object-contain"
+              />
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs sm:text-sm font-bold text-slate-800 tracking-wide">
+                Inclusive Connectivity and Development Project (ICDP)
+              </p>
+              <p className="text-[11px] text-slate-500 font-medium">
+                Road Development Authority &bull; Ministry of Transport, Highways and Urban Development
+              </p>
+              <p className="text-[10px] text-slate-400">
+                Democratic Socialist Republic of Sri Lanka &bull; Official Registration Portal
+              </p>
+            </div>
+          </div>
         </>
       )}
 
