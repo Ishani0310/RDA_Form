@@ -17,9 +17,13 @@ import {
   Copy,
   ArrowRight,
   Package,
+  Truck,
+  Plus,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { IQuestionnaireData, IFormSection, IFormQuestion } from "@/types/questionnaire";
+import { SUPPLIER_MATERIALS } from "@/lib/questionnaire-types";
 
 interface DynamicRegistrationPageProps {
   params: Promise<{ slug: string }>;
@@ -48,7 +52,11 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
     contactNumber: "",
     email: "",
     supplierType: "",
+    materialsSupplied: [] as string[],
+    materialsOther: "",
+    supplyCapacities: {} as Record<string, any>,
   });
+  const [supplierMaterialsOtherList, setSupplierMaterialsOtherList] = useState<string[]>([""]);
 
   // Validation errors state
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -64,6 +72,7 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
     contactNumber: string;
     email: string;
     supplierType?: string;
+    materialsSupplied?: string[];
     submittedAt: string;
   } | null>(null);
 
@@ -97,6 +106,59 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
     if (fieldId === "email" && emailUniqueError) {
       setEmailUniqueError(null);
     }
+  };
+
+  // Handle materials toggle for material supplier
+  const handleMaterialToggle = (mat: string) => {
+    setFormData((prev) => {
+      const currentList: string[] = prev.materialsSupplied || [];
+      const updated = currentList.includes(mat)
+        ? currentList.filter((m) => m !== mat)
+        : [...currentList, mat];
+      return { ...prev, materialsSupplied: updated };
+    });
+    if (fieldErrors.materialsSupplied) {
+      setFieldErrors((prev) => {
+        const copy = { ...prev };
+        delete copy.materialsSupplied;
+        return copy;
+      });
+    }
+  };
+
+  const handleAddSupplierMaterialOther = () => {
+    setSupplierMaterialsOtherList((prev) => [...prev, ""]);
+  };
+
+  const handleRemoveSupplierMaterialOther = (index: number) => {
+    setSupplierMaterialsOtherList((prev) => {
+      const updated = prev.filter((_, idx) => idx !== index);
+      const combined = updated.map((s) => s.trim()).filter(Boolean).join(", ");
+      setFormData((f) => ({ ...f, materialsOther: combined }));
+      return updated.length > 0 ? updated : [""];
+    });
+  };
+
+  const handleUpdateSupplierMaterialOther = (index: number, val: string) => {
+    setSupplierMaterialsOtherList((prev) => {
+      const updated = [...prev];
+      updated[index] = val;
+      const combined = updated.map((s) => s.trim()).filter(Boolean).join(", ");
+      setFormData((f) => ({ ...f, materialsOther: combined }));
+      return updated;
+    });
+  };
+
+  // Handle capacity changes
+  const handleCapacityChange = (matKey: string, field: string, val: string) => {
+    setFormData((prev) => {
+      const caps = { ...(prev.supplyCapacities || {}) };
+      caps[matKey] = {
+        ...(caps[matKey] || { quantity: "", unit: "MT per year", rate: "", rateUnit: "cu.m" }),
+        [field]: val,
+      };
+      return { ...prev, supplyCapacities: caps };
+    });
   };
 
   // Real-time unique email check on blur
@@ -171,6 +233,20 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
       errors.supplierType = "Please select a valid supplier type (Material, Labour, or Equipment).";
     }
 
+    // If Material is selected, require at least one material selected
+    if (supType === "Material") {
+      if (!formData.materialsSupplied || formData.materialsSupplied.length === 0) {
+        errors.materialsSupplied = "Please select at least one material you supply.";
+      } else if (formData.materialsSupplied.includes("Other")) {
+        const hasOtherValue =
+          supplierMaterialsOtherList.some((s) => s.trim().length > 0) ||
+          Boolean(formData.materialsOther?.trim());
+        if (!hasOtherValue) {
+          errors.materialsOther = "Please specify the other material(s) you supply.";
+        }
+      }
+    }
+
     setFieldErrors(errors);
     return Object.keys(errors).length === 0 && !emailUniqueError;
   };
@@ -182,6 +258,11 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
 
     setSubmitting(true);
     try {
+      const otherCombined = supplierMaterialsOtherList
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .join(", ");
+
       const payload = {
         businessName: formData.organizationName.trim(),
         formId: questionnaire?.code || "RDA-SUPPLIER-Q",
@@ -192,6 +273,15 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
           contactNumber: formData.contactNumber.trim(),
           email: formData.email.trim().toLowerCase(),
           supplierType: (formData.supplierType || "Material").trim(),
+          materialsSupplied: formData.materialsSupplied || [],
+          materialsOther: otherCombined || formData.materialsOther || "",
+          supplyCapacities: formData.supplyCapacities || {},
+          supplierDetails: {
+            companyName: formData.organizationName.trim(),
+            materialsSupplied: formData.materialsSupplied || [],
+            materialsOther: otherCombined || formData.materialsOther || "",
+            supplyCapacities: formData.supplyCapacities || {},
+          },
           participantCategory: questionnaire?.category || "Supplier",
         },
       };
@@ -218,6 +308,7 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
           contactNumber: formData.contactNumber.trim(),
           email: formData.email.trim().toLowerCase(),
           supplierType: (formData.supplierType || "Material").trim(),
+          materialsSupplied: formData.materialsSupplied || [],
           submittedAt: new Date().toLocaleDateString("en-GB", {
             day: "2-digit",
             month: "short",
@@ -344,6 +435,23 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
                 <span className="text-[10px] text-slate-400 uppercase font-semibold block">Filing Timestamp</span>
                 <span className="font-bold text-slate-800">{submissionSuccess.submittedAt}</span>
               </div>
+              {submissionSuccess.materialsSupplied && submissionSuccess.materialsSupplied.length > 0 && (
+                <div className="sm:col-span-2 pt-2 border-t border-slate-200/80">
+                  <span className="text-[10px] text-slate-400 uppercase font-semibold block mb-1.5">
+                    Materials Supplied
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {submissionSuccess.materialsSupplied.map((m) => (
+                      <span
+                        key={m}
+                        className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-blue-50 text-blue-900 border border-blue-200"
+                      >
+                        {m}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -360,7 +468,16 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
               href={`/register/${slug}`}
               onClick={() => {
                 setSubmissionSuccess(null);
-                setFormData({ organizationName: "", contactNumber: "", email: "" });
+                setFormData({
+                  organizationName: "",
+                  contactNumber: "",
+                  email: "",
+                  supplierType: "",
+                  materialsSupplied: [],
+                  materialsOther: "",
+                  supplyCapacities: {},
+                });
+                setSupplierMaterialsOtherList([""]);
               }}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl shadow-xs transition-all"
             >
@@ -609,6 +726,272 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
                 </p>
               )}
             </div>
+
+            {/* Conditionally Show Section 4: Supplier Details when Material is selected */}
+            {formData.supplierType === "Material" && (
+              <div className="space-y-4 pt-4 border-t border-slate-100 animate-fadeIn">
+                <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                  <Truck className="w-4 h-4 text-blue-900" />
+                  <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
+                    Section 4: Supplier Details
+                  </h2>
+                </div>
+
+                <div className="p-3.5 bg-blue-50 border border-blue-200/80 rounded-xl text-xs text-blue-950">
+                  <p className="leading-relaxed">
+                    Please provide details of the materials you supply and your production/supply capacity.
+                  </p>
+                </div>
+
+                <div className="space-y-4 text-xs">
+                  {/* Material Selection Checkboxes */}
+                  <div id="input-supplierDetails-materialsSupplied">
+                    <label className="block font-semibold text-slate-700 mb-2">
+                      Please select the material(s) you supply <span className="text-rose-500">*</span> (Multiple selection allowed)
+                    </label>
+                    <div
+                      className={`grid grid-cols-2 sm:grid-cols-3 gap-2.5 p-1.5 rounded-xl transition-all ${
+                        fieldErrors.materialsSupplied ? "bg-rose-50/40 border-2 border-rose-500" : ""
+                      }`}
+                    >
+                      {SUPPLIER_MATERIALS.map((mat) => {
+                        const isChecked = (formData.materialsSupplied || []).includes(mat);
+                        return (
+                          <label
+                            key={mat}
+                            className={`flex items-center gap-2 p-2.5 border rounded-lg cursor-pointer transition-colors ${
+                              isChecked
+                                ? "bg-blue-50/80 border-blue-800 text-blue-950 font-semibold shadow-xs"
+                                : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => handleMaterialToggle(mat)}
+                              className="w-4 h-4 text-blue-900 rounded focus:ring-blue-800 cursor-pointer"
+                            />
+                            <span>{mat}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                    {fieldErrors.materialsSupplied && (
+                      <div role="alert" className="flex items-start gap-1.5 mt-2 text-xs font-semibold text-rose-600 animate-fadeIn">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                        <span>{fieldErrors.materialsSupplied}</span>
+                      </div>
+                    )}
+
+                    {/* Specify Other Supplied Material(s) */}
+                    {(formData.materialsSupplied || []).includes("Other") && (
+                      <div className="mt-3 p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                        <div className="flex items-center justify-between">
+                          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
+                            Specify Other Supplied Material(s) <span className="text-rose-500">*</span>
+                          </label>
+                          <span className="text-[11px] text-slate-500">
+                            Add one or more material types
+                          </span>
+                        </div>
+
+                        <div className="space-y-2">
+                          {supplierMaterialsOtherList.map((item, idx) => (
+                            <div key={idx} className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                value={item}
+                                onChange={(e) => {
+                                  handleUpdateSupplierMaterialOther(idx, e.target.value);
+                                  if (fieldErrors.materialsOther) {
+                                    setFieldErrors((prev) => {
+                                      const copy = { ...prev };
+                                      delete copy.materialsOther;
+                                      return copy;
+                                    });
+                                  }
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    handleAddSupplierMaterialOther();
+                                  }
+                                }}
+                                placeholder={
+                                  idx === 0
+                                    ? "If Other, please specify your material type..."
+                                    : `Additional material #${idx + 1}`
+                                }
+                                className={`flex-1 p-2 bg-white rounded-lg text-slate-900 text-xs focus:outline-hidden focus:ring-2 ${
+                                  fieldErrors.materialsOther && idx === 0
+                                    ? "border-2 border-rose-500 focus:ring-rose-200"
+                                    : "border border-slate-300 focus:ring-blue-800"
+                                }`}
+                              />
+                              {supplierMaterialsOtherList.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveSupplierMaterialOther(idx)}
+                                  className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg border border-transparent hover:border-rose-200 transition-colors cursor-pointer"
+                                  title="Remove this material"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+
+                        {fieldErrors.materialsOther && (
+                          <div role="alert" className="flex items-start gap-1.5 mt-1 text-xs font-semibold text-rose-600 animate-fadeIn">
+                            <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                            <span>{fieldErrors.materialsOther}</span>
+                          </div>
+                        )}
+
+                        <div>
+                          <button
+                            type="button"
+                            onClick={handleAddSupplierMaterialOther}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-900 hover:text-blue-700 bg-white hover:bg-blue-50 border border-blue-200 rounded-lg shadow-xs transition-colors cursor-pointer"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Add another material</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Annual Supply Capacity Per Selected Material */}
+                  {(formData.materialsSupplied || []).length > 0 && (
+                    <div className="space-y-3 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                      <div>
+                        <span className="font-bold text-slate-900 uppercase text-[11px] block">
+                          Annual Supply Capacity &amp; Rates
+                        </span>
+                        <span className="text-[11px] text-slate-500">
+                          Specify annual production or supply capacity with its unit (e.g. MT per year), and enter the unit rate with its selected unit.
+                        </span>
+                      </div>
+
+                      {/* Desktop Header */}
+                      <div className="hidden sm:grid sm:grid-cols-12 gap-2.5 px-3 py-1 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <div className="sm:col-span-2">Material</div>
+                        <div className="sm:col-span-6">Annual Capacity (Quantity &amp; Unit)</div>
+                        <div className="sm:col-span-4">Rate &amp; Unit</div>
+                      </div>
+
+                      <div className="space-y-2.5">
+                        {(() => {
+                          const capacityRows: { key: string; label: string }[] = [];
+                          const mats: string[] = formData.materialsSupplied || [];
+                          const otherItems = supplierMaterialsOtherList
+                            .map((s) => s.trim())
+                            .filter(Boolean);
+
+                          mats.forEach((mat: string) => {
+                            if (mat !== "Other") {
+                              capacityRows.push({ key: mat, label: mat });
+                            } else if (otherItems.length === 0) {
+                              capacityRows.push({ key: "Other", label: "Other" });
+                            } else {
+                              otherItems.forEach((item) => {
+                                capacityRows.push({
+                                  key: `Other (${item})`,
+                                  label: `Other (${item})`,
+                                });
+                              });
+                            }
+                          });
+
+                          return capacityRows.map((row) => {
+                            const defaultUnit = "MT per year";
+                            const cap =
+                              formData.supplyCapacities?.[row.key] || {
+                                quantity: "",
+                                unit: defaultUnit,
+                                rate: "",
+                                rateUnit: "cu.m",
+                              };
+
+                            return (
+                              <div
+                                key={row.key}
+                                className="p-3 bg-white border border-slate-200 rounded-lg space-y-2.5 sm:space-y-0 sm:grid sm:grid-cols-12 sm:gap-2.5 sm:items-center"
+                              >
+                                <div className="sm:col-span-2">
+                                  <span className="font-semibold text-blue-950 text-xs sm:text-sm block">
+                                    {row.label}
+                                  </span>
+                                </div>
+
+                                {/* 1. Annual Capacity */}
+                                <div className="sm:col-span-6">
+                                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1 sm:hidden">
+                                    Annual Capacity (Quantity &amp; Unit)
+                                  </label>
+                                  <div className="flex items-center gap-1.5">
+                                    <input
+                                      type="text"
+                                      value={cap.quantity !== null && cap.quantity !== undefined ? cap.quantity : ""}
+                                      onChange={(e) => handleCapacityChange(row.key, "quantity", e.target.value)}
+                                      placeholder="Quantity (e.g. 50,000)"
+                                      className="w-1/2 p-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-800 font-mono"
+                                    />
+                                    <input
+                                      type="text"
+                                      value={cap.unit || ""}
+                                      onChange={(e) => handleCapacityChange(row.key, "unit", e.target.value)}
+                                      placeholder="Unit (e.g. MT per year)"
+                                      className="w-1/2 p-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-800"
+                                    />
+                                  </div>
+                                </div>
+
+                                {/* 2. Rate & Unit */}
+                                <div className="sm:col-span-4">
+                                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1 sm:hidden">
+                                    Rate &amp; Unit
+                                  </label>
+                                  <div className="flex items-center gap-1.5">
+                                    <div className="flex items-center w-3/5">
+                                      <span className="px-2 py-2 bg-slate-100 border border-r-0 border-slate-300 rounded-l-lg text-[10px] font-bold text-slate-600 select-none">
+                                        LKR
+                                      </span>
+                                      <input
+                                        type="text"
+                                        value={cap.rate !== null && cap.rate !== undefined ? cap.rate : ""}
+                                        onChange={(e) => handleCapacityChange(row.key, "rate", e.target.value)}
+                                        placeholder="Rate (e.g. 4,500)"
+                                        className="w-full p-2 bg-slate-50 border border-slate-300 rounded-r-lg text-xs text-slate-900 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-800 font-mono"
+                                      />
+                                    </div>
+                                    <div className="w-2/5">
+                                      <select
+                                        value={cap.rateUnit || "cu.m"}
+                                        onChange={(e) => handleCapacityChange(row.key, "rateUnit", e.target.value)}
+                                        className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900 font-semibold focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-800 cursor-pointer"
+                                      >
+                                        <option value="cu.m">cu.m</option>
+                                        <option value="cube">cube</option>
+                                        <option value="MT">MT</option>
+                                        <option value="Liters">Liter</option>
+                                        <option value="Nos">Nos</option>
+                                      </select>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          });
+                        })()}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Submission Notice & Submit Button */}
