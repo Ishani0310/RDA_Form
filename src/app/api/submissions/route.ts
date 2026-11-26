@@ -47,23 +47,19 @@ export async function GET(request: NextRequest) {
 
     await connectToDatabase();
 
-    // Prevent duplicate draft records & clean up test/demo records
+    // Prevent duplicate draft records & clean up demo records
     try {
       await Promise.all([
         Submission.deleteMany({
           $or: [
             { isDemoRecord: true },
             { submissionReference: /^DFT-/ },
-            { "questionnaireData.organizationName": { $regex: /testing/i } },
-            { "questionnaireData.organizationName": { $regex: /ishani/i } },
           ],
         }),
         Contractor.deleteMany({
           $or: [
             { isDemoRecord: true },
             { registrationNumber: /^DFT-/ },
-            { businessName: { $regex: /testing/i } },
-            { businessName: { $regex: /ishani/i } },
           ],
         }),
       ]).catch(() => {});
