@@ -349,7 +349,11 @@ export default function SupplierSubmissionsPage() {
                         }`}>
                           {supType}
                         </span>
-                        {supType === "Labour" && q.labourCategories && q.labourCategories.length > 0 ? (
+                        {supType === "Equipment" && q.equipmentList && q.equipmentList.length > 0 ? (
+                          <div className="text-[10px] text-emerald-800 font-medium truncate max-w-[140px] mt-0.5" title={q.equipmentList.map((e: any) => e.name).join(", ")}>
+                            {q.equipmentList.map((e: any) => e.name).join(", ")}
+                          </div>
+                        ) : supType === "Labour" && q.labourCategories && q.labourCategories.length > 0 ? (
                           <div className="text-[10px] text-amber-800 font-medium truncate max-w-[140px] mt-0.5" title={q.labourCategories.join(", ")}>
                             {q.labourCategories.join(", ")}
                           </div>
@@ -511,6 +515,36 @@ export default function SupplierSubmissionsPage() {
                         >
                           {c}
                         </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {selectedRecord.questionnaireData?.equipmentList &&
+                  selectedRecord.questionnaireData.equipmentList.length > 0 && (
+                  <div className="sm:col-span-2 bg-slate-50 border border-slate-200 rounded-xl p-3">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
+                      Equipment / Machinery Supplied
+                    </span>
+                    <div className="space-y-1.5">
+                      {selectedRecord.questionnaireData.equipmentList.map((eq: any, idx: number) => (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between text-xs p-2 bg-white border border-emerald-200 rounded-lg"
+                        >
+                          <span className="font-bold text-emerald-950">{eq.name}</span>
+                          <div className="flex items-center gap-2 text-slate-600">
+                            {eq.capacity && (
+                              <span className="font-mono bg-slate-50 px-2 py-0.5 rounded border border-slate-200 text-slate-800">
+                                {eq.capacity}
+                              </span>
+                            )}
+                            {eq.availableCity && (
+                              <span className="font-semibold text-emerald-900">
+                                {eq.availableCity}
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       ))}
                     </div>
                   </div>

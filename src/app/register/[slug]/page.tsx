@@ -21,6 +21,7 @@ import {
   Plus,
   X,
   Users,
+  Wrench,
 } from "lucide-react";
 import Link from "next/link";
 import { IQuestionnaireData, IFormSection, IFormQuestion } from "@/types/questionnaire";
@@ -76,6 +77,7 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
     supplyCapacities: {} as Record<string, any>,
     labourCategories: [] as string[],
     labourDetails: {} as Record<string, any>,
+    equipmentList: [{ name: "", capacity: "", availableCity: "" }],
   });
   const [supplierMaterialsOtherList, setSupplierMaterialsOtherList] = useState<string[]>([""]);
 
@@ -95,6 +97,7 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
     supplierType?: string;
     materialsSupplied?: string[];
     labourCategories?: string[];
+    equipmentList?: Array<{ name: string; capacity?: string; availableCity?: string }>;
     submittedAt: string;
   } | null>(null);
 
@@ -213,6 +216,40 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
     });
   };
 
+  // Handle equipment management
+  const handleAddEquipment = () => {
+    setFormData((prev) => ({
+      ...prev,
+      equipmentList: [...(prev.equipmentList || []), { name: "", capacity: "", availableCity: "" }],
+    }));
+  };
+
+  const handleRemoveEquipment = (index: number) => {
+    setFormData((prev) => {
+      const list = [...(prev.equipmentList || [])];
+      const updated = list.filter((_, idx) => idx !== index);
+      return {
+        ...prev,
+        equipmentList: updated.length > 0 ? updated : [{ name: "", capacity: "", availableCity: "" }],
+      };
+    });
+  };
+
+  const handleEquipmentChange = (index: number, field: "name" | "capacity" | "availableCity", val: string) => {
+    setFormData((prev) => {
+      const list = [...(prev.equipmentList || [{ name: "", capacity: "", availableCity: "" }])];
+      list[index] = { ...list[index], [field]: val };
+      return { ...prev, equipmentList: list };
+    });
+    if (fieldErrors.equipmentList) {
+      setFieldErrors((prev) => {
+        const copy = { ...prev };
+        delete copy.equipmentList;
+        return copy;
+      });
+    }
+  };
+
   // Real-time unique email check on blur
   const handleEmailBlur = async () => {
     const rawEmail = (formData.email || "").trim().toLowerCase();
@@ -306,6 +343,16 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
       }
     }
 
+    // If Equipment is selected, require at least one equipment name
+    if (supType === "Equipment") {
+      const hasValidEquip = (formData.equipmentList || []).some(
+        (eq: any) => eq.name && eq.name.trim().length > 0
+      );
+      if (!hasValidEquip) {
+        errors.equipmentList = "Please provide details for at least one piece of equipment (Equipment Name is required).";
+      }
+    }
+
     setFieldErrors(errors);
     return Object.keys(errors).length === 0 && !emailUniqueError;
   };
@@ -322,6 +369,10 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
         .filter(Boolean)
         .join(", ");
 
+      const cleanedEquipmentList = (formData.equipmentList || []).filter(
+        (eq: any) => eq.name && eq.name.trim().length > 0
+      );
+
       const payload = {
         businessName: formData.organizationName.trim(),
         formId: questionnaire?.code || "RDA-SUPPLIER-Q",
@@ -337,6 +388,7 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
           supplyCapacities: formData.supplyCapacities || {},
           labourCategories: formData.labourCategories || [],
           labourDetails: formData.labourDetails || {},
+          equipmentList: cleanedEquipmentList,
           supplierDetails: {
             companyName: formData.organizationName.trim(),
             materialsSupplied: formData.materialsSupplied || [],
@@ -344,6 +396,7 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
             supplyCapacities: formData.supplyCapacities || {},
             labourCategories: formData.labourCategories || [],
             labourDetails: formData.labourDetails || {},
+            equipmentList: cleanedEquipmentList,
           },
           participantCategory: questionnaire?.category || "Supplier",
         },
@@ -373,6 +426,7 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
           supplierType: (formData.supplierType || "Material").trim(),
           materialsSupplied: formData.materialsSupplied || [],
           labourCategories: formData.labourCategories || [],
+          equipmentList: cleanedEquipmentList,
           submittedAt: new Date().toLocaleDateString("en-GB", {
             day: "2-digit",
             month: "short",
@@ -533,6 +587,35 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
                   </div>
                 </div>
               )}
+              {submissionSuccess.equipmentList && submissionSuccess.equipmentList.length > 0 && (
+                <div className="sm:col-span-2 pt-2 border-t border-slate-200/80">
+                  <span className="text-[10px] text-slate-400 uppercase font-semibold block mb-1.5">
+                    Equipment / Machinery Supplied
+                  </span>
+                  <div className="space-y-1.5">
+                    {submissionSuccess.equipmentList.map((eq, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between text-[11px] p-2 bg-emerald-50/70 border border-emerald-200/80 rounded-lg"
+                      >
+                        <span className="font-bold text-emerald-950">{eq.name}</span>
+                        <div className="flex items-center gap-2 text-slate-600">
+                          {eq.capacity && (
+                            <span className="font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200 text-slate-800">
+                              {eq.capacity}
+                            </span>
+                          )}
+                          {eq.availableCity && (
+                            <span className="font-semibold text-emerald-900">
+                              {eq.availableCity}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -559,6 +642,7 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
                   supplyCapacities: {},
                   labourCategories: [],
                   labourDetails: {},
+                  equipmentList: [{ name: "", capacity: "", availableCity: "" }],
                 });
                 setSupplierMaterialsOtherList([""]);
               }}
@@ -1221,6 +1305,113 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
                       </div>
                     </div>
                   )}
+                </div>
+              </div>
+            )}
+
+            {/* Conditionally Show Equipment Details when Equipment is selected */}
+            {formData.supplierType === "Equipment" && (
+              <div className="space-y-4 pt-3 border-t border-slate-100 animate-fadeIn">
+                <div className="p-3.5 bg-emerald-50/80 border border-emerald-200/90 rounded-xl text-xs text-emerald-950">
+                  <p className="leading-relaxed">
+                    Please provide details of the construction machinery and equipment supplied by your organization, including capacity and available city/location.
+                  </p>
+                </div>
+
+                <div className="space-y-4 text-xs">
+                  <div id="input-supplierDetails-equipment">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block font-semibold text-slate-700">
+                        Equipment / Machinery Inventory <span className="text-rose-500">*</span>
+                      </label>
+                      <span className="text-[11px] text-slate-500">
+                        Specify equipment name, capacity, and available city
+                      </span>
+                    </div>
+
+                    {fieldErrors.equipmentList && (
+                      <div role="alert" className="flex items-start gap-1.5 mb-2.5 text-xs font-semibold text-rose-600 animate-fadeIn">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                        <span>{fieldErrors.equipmentList}</span>
+                      </div>
+                    )}
+
+                    <div className="space-y-3">
+                      {(formData.equipmentList || []).map((eq: any, idx: number) => (
+                        <div
+                          key={idx}
+                          className="p-3.5 bg-white border border-slate-200 rounded-xl space-y-3 sm:space-y-0 sm:grid sm:grid-cols-12 sm:gap-2.5 sm:items-center shadow-2xs"
+                        >
+                          {/* 1. Equipment Name */}
+                          <div className="sm:col-span-5 space-y-1">
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase">
+                              Equipment Name <span className="text-rose-500">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={eq.name || ""}
+                              onChange={(e) => handleEquipmentChange(idx, "name", e.target.value)}
+                              placeholder="e.g. Excavator, Motor Grader, Asphalt Paver"
+                              className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-600"
+                            />
+                          </div>
+
+                          {/* 2. Capacity Input Area */}
+                          <div className="sm:col-span-3 space-y-1">
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase">
+                              Capacity
+                            </label>
+                            <input
+                              type="text"
+                              value={eq.capacity || ""}
+                              onChange={(e) => handleEquipmentChange(idx, "capacity", e.target.value)}
+                              placeholder="e.g. 20 Ton, 1.2 cu.m, 200 HP"
+                              className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-600 font-mono"
+                            />
+                          </div>
+
+                          {/* 3. Available City Input Area */}
+                          <div className="sm:col-span-3 space-y-1">
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase">
+                              Available City
+                            </label>
+                            <input
+                              type="text"
+                              value={eq.availableCity || ""}
+                              onChange={(e) => handleEquipmentChange(idx, "availableCity", e.target.value)}
+                              placeholder="e.g. Colombo, Kandy, Kurunegala"
+                              className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-600"
+                            />
+                          </div>
+
+                          {/* Action (Remove) */}
+                          <div className="sm:col-span-1 flex sm:justify-center items-end sm:pt-4">
+                            {(formData.equipmentList || []).length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveEquipment(idx)}
+                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg border border-transparent hover:border-rose-200 transition-colors cursor-pointer"
+                                title="Remove this equipment"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={handleAddEquipment}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-900 hover:text-emerald-700 bg-white hover:bg-emerald-50 border border-emerald-200 rounded-lg shadow-2xs transition-colors cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Add Another Equipment</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
