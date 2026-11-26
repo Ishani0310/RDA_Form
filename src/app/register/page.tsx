@@ -7216,57 +7216,67 @@ function RegisterFooter() {
   return (
     <footer className="w-full bg-[#07162c] text-slate-300 border-t border-[#132c4a] mt-12 sm:mt-16 print:hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 lg:py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-10 items-start">
-          {/* Col 1: Official Ministry, RDA & ICDP Logo Hierarchy (Full on mobile, 5 cols on lg) */}
-          <div className="lg:col-span-5 space-y-3.5 sm:space-y-4">
-            <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
-              {/* 1. Ministry Official Logo (FIRST) */}
-              <div className="bg-white rounded-xl p-1.5 sm:p-2 shadow-md border border-white/20 shrink-0">
-                <img
-                  src="/ministry-logo.png"
-                  alt="Ministry of Transport, Highways and Urban Development"
-                  className="h-9 sm:h-11 lg:h-12 w-auto object-contain"
-                />
-              </div>
-
-              {/* 2. RDA Official Logo (SECOND) */}
-              <div className="bg-white rounded-xl p-1.5 sm:p-2 shadow-md border border-white/20 shrink-0">
-                <img
-                  src="/rda-logo.png"
-                  alt="Road Development Authority Sri Lanka"
-                  className="h-9 sm:h-11 lg:h-12 w-auto object-contain"
-                />
-              </div>
-
-              {/* 3. ICDP Official Logo (THIRD) */}
-              <div className="bg-white rounded-xl p-1.5 sm:p-2 shadow-md border border-white/20 shrink-0">
-                <img
-                  src="/icdp-logo.jpg"
-                  alt="Inclusive Connectivity and Development Project (ICDP)"
-                  className="h-9 sm:h-11 lg:h-12 w-auto object-contain"
-                />
-              </div>
+        {/* Top Header / Brand Row with all 3 logos in official order */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-8 border-b border-[#132c4a]">
+          {/* 1. Ministry, 2. RDA, 3. ICDP Official Logos */}
+          <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+            {/* 1. Ministry Official Logo (FIRST) */}
+            <div className="bg-white rounded-xl p-2 sm:p-2.5 shadow-md border border-white/20 shrink-0">
+              <img
+                src="/ministry-logo.png"
+                alt="Ministry of Transport, Highways and Urban Development"
+                className="h-10 sm:h-12 w-auto object-contain"
+              />
             </div>
 
-            <div>
-              <div className="text-[10px] sm:text-[10.5px] font-bold text-amber-400 uppercase tracking-widest">
-                Government of Sri Lanka
-              </div>
-              <h3 className="text-sm sm:text-base font-black text-white tracking-tight leading-snug mt-0.5">
-                Inclusive Connectivity and Development Project (ICDP)
-              </h3>
-              <p className="text-[11px] sm:text-xs text-slate-400 font-medium mt-0.5">
-                Road Development Authority &bull; Ministry of Transport, Highways and Urban Development
-              </p>
+            {/* 2. RDA Official Logo (SECOND) */}
+            <div className="bg-white rounded-xl p-2 sm:p-2.5 shadow-md border border-white/20 shrink-0">
+              <img
+                src="/rda-logo.png"
+                alt="Road Development Authority Sri Lanka"
+                className="h-10 sm:h-12 w-auto object-contain"
+              />
             </div>
 
-            <p className="text-xs text-slate-400 leading-relaxed max-w-md">
+            {/* 3. ICDP Official Logo (THIRD) */}
+            <div className="bg-white rounded-xl p-2 sm:p-2.5 shadow-md border border-white/20 shrink-0">
+              <img
+                src="/icdp-logo.jpg"
+                alt="Inclusive Connectivity and Development Project (ICDP)"
+                className="h-10 sm:h-12 w-auto object-contain"
+              />
+            </div>
+          </div>
+
+          {/* Institutional Title & Hierarchy */}
+          <div className="lg:text-right">
+            <div className="text-[10.5px] sm:text-xs font-bold text-amber-400 uppercase tracking-widest">
+              Government of Sri Lanka
+            </div>
+            <h3 className="text-base sm:text-lg font-black text-white tracking-tight leading-snug mt-0.5">
+              Inclusive Connectivity and Development Project (ICDP)
+            </h3>
+            <p className="text-xs text-slate-400 font-medium mt-0.5">
+              Road Development Authority &bull; Ministry of Transport, Highways and Urban Development
+            </p>
+          </div>
+        </div>
+
+        {/* 3-Column Balanced Content Grid - fills horizontal space symmetrically without empty voids */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 lg:gap-10 pt-8 items-start">
+          {/* Col 1: Portal Overview */}
+          <div className="space-y-2.5">
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+              <Building2 className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+              <span>About The Portal</span>
+            </h4>
+            <p className="text-xs text-slate-400 leading-relaxed">
               Official questionnaire registration portal for contractors, material suppliers, and public sector stakeholders under the ICDP Capacity Building initiative.
             </p>
           </div>
 
-          {/* Col 2: Project Secretariat & Location (Full on mobile, 1 col on md, 4 cols on lg) */}
-          <div className="lg:col-span-4 space-y-2.5 sm:space-y-3">
+          {/* Col 2: Project Secretariat & Location */}
+          <div className="space-y-2.5">
             <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
               <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
               <span>Project Secretariat &amp; Head Office</span>
@@ -7278,7 +7288,7 @@ function RegisterFooter() {
               <p className="text-slate-400 text-[11px] sm:text-xs">
                 Denzil Kobbekaduwa Mawatha, Koswatta, Battaramulla, Sri Lanka
               </p>
-              <div className="pt-1.5 space-y-1.5 text-slate-300 text-[11px] sm:text-xs">
+              <div className="pt-1 space-y-1.5 text-slate-300 text-[11px] sm:text-xs">
                 <p className="flex items-center gap-2">
                   <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                   <a href="tel:+94112862795" className="hover:text-amber-300 transition-colors">
@@ -7295,8 +7305,8 @@ function RegisterFooter() {
             </div>
           </div>
 
-          {/* Col 3: Compliance & Security (Full on mobile, 1 col on md, 3 cols on lg) */}
-          <div className="lg:col-span-3 space-y-2.5 sm:space-y-3">
+          {/* Col 3: Compliance & Security */}
+          <div className="space-y-2.5">
             <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
               <span>Official Portal Security</span>
@@ -7304,9 +7314,11 @@ function RegisterFooter() {
             <p className="text-xs text-slate-400 leading-relaxed">
               All questionnaire filings and contractor capacity records are collected and securely stored in compliance with government data protection standards.
             </p>
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[11px] text-emerald-400 font-semibold">
-              <Lock className="w-3.5 h-3.5 shrink-0" />
-              <span>Official Verified Filing Portal</span>
+            <div className="pt-1">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-400 font-semibold">
+                <Lock className="w-3.5 h-3.5 shrink-0" />
+                <span>Official Verified Filing Portal</span>
+              </div>
             </div>
           </div>
         </div>
