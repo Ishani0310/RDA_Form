@@ -934,14 +934,17 @@ export default function FormBuilderPage() {
               <div className="h-4 w-px bg-slate-200 hidden sm:block" />
 
               <div className="flex items-center gap-2 flex-wrap text-xs">
+                <span className="font-mono font-black text-[10px] text-amber-950 bg-amber-400 px-2.5 py-0.5 rounded-full shadow-2xs">
+                  FORM 01
+                </span>
                 <span className="font-mono font-bold text-[10px] text-blue-900 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                  {questionnaire?.code}
+                  {questionnaire?.code || "RDA-ICDP-CONTRACTOR-Q"}
                 </span>
                 <span className="font-bold text-slate-900 truncate max-w-xs">
-                  {questionnaire?.title}
+                  {questionnaire?.title || "Form 1: RDA Contractor Registration & Capacity Declaration Questionnaire"}
                 </span>
                 <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
-                  {questionnaire?.category || "General"}
+                  {questionnaire?.category || "Contractor, Supplier & Public Sector"}
                 </span>
               </div>
             </div>
@@ -949,19 +952,19 @@ export default function FormBuilderPage() {
             <div className="flex items-center gap-2 text-xs">
               {/* Direct Link to Public Portal */}
               <a
-                href={`/register/${questionnaire?.slug || "contractor"}`}
+                href="/register"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 font-semibold text-blue-900 hover:underline"
+                className="inline-flex items-center gap-1.5 font-bold text-blue-900 hover:text-blue-950 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg border border-blue-200 transition-colors"
               >
-                <span>/register/{questionnaire?.slug || "contractor"}</span>
-                <ExternalLink className="w-3 h-3" />
+                <span>/register (Public Portal)</span>
+                <ExternalLink className="w-3 h-3 text-blue-800" />
               </a>
 
               <div className="h-4 w-px bg-slate-200" />
 
               <Link
-                href={`/submissions?formId=${questionnaire?.code}`}
+                href={`/submissions?formId=${questionnaire?.code || "RDA-ICDP-CONTRACTOR-Q"}`}
                 className="font-bold text-slate-600 hover:text-blue-900"
               >
                 Submissions
@@ -977,8 +980,11 @@ export default function FormBuilderPage() {
                   <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-900">
                     <FormInput className="w-4 h-4" />
                   </div>
+                  <span className="bg-amber-400 text-slate-900 font-black px-2.5 py-0.5 rounded-full text-[10px] tracking-wider uppercase shadow-2xs">
+                    FORM 01
+                  </span>
                   <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                    {questionnaire?.title}
+                    {questionnaire?.title || "Form 1: RDA Contractor Registration & Capacity Declaration Questionnaire"}
                   </h1>
 
                   {/* Status Badge */}
@@ -1017,73 +1023,6 @@ export default function FormBuilderPage() {
 
               {/* Action Toolbar */}
               <div className="flex items-center gap-2 flex-wrap">
-                {/* Version History Drawer Trigger */}
-                <button
-                  type="button"
-                  onClick={() => setVersionDrawerOpen(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg shadow-2xs"
-                >
-                  <History className="w-3.5 h-3.5 text-slate-500" />
-                  <span>Version History</span>
-                </button>
-
-                {/* Sync with Official Baseline Schema */}
-                {permissions.canEdit && (
-                  <button
-                    type="button"
-                    onClick={handleSyncBaseline}
-                    disabled={questionnaire?.isLocked || workspaceLoading}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-900 bg-blue-50 border border-blue-200 hover:bg-blue-100 rounded-lg shadow-2xs transition-all disabled:opacity-50"
-                    title="Synchronize Form Builder with the latest official registration form schema"
-                  >
-                    <RefreshCw className={`w-3.5 h-3.5 text-blue-800 ${workspaceLoading ? "animate-spin" : ""}`} />
-                    <span>Sync Latest Form</span>
-                  </button>
-                )}
-
-                {/* Export Schema JSON */}
-                {permissions.canExport && (
-                  <button
-                    type="button"
-                    onClick={handleExportSchema}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg shadow-2xs"
-                    title="Export Schema JSON"
-                  >
-                    <Download className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Export</span>
-                  </button>
-                )}
-
-                {/* Import Schema JSON */}
-                {permissions.canImport && (
-                  <button
-                    type="button"
-                    onClick={() => setImportModalOpen(true)}
-                    disabled={questionnaire?.isLocked}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg shadow-2xs disabled:opacity-50"
-                    title="Import Schema JSON"
-                  >
-                    <Upload className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Import</span>
-                  </button>
-                )}
-
-                {/* Policy Lock Toggle (Super Admin Only) */}
-                {permissions.canLock && (
-                  <button
-                    type="button"
-                    onClick={handleToggleLock}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg shadow-2xs border ${
-                      questionnaire?.isLocked
-                        ? "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100"
-                        : "bg-slate-50 text-slate-700 border-slate-300 hover:bg-slate-100"
-                    }`}
-                  >
-                    {questionnaire?.isLocked ? <Unlock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
-                    <span>{questionnaire?.isLocked ? "Unlock Policy" : "Lock Schema"}</span>
-                  </button>
-                )}
-
                 {/* Two Admin Modes Segmented Control */}
                 <div className="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold">
                   <button
@@ -1194,10 +1133,25 @@ export default function FormBuilderPage() {
                   <button
                     type="button"
                     onClick={handleExportSchema}
-                    className="p-1.5 text-slate-500 hover:text-slate-800 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg shadow-2xs"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg shadow-2xs"
                     title="Export Schema JSON"
                   >
-                    <Download className="w-3.5 h-3.5" />
+                    <Download className="w-3.5 h-3.5 text-slate-500" />
+                    <span>Export</span>
+                  </button>
+                )}
+
+                {/* Import Schema JSON */}
+                {permissions.canImport && (
+                  <button
+                    type="button"
+                    onClick={() => setImportModalOpen(true)}
+                    disabled={questionnaire?.isLocked}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg shadow-2xs disabled:opacity-50"
+                    title="Import Schema JSON"
+                  >
+                    <Upload className="w-3.5 h-3.5 text-slate-500" />
+                    <span>Import</span>
                   </button>
                 )}
 
@@ -1206,14 +1160,14 @@ export default function FormBuilderPage() {
                   <button
                     type="button"
                     onClick={handleToggleLock}
-                    className={`p-1.5 rounded-lg shadow-2xs border ${
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg shadow-2xs border ${
                       questionnaire?.isLocked
                         ? "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100"
                         : "bg-slate-50 text-slate-700 border-slate-300 hover:bg-slate-100"
                     }`}
-                    title={questionnaire?.isLocked ? "Unlock Policy" : "Lock Schema"}
                   >
                     {questionnaire?.isLocked ? <Unlock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
+                    <span>{questionnaire?.isLocked ? "Unlock Policy" : "Lock Schema"}</span>
                   </button>
                 )}
               </div>

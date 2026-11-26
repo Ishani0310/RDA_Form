@@ -134,6 +134,9 @@ export const FormsDashboard: React.FC<FormsDashboardProps> = ({
             <div className="p-6 sm:p-7 space-y-5">
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div className="flex items-center gap-2">
+                  <span className="font-mono font-black text-xs text-amber-950 bg-amber-400 px-3 py-1 rounded-full shadow-2xs">
+                    FORM 01
+                  </span>
                   <span className="font-mono font-black text-xs text-blue-900 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
                     {primaryForm.code || "RDA-ICDP-CONTRACTOR-Q"}
                   </span>
@@ -168,7 +171,7 @@ export const FormsDashboard: React.FC<FormsDashboardProps> = ({
               {/* Form Title & Description */}
               <div>
                 <h2 className="text-lg sm:text-xl font-black text-slate-900 leading-snug">
-                  {primaryForm.title || "RDA Contractor Registration & Capacity Declaration Questionnaire"}
+                  {primaryForm.title || "Form 1: RDA Contractor Registration & Capacity Declaration Questionnaire"}
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-600 mt-1.5 leading-relaxed">
                   {primaryForm.description ||
@@ -182,7 +185,7 @@ export const FormsDashboard: React.FC<FormsDashboardProps> = ({
                   <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
                   <span className="font-semibold text-slate-700">Public Portal Route:</span>
                   <span className="font-mono text-blue-900 font-bold truncate">
-                    {primaryForm.publicUrl || "http://localhost:3000/register"}
+                    /register
                   </span>
                 </div>
                 <Link
@@ -190,7 +193,7 @@ export const FormsDashboard: React.FC<FormsDashboardProps> = ({
                   target="_blank"
                   className="font-bold text-blue-900 hover:underline flex items-center gap-1 shrink-0 ml-2"
                 >
-                  <span>Open</span>
+                  <span>Open Portal</span>
                   <ArrowRight className="w-3 h-3" />
                 </Link>
               </div>
