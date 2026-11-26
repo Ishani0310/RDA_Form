@@ -1177,42 +1177,81 @@ export default function FormBuilderPage() {
                 </p>
               </div>
 
-              {/* Action Toolbar: Exactly 3 buttons (Save Draft, Publish Live, Download as PDF) */}
+              {/* Action Toolbar */}
               <div className="flex items-center gap-2.5 flex-wrap">
-                {/* 1. Save Draft Button */}
-                <button
-                  type="button"
-                  onClick={handleSaveDraft}
-                  disabled={saving || questionnaire?.isLocked}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-800 bg-white border border-slate-300 hover:bg-slate-50 rounded-xl shadow-2xs transition-all disabled:opacity-50"
-                  title="Save current questionnaire state as draft"
-                >
-                  <Save className="w-4 h-4 text-blue-900" />
-                  <span>{saving ? "Saving..." : "Save Draft"}</span>
-                </button>
+                {adminMode === "VIEW" ? (
+                  <>
+                    {/* Edit Form Button (Only way to enter edit mode) */}
+                    <button
+                      type="button"
+                      onClick={() => setAdminMode("EDIT")}
+                      className="inline-flex items-center gap-2 px-5 py-2 text-xs font-bold text-white bg-[#0b1f3a] hover:bg-[#132f54] rounded-xl shadow-xs transition-all"
+                      title="Click to edit sections, questions, and form structure"
+                    >
+                      <Edit2 className="w-4 h-4 text-amber-400" />
+                      <span>Edit Form</span>
+                    </button>
 
-                {/* 2. Publish Live Button */}
-                <button
-                  type="button"
-                  onClick={handlePublish}
-                  disabled={publishing || questionnaire?.isLocked}
-                  className="inline-flex items-center gap-2 px-5 py-2 text-xs font-bold text-white bg-[#0b1f3a] hover:bg-[#132f54] rounded-xl shadow-xs transition-all disabled:opacity-50"
-                  title="Publish questionnaire live to the public portal"
-                >
-                  <Send className="w-4 h-4 text-amber-400" />
-                  <span>{publishing ? "Publishing..." : "Publish Live"}</span>
-                </button>
+                    {/* Download as PDF Button */}
+                    <button
+                      type="button"
+                      onClick={handleDownloadPDF}
+                      className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl shadow-2xs transition-all"
+                      title="Download and print full form as PDF"
+                    >
+                      <Printer className="w-4 h-4 text-blue-900" />
+                      <span>Download as PDF</span>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    {/* Save Draft Button */}
+                    <button
+                      type="button"
+                      onClick={handleSaveDraft}
+                      disabled={saving || questionnaire?.isLocked}
+                      className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-800 bg-white border border-slate-300 hover:bg-slate-50 rounded-xl shadow-2xs transition-all disabled:opacity-50"
+                      title="Save current questionnaire state as draft"
+                    >
+                      <Save className="w-4 h-4 text-blue-900" />
+                      <span>{saving ? "Saving..." : "Save Draft"}</span>
+                    </button>
 
-                {/* 3. Download as PDF Button */}
-                <button
-                  type="button"
-                  onClick={handleDownloadPDF}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl shadow-2xs transition-all"
-                  title="Download and print full form as PDF"
-                >
-                  <Printer className="w-4 h-4 text-blue-900" />
-                  <span>Download as PDF</span>
-                </button>
+                    {/* Publish Live Button */}
+                    <button
+                      type="button"
+                      onClick={handlePublish}
+                      disabled={publishing || questionnaire?.isLocked}
+                      className="inline-flex items-center gap-2 px-5 py-2 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-xl shadow-xs transition-all disabled:opacity-50"
+                      title="Publish questionnaire live to the public portal"
+                    >
+                      <Send className="w-4 h-4 text-white" />
+                      <span>{publishing ? "Publishing..." : "Publish Live"}</span>
+                    </button>
+
+                    {/* Return to View Mode Button */}
+                    <button
+                      type="button"
+                      onClick={() => setAdminMode("VIEW")}
+                      className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-xl transition-all"
+                      title="Done editing, return to view mode"
+                    >
+                      <Eye className="w-4 h-4 text-slate-600" />
+                      <span>View Form</span>
+                    </button>
+
+                    {/* Download as PDF Button */}
+                    <button
+                      type="button"
+                      onClick={handleDownloadPDF}
+                      className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl shadow-2xs transition-all"
+                      title="Download and print full form as PDF"
+                    >
+                      <Printer className="w-4 h-4 text-blue-900" />
+                      <span>Download as PDF</span>
+                    </button>
+                  </>
+                )}
               </div>
             </div>
 
@@ -1255,117 +1294,53 @@ export default function FormBuilderPage() {
 
           {/* Mode Banner Indicator */}
           {adminMode === "VIEW" ? (
-            <div className="space-y-3">
-              <div className="bg-blue-50/80 border border-blue-200 text-blue-900 px-4 py-2.5 rounded-2xl flex items-center justify-between text-xs shadow-2xs">
-                <div className="flex items-center gap-2">
-                  <Eye className="w-4 h-4 text-blue-700" />
-                  <span>
-                    <strong>MODE A – FORM VIEW:</strong> Displaying the complete actual contractor-facing form with all Google Form conditional routing rules.
-                  </span>
-                </div>
-                <span className="font-mono text-[11px] text-blue-800 font-bold bg-white px-2 py-0.5 rounded border border-blue-200">
-                  Live Public Simulation
+            <div className="bg-blue-50/80 border border-blue-200 text-blue-900 px-4 py-2.5 rounded-2xl flex items-center justify-between text-xs shadow-2xs">
+              <div className="flex items-center gap-2">
+                <Eye className="w-4 h-4 text-blue-700 shrink-0" />
+                <span>
+                  Viewing exact form. If you need to make edits or changes, click <strong>&quot;Edit Form&quot;</strong> in the toolbar.
                 </span>
               </div>
-
-              {/* Mode A Google Form Conditional Routing Toolbar */}
-              <div className="bg-white border border-slate-200 p-3 rounded-2xl shadow-2xs space-y-2">
-                <div className="flex items-center justify-between text-xs font-bold text-slate-700">
-                  <span className="flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Google Form Conditional Branch Presets:</span>
-                  </span>
-                  <span className="text-[11px] text-slate-400 font-normal">
-                    Click a preset or test the form interactively below
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <button
-                    type="button"
-                    onClick={() => applyBranchPreset("ATTENDANCE_NO")}
-                    className={`px-2.5 py-1 text-xs rounded-lg font-semibold transition-all border ${
-                      simulatedValues.willParticipate === "No"
-                        ? "bg-amber-100 text-amber-900 border-amber-300 shadow-2xs"
-                        : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
-                    }`}
-                  >
-                    1. Non-Attendee (No)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => applyBranchPreset("OFFICER")}
-                    className={`px-2.5 py-1 text-xs rounded-lg font-semibold transition-all border ${
-                      simulatedValues.participantCategory === "Government Officer"
-                        ? "bg-blue-100 text-blue-950 border-blue-300 shadow-2xs"
-                        : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
-                    }`}
-                  >
-                    2. Government Officer
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => applyBranchPreset("SUPPLIER")}
-                    className={`px-2.5 py-1 text-xs rounded-lg font-semibold transition-all border ${
-                      simulatedValues.participantCategory === "Supplier"
-                        ? "bg-emerald-100 text-emerald-950 border-emerald-300 shadow-2xs"
-                        : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
-                    }`}
-                  >
-                    3. Supplier (1 Rep Only)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => applyBranchPreset("CONTRACTOR_YES")}
-                    className={`px-2.5 py-1 text-xs rounded-lg font-semibold transition-all border ${
-                      simulatedValues.participantCategory === "Contractor" && simulatedValues.hasOngoingContracts === "Yes"
-                        ? "bg-indigo-100 text-indigo-950 border-indigo-300 shadow-2xs"
-                        : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
-                    }`}
-                  >
-                    4. Contractor (Ongoing = Yes)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => applyBranchPreset("CONTRACTOR_NO")}
-                    className={`px-2.5 py-1 text-xs rounded-lg font-semibold transition-all border ${
-                      simulatedValues.participantCategory === "Contractor" && simulatedValues.hasOngoingContracts === "No"
-                        ? "bg-purple-100 text-purple-950 border-purple-300 shadow-2xs"
-                        : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
-                    }`}
-                  >
-                    5. Contractor (Ongoing = No)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => applyBranchPreset("CLEAR")}
-                    className="px-2.5 py-1 text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium transition-all ml-auto"
-                  >
-                    Reset Form
-                  </button>
-                </div>
-              </div>
+              <button
+                type="button"
+                onClick={() => setAdminMode("EDIT")}
+                className="font-bold text-white bg-blue-900 hover:bg-blue-950 px-3.5 py-1.5 rounded-xl shadow-xs flex items-center gap-1.5 shrink-0 ml-2 transition-all"
+              >
+                <Edit2 className="w-3.5 h-3.5 text-amber-400" />
+                <span>Edit Form</span>
+              </button>
             </div>
           ) : (
             <div className="bg-amber-50/90 border border-amber-200 text-amber-950 px-4 py-2.5 rounded-2xl flex items-center justify-between text-xs shadow-2xs">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-amber-600" />
+                <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
                 <span>
-                  <strong>MODE B – EDIT MODE:</strong> Exact public form design with inline administrative controls. Add, edit, reorder, or duplicate sections and questions.
+                  <strong>EDIT MODE ACTIVE:</strong> Click any section or question below to edit fields, or click <strong>&quot;Save Draft&quot;</strong> / <strong>&quot;Publish Live&quot;</strong> when finished.
                 </span>
               </div>
-              {permissions.canEdit && !questionnaire?.isLocked && (
+              <div className="flex items-center gap-2">
+                {permissions.canEdit && !questionnaire?.isLocked && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingSection(null);
+                      setSectionModalOpen(true);
+                    }}
+                    className="inline-flex items-center gap-1 font-bold text-blue-950 hover:underline bg-white px-2.5 py-1 rounded-lg border border-amber-300 shadow-2xs"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>+ Add Section</span>
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={() => {
-                    setEditingSection(null);
-                    setSectionModalOpen(true);
-                  }}
-                  className="inline-flex items-center gap-1 font-bold text-blue-950 hover:underline bg-white/80 px-2.5 py-1 rounded border border-amber-300 shadow-2xs"
+                  onClick={() => setAdminMode("VIEW")}
+                  className="font-bold text-slate-700 bg-white hover:bg-slate-50 px-3 py-1 rounded-lg border border-slate-300 shadow-2xs flex items-center gap-1.5 shrink-0"
                 >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>+ Add Section</span>
+                  <Eye className="w-3.5 h-3.5 text-slate-600" />
+                  <span>Done Editing</span>
                 </button>
-              )}
+              </div>
             </div>
           )}
 

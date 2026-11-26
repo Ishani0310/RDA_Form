@@ -316,41 +316,30 @@ export const FormsDashboard: React.FC<FormsDashboardProps> = ({
                 </div>
 
                 {/* Actions on the Card */}
-                <div className="p-4 sm:p-5 bg-slate-50 border-t border-slate-200/90 grid grid-cols-2 sm:grid-cols-5 gap-2.5">
-                  {/* Action 1: Select & Edit Form (Direct entry into workspace) */}
-                  <button
-                    type="button"
-                    onClick={() => onEditForm(form.code)}
-                    className="inline-flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-bold text-white bg-[#0b1f3a] hover:bg-[#132f54] rounded-xl shadow-xs transition-all col-span-2 sm:col-span-2"
-                    title={`Open Form ${formNumber} in Form Builder workspace editor`}
-                  >
-                    <Edit2 className="w-4 h-4 text-amber-400" />
-                    <span>Select &amp; Edit Form {formNumber}</span>
-                  </button>
-
-                  {/* Action 2: View Simulation */}
+                <div className="p-4 sm:p-5 bg-slate-50 border-t border-slate-200/90 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  {/* Action 1: Open Exact Form (View Mode by default) */}
                   <button
                     type="button"
                     onClick={() => onViewForm(form.code)}
-                    className="inline-flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-bold text-slate-800 bg-white hover:bg-slate-100 border border-slate-300 rounded-xl shadow-2xs transition-all hover:border-slate-400"
-                    title="View form interactive simulation"
+                    className="inline-flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-bold text-white bg-[#0b1f3a] hover:bg-[#132f54] rounded-xl shadow-xs transition-all col-span-2 sm:col-span-2"
+                    title={`Open Form ${formNumber} to inspect exact form`}
                   >
-                    <Eye className="w-4 h-4 text-blue-900" />
-                    <span>View Form</span>
+                    <Eye className="w-4 h-4 text-amber-400" />
+                    <span>Open Form {formNumber}</span>
                   </button>
 
-                  {/* Action 3: Preview Form */}
+                  {/* Action 2: Edit Form (Edit Mode) */}
                   <button
                     type="button"
-                    onClick={() => onPreviewForm(form)}
-                    className="inline-flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-bold text-purple-950 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl shadow-2xs transition-all"
-                    title="Interactive preview simulation"
+                    onClick={() => onEditForm(form.code)}
+                    className="inline-flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-bold text-slate-800 bg-white hover:bg-slate-100 border border-slate-300 rounded-xl shadow-2xs transition-all hover:border-slate-400"
+                    title={`Edit Form ${formNumber} structure and fields`}
                   >
-                    <Sparkles className="w-4 h-4 text-purple-600" />
-                    <span>Preview</span>
+                    <Edit2 className="w-4 h-4 text-blue-900" />
+                    <span>Edit Form</span>
                   </button>
 
-                  {/* Action 4: Version History */}
+                  {/* Action 3: Version History */}
                   <button
                     type="button"
                     onClick={() => onVersionHistory(form)}
