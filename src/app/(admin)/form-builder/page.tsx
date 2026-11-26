@@ -63,7 +63,7 @@ import Link from "next/link";
 
 export default function FormBuilderPage() {
   // Top-level Navigation Mode: "DASHBOARD" (Forms Hub) or "WORKSPACE" (Form Editor)
-  const [viewMode, setViewMode] = useState<"DASHBOARD" | "WORKSPACE">("WORKSPACE");
+  const [viewMode, setViewMode] = useState<"DASHBOARD" | "WORKSPACE">("DASHBOARD");
   const [showWorkshopInfo, setShowWorkshopInfo] = useState(false);
 
   // Multi-Form Hub State
@@ -891,6 +891,7 @@ export default function FormBuilderPage() {
         <FormsDashboard
           forms={forms}
           loading={formsLoading}
+          onCreateNewForm={() => setCreateFormModalOpen(true)}
           onViewForm={(formCode) => {
             setAdminMode("VIEW");
             handleOpenFormWorkspace(formCode);
