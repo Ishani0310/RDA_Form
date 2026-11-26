@@ -1068,7 +1068,8 @@ export async function submitDirectDeclaration(
 
   if (isNewForm2) {
     if (normalizedQ.organizationName) businessName = normalizedQ.organizationName.trim();
-    primarySpeciality = "Materials & Equipment Supplier";
+    const supType = normalizedQ.supplierType || rawQ.supplierType || "Material";
+    primarySpeciality = `${supType} Supplier`;
     registrationNumber = `SUP-${Date.now().toString().slice(-6)}`;
   } else if (normalizedQ.participantCategory === "Supplier") {
     if (normalizedQ.supplierDetails?.companyName) businessName = normalizedQ.supplierDetails.companyName.trim();

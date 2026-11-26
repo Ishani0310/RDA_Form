@@ -1243,6 +1243,22 @@ export function getSupplierSections(): IFormSection[] {
           isRequired: true,
           validation: { minLength: 5, maxLength: 100 },
         },
+        {
+          id: "supplierType",
+          code: "Q04",
+          number: 4,
+          text: "Supplier Type",
+          description: "Select supplier specialization category: Material, Labour, or Equipment.",
+          placeholder: "Select Supplier Type",
+          fieldType: "radio",
+          options: [
+            { id: "opt_mat", label: "Material", value: "Material", displayOrder: 1, isActive: true },
+            { id: "opt_lab", label: "Labour", value: "Labour", displayOrder: 2, isActive: true },
+            { id: "opt_eqp", label: "Equipment", value: "Equipment", displayOrder: 3, isActive: true },
+          ],
+          displayOrder: 4,
+          isRequired: true,
+        },
       ],
     },
   ];
@@ -1256,6 +1272,13 @@ export async function seedSupplierQuestionnaire(): Promise<IQuestionnaire> {
   });
 
   if (existing) {
+    const supplierSections = getSupplierSections();
+    const hasSupplierType = existing.sections?.some((s) => s.questions?.some((q) => q.id === "supplierType"));
+    if (!hasSupplierType) {
+      existing.sections = supplierSections;
+      existing.stats = computeQuestionnaireStats(supplierSections);
+      await existing.save();
+    }
     return existing;
   }
 

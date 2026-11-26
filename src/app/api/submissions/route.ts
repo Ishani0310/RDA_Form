@@ -345,6 +345,7 @@ export async function GET(request: NextRequest) {
         schemaVersion: s.schemaVersion,
         formId: s.formId || "RDA-ICDP-CONTRACTOR-Q",
         formSlug: s.formSlug || "contractor",
+        supplierType: s.questionnaireData?.supplierType || null,
         questionnaireId: s.questionnaireId?.toString(),
         questionnaireVersion: s.questionnaireVersion || s.schemaVersion,
         questionnaireData: s.questionnaireData || null,

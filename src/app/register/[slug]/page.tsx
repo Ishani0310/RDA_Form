@@ -16,6 +16,9 @@ import {
   HelpCircle,
   Copy,
   ArrowRight,
+  Package,
+  Users,
+  Wrench,
 } from "lucide-react";
 import Link from "next/link";
 import { IQuestionnaireData, IFormSection, IFormQuestion } from "@/types/questionnaire";
@@ -46,6 +49,7 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
     organizationName: "",
     contactNumber: "",
     email: "",
+    supplierType: "",
   });
 
   // Validation errors state
@@ -61,6 +65,7 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
     organizationName: string;
     contactNumber: string;
     email: string;
+    supplierType?: string;
     submittedAt: string;
   } | null>(null);
 
@@ -160,6 +165,14 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
       errors.email = emailUniqueError;
     }
 
+    // 4. Supplier Type
+    const supType = (formData.supplierType || "").trim();
+    if (!supType) {
+      errors.supplierType = "Supplier type is required. Please select Material, Labour, or Equipment.";
+    } else if (!["Material", "Labour", "Equipment"].includes(supType)) {
+      errors.supplierType = "Please select a valid supplier type (Material, Labour, or Equipment).";
+    }
+
     setFieldErrors(errors);
     return Object.keys(errors).length === 0 && !emailUniqueError;
   };
@@ -180,6 +193,7 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
           organizationName: formData.organizationName.trim(),
           contactNumber: formData.contactNumber.trim(),
           email: formData.email.trim().toLowerCase(),
+          supplierType: (formData.supplierType || "Material").trim(),
           participantCategory: questionnaire?.category || "Supplier",
         },
       };
@@ -205,6 +219,7 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
           organizationName: formData.organizationName.trim(),
           contactNumber: formData.contactNumber.trim(),
           email: formData.email.trim().toLowerCase(),
+          supplierType: (formData.supplierType || "Material").trim(),
           submittedAt: new Date().toLocaleDateString("en-GB", {
             day: "2-digit",
             month: "short",
@@ -314,6 +329,12 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
                 <span className="font-bold text-slate-800">{submissionSuccess.organizationName}</span>
               </div>
               <div>
+                <span className="text-[10px] text-slate-400 uppercase font-semibold block">Supplier Type</span>
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 text-purple-900 border border-purple-200 mt-0.5">
+                  {submissionSuccess.supplierType || "Material"}
+                </span>
+              </div>
+              <div>
                 <span className="text-[10px] text-slate-400 uppercase font-semibold block">Contact Number</span>
                 <span className="font-bold text-slate-800">{submissionSuccess.contactNumber}</span>
               </div>
@@ -321,7 +342,7 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
                 <span className="text-[10px] text-slate-400 uppercase font-semibold block">Registered Email</span>
                 <span className="font-bold text-blue-900">{submissionSuccess.email}</span>
               </div>
-              <div>
+              <div className="sm:col-span-2">
                 <span className="text-[10px] text-slate-400 uppercase font-semibold block">Filing Timestamp</span>
                 <span className="font-bold text-slate-800">{submissionSuccess.submittedAt}</span>
               </div>
@@ -551,6 +572,92 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
                 <p className="text-[11px] text-emerald-700 font-medium flex items-center gap-1 mt-1">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                   <span>Verified unique institutional email requirement enforced.</span>
+                </p>
+              )}
+            </div>
+
+            {/* Question 4: Supplier Type */}
+            <div className="space-y-2 pt-3 border-t border-slate-100">
+              <label className="block font-bold text-slate-800">
+                4. Supplier Type <span className="text-rose-500">*</span>
+              </label>
+              <p className="text-[11px] text-slate-500">
+                Please select the primary supply category provided by your organization (Material, Labour, or Equipment).
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                {[
+                  {
+                    type: "Material",
+                    label: "Material",
+                    desc: "Bitumen, asphalt premix, aggregate, cement, steel, etc.",
+                    icon: Package,
+                    color: "text-blue-700",
+                    borderSelected: "border-blue-600 bg-blue-50/70 ring-2 ring-blue-600/30",
+                  },
+                  {
+                    type: "Labour",
+                    label: "Labour",
+                    desc: "Skilled/unskilled labour force, site crews, technical personnel.",
+                    icon: Users,
+                    color: "text-amber-700",
+                    borderSelected: "border-amber-600 bg-amber-50/70 ring-2 ring-amber-600/30",
+                  },
+                  {
+                    type: "Equipment",
+                    label: "Equipment",
+                    desc: "Heavy machinery, pavers, rollers, excavators, transport fleet.",
+                    icon: Wrench,
+                    color: "text-emerald-700",
+                    borderSelected: "border-emerald-600 bg-emerald-50/70 ring-2 ring-emerald-600/30",
+                  },
+                ].map((item) => {
+                  const isSelected = formData.supplierType === item.type;
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.type}
+                      type="button"
+                      onClick={() => handleChange("supplierType", item.type)}
+                      className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer relative flex flex-col justify-between ${
+                        isSelected
+                          ? item.borderSelected
+                          : "bg-slate-50/90 border-slate-200 hover:border-slate-300 hover:bg-slate-100/70"
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                            isSelected ? "bg-white shadow-xs" : "bg-slate-200/70"
+                          }`}>
+                            <Icon className={`w-4 h-4 ${isSelected ? item.color : "text-slate-600"}`} />
+                          </div>
+                          <span
+                            className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
+                              isSelected
+                                ? "border-blue-900 bg-blue-900"
+                                : "border-slate-300 bg-white"
+                            }`}
+                          >
+                            {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                          </span>
+                        </div>
+                        <span className="font-bold text-slate-900 block text-xs">
+                          {item.label}
+                        </span>
+                        <span className="text-[10px] text-slate-500 leading-tight block mt-1">
+                          {item.desc}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {fieldErrors.supplierType && (
+                <p className="text-xs text-rose-600 font-semibold flex items-center gap-1 mt-1.5">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>{fieldErrors.supplierType}</span>
                 </p>
               )}
             </div>

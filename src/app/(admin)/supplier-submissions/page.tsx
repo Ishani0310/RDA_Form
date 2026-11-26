@@ -31,12 +31,14 @@ interface SupplierSubmissionRecord {
   provincialOffice: string;
   status: string;
   category?: string;
+  supplierType?: string;
   formId?: string;
   formSlug?: string;
   questionnaireData?: {
     organizationName?: string;
     contactNumber?: string;
     email?: string;
+    supplierType?: string;
     [key: string]: any;
   };
   createdAt?: string;
@@ -105,7 +107,8 @@ export default function SupplierSubmissionsPage() {
           orgName.includes(term) ||
           phone.includes(term) ||
           email.includes(term) ||
-          ref.includes(term);
+          ref.includes(term) ||
+          (s.supplierType || q.supplierType || "").toLowerCase().includes(term);
 
         if (!match) return false;
       }
@@ -124,6 +127,7 @@ export default function SupplierSubmissionsPage() {
     const headers = [
       "Filing Reference",
       "Organization / Company Name",
+      "Supplier Type",
       "Contact Phone",
       "Official Email",
       "Submission Date",
@@ -133,6 +137,7 @@ export default function SupplierSubmissionsPage() {
     const rows = filteredRecords.map((s) => {
       const q = s.questionnaireData || {};
       const org = s.contractor || q.organizationName || "—";
+      const supType = s.supplierType || q.supplierType || "Material";
       const phone = q.contactNumber || "—";
       const email = q.email || "—";
       const subDate = formatDisplayDate(s.submittedAt || s.createdAt);
@@ -140,6 +145,7 @@ export default function SupplierSubmissionsPage() {
       return [
         `"${s.ref.replace(/"/g, '""')}"`,
         `"${org.replace(/"/g, '""')}"`,
+        `"${supType.replace(/"/g, '""')}"`,
         `"${phone.replace(/"/g, '""')}"`,
         `"${email.replace(/"/g, '""')}"`,
         `"${subDate}"`,
@@ -288,6 +294,7 @@ export default function SupplierSubmissionsPage() {
               <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-600 uppercase tracking-wider font-semibold">
                 <th className="p-3.5">#</th>
                 <th className="p-3.5">Organization / Firm Name</th>
+                <th className="p-3.5">Supplier Type</th>
                 <th className="p-3.5">Filing Reference</th>
                 <th className="p-3.5">Contact Phone</th>
                 <th className="p-3.5">Official Email</th>
@@ -299,14 +306,14 @@ export default function SupplierSubmissionsPage() {
             <tbody className="divide-y divide-slate-100 text-slate-700">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="p-8 text-center text-slate-400">
+                  <td colSpan={9} className="p-8 text-center text-slate-400">
                     <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-purple-600" />
                     <span>Loading verified supplier submissions...</span>
                   </td>
                 </tr>
               ) : filteredRecords.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="p-10 text-center text-slate-400 space-y-2">
+                  <td colSpan={9} className="p-10 text-center text-slate-400 space-y-2">
                     <AlertCircle className="w-8 h-8 mx-auto text-slate-300" />
                     <p className="font-semibold text-slate-600">No supplier submissions found.</p>
                     <p className="text-xs text-slate-400">
@@ -318,6 +325,7 @@ export default function SupplierSubmissionsPage() {
                 filteredRecords.map((s, idx) => {
                   const q = s.questionnaireData || {};
                   const orgName = s.contractor || q.organizationName || "—";
+                  const supType = s.supplierType || q.supplierType || "Material";
                   const phone = q.contactNumber || "—";
                   const email = q.email || "—";
                   const subDate = formatDisplayDate(s.submittedAt || s.createdAt);
@@ -330,6 +338,17 @@ export default function SupplierSubmissionsPage() {
                           <Building2 className="w-3.5 h-3.5 text-purple-600 shrink-0" />
                           <span>{orgName}</span>
                         </div>
+                      </td>
+                      <td className="p-3.5 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                          supType === "Labour"
+                            ? "bg-amber-50 text-amber-900 border-amber-300"
+                            : supType === "Equipment"
+                            ? "bg-emerald-50 text-emerald-900 border-emerald-300"
+                            : "bg-blue-50 text-blue-900 border-blue-300"
+                        }`}>
+                          {supType}
+                        </span>
                       </td>
                       <td className="p-3.5 font-mono text-[11px] font-bold text-purple-950">
                         {s.ref}
@@ -411,6 +430,14 @@ export default function SupplierSubmissionsPage() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Supplier Type
+                  </span>
+                  <span className="font-bold text-purple-900 block mt-1">
+                    {selectedRecord.supplierType || selectedRecord.questionnaireData?.supplierType || "Material"}
+                  </span>
+                </div>
                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                     Contact Phone Number
