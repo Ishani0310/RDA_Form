@@ -20,10 +20,29 @@ import {
   Truck,
   Plus,
   X,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 import { IQuestionnaireData, IFormSection, IFormQuestion } from "@/types/questionnaire";
 import { SUPPLIER_MATERIALS } from "@/lib/questionnaire-types";
+
+const LABOUR_CATEGORIES = [
+  {
+    id: "Skilled",
+    label: "Skilled Labour",
+    description: "Certified masons, carpenters, bar benders, equipment operators, electricians, welders, etc.",
+  },
+  {
+    id: "Semi-Skilled",
+    label: "Semi-Skilled Labour",
+    description: "Trades assistants, experienced site hands, machine attendants, concrete placement crew.",
+  },
+  {
+    id: "Unskilled",
+    label: "Unskilled Labour",
+    description: "General manual construction labour, earthwork/excavation workforce, site clearing crew.",
+  },
+] as const;
 
 interface DynamicRegistrationPageProps {
   params: Promise<{ slug: string }>;
@@ -55,6 +74,8 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
     materialsSupplied: [] as string[],
     materialsOther: "",
     supplyCapacities: {} as Record<string, any>,
+    labourCategories: [] as string[],
+    labourDetails: {} as Record<string, any>,
   });
   const [supplierMaterialsOtherList, setSupplierMaterialsOtherList] = useState<string[]>([""]);
 
@@ -73,6 +94,7 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
     email: string;
     supplierType?: string;
     materialsSupplied?: string[];
+    labourCategories?: string[];
     submittedAt: string;
   } | null>(null);
 
@@ -158,6 +180,36 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
         [field]: val,
       };
       return { ...prev, supplyCapacities: caps };
+    });
+  };
+
+  // Handle labour categories toggle
+  const handleLabourCategoryToggle = (catId: string) => {
+    setFormData((prev) => {
+      const currentList: string[] = prev.labourCategories || [];
+      const updated = currentList.includes(catId)
+        ? currentList.filter((c) => c !== catId)
+        : [...currentList, catId];
+      return { ...prev, labourCategories: updated };
+    });
+    if (fieldErrors.labourCategories) {
+      setFieldErrors((prev) => {
+        const copy = { ...prev };
+        delete copy.labourCategories;
+        return copy;
+      });
+    }
+  };
+
+  // Handle labour category details
+  const handleLabourDetailChange = (catId: string, field: string, val: string) => {
+    setFormData((prev) => {
+      const currentDetails = { ...(prev.labourDetails || {}) };
+      currentDetails[catId] = {
+        ...(currentDetails[catId] || { count: "", rate: "", trades: "" }),
+        [field]: val,
+      };
+      return { ...prev, labourDetails: currentDetails };
     });
   };
 
@@ -247,6 +299,13 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
       }
     }
 
+    // If Labour is selected, require at least one labour category
+    if (supType === "Labour") {
+      if (!formData.labourCategories || formData.labourCategories.length === 0) {
+        errors.labourCategories = "Please select at least one labour category (Skilled, Semi-Skilled, or Unskilled).";
+      }
+    }
+
     setFieldErrors(errors);
     return Object.keys(errors).length === 0 && !emailUniqueError;
   };
@@ -276,11 +335,15 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
           materialsSupplied: formData.materialsSupplied || [],
           materialsOther: otherCombined || formData.materialsOther || "",
           supplyCapacities: formData.supplyCapacities || {},
+          labourCategories: formData.labourCategories || [],
+          labourDetails: formData.labourDetails || {},
           supplierDetails: {
             companyName: formData.organizationName.trim(),
             materialsSupplied: formData.materialsSupplied || [],
             materialsOther: otherCombined || formData.materialsOther || "",
             supplyCapacities: formData.supplyCapacities || {},
+            labourCategories: formData.labourCategories || [],
+            labourDetails: formData.labourDetails || {},
           },
           participantCategory: questionnaire?.category || "Supplier",
         },
@@ -309,6 +372,7 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
           email: formData.email.trim().toLowerCase(),
           supplierType: (formData.supplierType || "Material").trim(),
           materialsSupplied: formData.materialsSupplied || [],
+          labourCategories: formData.labourCategories || [],
           submittedAt: new Date().toLocaleDateString("en-GB", {
             day: "2-digit",
             month: "short",
@@ -452,6 +516,23 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
                   </div>
                 </div>
               )}
+              {submissionSuccess.labourCategories && submissionSuccess.labourCategories.length > 0 && (
+                <div className="sm:col-span-2 pt-2 border-t border-slate-200/80">
+                  <span className="text-[10px] text-slate-400 uppercase font-semibold block mb-1.5">
+                    Labour Categories Supplied
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {submissionSuccess.labourCategories.map((c) => (
+                      <span
+                        key={c}
+                        className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-900 border border-amber-200"
+                      >
+                        {c}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -476,6 +557,8 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
                   materialsSupplied: [],
                   materialsOther: "",
                   supplyCapacities: {},
+                  labourCategories: [],
+                  labourDetails: {},
                 });
                 setSupplierMaterialsOtherList([""]);
               }}
@@ -993,6 +1076,148 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
                             );
                           });
                         })()}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Conditionally Show Labour Details when Labour is selected */}
+            {formData.supplierType === "Labour" && (
+              <div className="space-y-4 pt-3 border-t border-slate-100 animate-fadeIn">
+                <div className="p-3.5 bg-amber-50/80 border border-amber-200/90 rounded-xl text-xs text-amber-950">
+                  <p className="leading-relaxed">
+                    Please provide details of the labour categories supplied by your organization and available workforce capacity.
+                  </p>
+                </div>
+
+                <div className="space-y-4 text-xs">
+                  {/* Labour Category Selection Checkboxes */}
+                  <div id="input-supplierDetails-labourCategories">
+                    <label className="block font-semibold text-slate-700 mb-2">
+                      Please select the labour category(ies) you supply <span className="text-rose-500">*</span> (Multiple selection allowed)
+                    </label>
+                    <div
+                      className={`grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-1.5 rounded-xl transition-all ${
+                        fieldErrors.labourCategories ? "bg-rose-50/40 border-2 border-rose-500" : ""
+                      }`}
+                    >
+                      {LABOUR_CATEGORIES.map((cat) => {
+                        const isChecked = (formData.labourCategories || []).includes(cat.id);
+                        return (
+                          <label
+                            key={cat.id}
+                            className={`flex flex-col gap-1 p-3 border rounded-xl cursor-pointer transition-colors ${
+                              isChecked
+                                ? "bg-amber-50/80 border-amber-600 text-amber-950 font-semibold shadow-xs"
+                                : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => handleLabourCategoryToggle(cat.id)}
+                                className="w-4 h-4 text-amber-600 rounded focus:ring-amber-500 cursor-pointer"
+                              />
+                              <span className="font-bold text-slate-900">{cat.label}</span>
+                            </div>
+                            <span className="text-[11px] text-slate-500 pl-6 leading-tight font-normal">
+                              {cat.description}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                    {fieldErrors.labourCategories && (
+                      <div role="alert" className="flex items-start gap-1.5 mt-2 text-xs font-semibold text-rose-600 animate-fadeIn">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                        <span>{fieldErrors.labourCategories}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Labour Capacity & Rate Details for selected categories */}
+                  {(formData.labourCategories || []).length > 0 && (
+                    <div className="space-y-3 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                      <div>
+                        <span className="font-bold text-slate-900 uppercase text-[11px] block">
+                          Workforce Capacity &amp; Daily Rates
+                        </span>
+                        <span className="text-[11px] text-slate-500">
+                          Specify available personnel count, daily wage/rate (LKR per day), and key trades provided.
+                        </span>
+                      </div>
+
+                      {/* Desktop Header */}
+                      <div className="hidden sm:grid sm:grid-cols-12 gap-2.5 px-3 py-1 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <div className="sm:col-span-3">Labour Category</div>
+                        <div className="sm:col-span-3">Available Workforce (Personnel Count)</div>
+                        <div className="sm:col-span-3">Daily Rate (LKR / Day)</div>
+                        <div className="sm:col-span-3">Key Trades / Specialization</div>
+                      </div>
+
+                      <div className="space-y-2.5">
+                        {LABOUR_CATEGORIES.filter((cat) => (formData.labourCategories || []).includes(cat.id)).map((cat) => {
+                          const details = formData.labourDetails?.[cat.id] || { count: "", rate: "", trades: "" };
+                          return (
+                            <div
+                              key={cat.id}
+                              className="p-3 bg-white border border-slate-200 rounded-lg space-y-2.5 sm:space-y-0 sm:grid sm:grid-cols-12 sm:gap-2.5 sm:items-center"
+                            >
+                              <div className="sm:col-span-3">
+                                <span className="font-semibold text-amber-950 text-xs sm:text-sm block">
+                                  {cat.label}
+                                </span>
+                              </div>
+
+                              <div className="sm:col-span-3">
+                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1 sm:hidden">
+                                  Available Workforce
+                                </label>
+                                <input
+                                  type="text"
+                                  value={details.count || ""}
+                                  onChange={(e) => handleLabourDetailChange(cat.id, "count", e.target.value)}
+                                  placeholder="e.g. 25 workers"
+                                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-amber-500 font-mono"
+                                />
+                              </div>
+
+                              <div className="sm:col-span-3">
+                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1 sm:hidden">
+                                  Daily Rate (LKR)
+                                </label>
+                                <div className="flex items-center">
+                                  <span className="px-2 py-2 bg-slate-100 border border-r-0 border-slate-300 rounded-l-lg text-[10px] font-bold text-slate-600 select-none">
+                                    LKR
+                                  </span>
+                                  <input
+                                    type="text"
+                                    value={details.rate || ""}
+                                    onChange={(e) => handleLabourDetailChange(cat.id, "rate", e.target.value)}
+                                    placeholder="e.g. 4,500 / day"
+                                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-r-lg text-xs text-slate-900 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-amber-500 font-mono"
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="sm:col-span-3">
+                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1 sm:hidden">
+                                  Key Trades
+                                </label>
+                                <input
+                                  type="text"
+                                  value={details.trades || ""}
+                                  onChange={(e) => handleLabourDetailChange(cat.id, "trades", e.target.value)}
+                                  placeholder="e.g. Masons, Carpenters"
+                                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-amber-500"
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}

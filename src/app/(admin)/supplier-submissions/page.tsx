@@ -349,11 +349,15 @@ export default function SupplierSubmissionsPage() {
                         }`}>
                           {supType}
                         </span>
-                        {q.materialsSupplied && q.materialsSupplied.length > 0 && (
+                        {supType === "Labour" && q.labourCategories && q.labourCategories.length > 0 ? (
+                          <div className="text-[10px] text-amber-800 font-medium truncate max-w-[140px] mt-0.5" title={q.labourCategories.join(", ")}>
+                            {q.labourCategories.join(", ")}
+                          </div>
+                        ) : q.materialsSupplied && q.materialsSupplied.length > 0 ? (
                           <div className="text-[10px] text-slate-500 font-medium truncate max-w-[140px] mt-0.5" title={q.materialsSupplied.join(", ")}>
                             {q.materialsSupplied.join(", ")}
                           </div>
-                        )}
+                        ) : null}
                       </td>
                       <td className="p-3.5 font-mono text-[11px] font-bold text-purple-950">
                         {s.ref}
@@ -488,6 +492,24 @@ export default function SupplierSubmissionsPage() {
                           className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-blue-50 text-blue-900 border border-blue-200"
                         >
                           {m}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {selectedRecord.questionnaireData?.labourCategories &&
+                  selectedRecord.questionnaireData.labourCategories.length > 0 && (
+                  <div className="sm:col-span-2 bg-slate-50 border border-slate-200 rounded-xl p-3">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
+                      Labour Categories Supplied
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {selectedRecord.questionnaireData.labourCategories.map((c: string) => (
+                        <span
+                          key={c}
+                          className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-900 border border-amber-200"
+                        >
+                          {c}
                         </span>
                       ))}
                     </div>
