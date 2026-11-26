@@ -6,6 +6,7 @@ const PROTECTED_PREFIXES = [
   "/dashboard",
   "/contractors",
   "/submissions",
+  "/supplier-submissions",
   "/qr-management",
   "/form-builder",
   "/reports",

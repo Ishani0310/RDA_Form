@@ -45,7 +45,7 @@ export const navItems = [
   },
   {
     name: "Supplier Submissions",
-    href: "/reports/suppliers",
+    href: "/supplier-submissions",
     icon: Truck,
     badge: null,
   },

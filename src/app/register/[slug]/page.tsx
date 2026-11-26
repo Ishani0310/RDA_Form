@@ -198,7 +198,7 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
         // If this is the supplier registration form, redirect immediately to the supplier page as requested
         if (slug === "supplier" || questionnaire?.slug === "supplier" || questionnaire?.category === "Supplier") {
           setTimeout(() => {
-            window.location.href = "/reports/suppliers";
+            window.location.href = "/supplier-submissions";
           }, 600);
           return;
         }
@@ -333,11 +333,11 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
             <Link
-              href="/reports/suppliers"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-xl shadow-xs transition-all"
+              href="/supplier-submissions"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 text-xs font-bold text-white bg-purple-700 hover:bg-purple-800 rounded-xl shadow-xs transition-all"
             >
               <Truck className="w-4 h-4" />
-              <span>Go to Supplier Directory</span>
+              <span>Go to Supplier Submissions</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
             <button

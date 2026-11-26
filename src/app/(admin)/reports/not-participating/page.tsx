@@ -20,6 +20,8 @@ interface SubmissionItem {
   ref: string;
   contractor: string;
   category?: string;
+  formId?: string;
+  formSlug?: string;
   questionnaireData?: any;
   createdAt?: string;
   submittedAt?: string | null;
@@ -73,6 +75,8 @@ export default function NotParticipatingHubPage() {
       const q = s.questionnaireData || {};
       const orgName = (s.contractor || q.organizationName || "").toLowerCase();
       if (orgName.includes("testing") || orgName.includes("dummy")) return false;
+      // Do not connect new supplier form with analytics
+      if (s.formId === "RDA-SUPPLIER-Q" || s.formSlug === "supplier" || q.formSlug === "supplier") return false;
       return q.willParticipate === "No";
     });
   }, [submissions]);

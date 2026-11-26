@@ -38,6 +38,8 @@ export interface FormattedRecord {
   provincialOffice: string;
   status: string;
   category?: string;
+  formId?: string;
+  formSlug?: string;
   questionnaireData?: any;
   createdAt?: string;
   submittedAt?: string | null;
@@ -146,6 +148,9 @@ export default function ReportDirectoryView({
       const q = s.questionnaireData || {};
       const orgName = (s.contractor || q.organizationName || "").toLowerCase();
       if (orgName.includes("testing") || orgName.includes("dummy")) return false;
+
+      // Do not connect new supplier form with analytics & reports
+      if (s.formId === "RDA-SUPPLIER-Q" || s.formSlug === "supplier" || q.formSlug === "supplier") return false;
 
       if (attendanceFilter === "Yes" && q.willParticipate !== "Yes") return false;
       if (attendanceFilter === "No" && q.willParticipate !== "No") return false;
