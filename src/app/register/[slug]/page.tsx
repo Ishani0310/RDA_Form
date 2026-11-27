@@ -23,10 +23,19 @@ import {
   Users,
   Wrench,
   Globe,
+  FileText,
+  Trash2,
+  MapPin,
 } from "lucide-react";
 import Link from "next/link";
 import { IQuestionnaireData, IFormSection, IFormQuestion } from "@/types/questionnaire";
-import { SUPPLIER_MATERIALS } from "@/lib/questionnaire-types";
+import {
+  SUPPLIER_MATERIALS,
+  SRI_LANKA_PROVINCES,
+  PROVINCE_DISTRICT_MAP,
+  SriLankaProvince,
+} from "@/lib/questionnaire-types";
+import { LocationMapPicker } from "@/components/LocationMapPicker";
 
 type Language = "en" | "si" | "ta";
 
@@ -40,18 +49,33 @@ const TRANSLATIONS = {
     instructions: "Please fill in all mandatory fields with verified institutional data. Once submitted, your registration reference will be immediately generated.",
 
     // Section 1
-    sec1Title: "1. Supplier Organization & Contact Details",
-    sec1Desc: "All three fields below are mandatory. Each organization must register using a unique email address.",
-    q1Label: "1. Name of Supplier Organization / Company",
+    sec1Title: "1. Supplier Organization & Location Details",
+    sec1Desc: "All mandatory fields below are required. Each organization must register using a unique email address.",
+    q1Label: "Company Name",
     q1Help: "Official registered corporate or commercial trading name.",
-    q1Placeholder: "e.g., Lanka Asphalt & Aggregates (Pvt) Ltd",
-    q2Label: "2. Organization Contact Telephone / Mobile Number",
+    q1Placeholder: "e.g. Lanka Ready-Mix & Asphalt Products (Pvt) Ltd",
+    q2Label: "Organization Contact Telephone / Mobile Number",
     q2Help: "Active official contact number for institutional correspondence (e.g., +94 11 234 5678 or 077 123 4567).",
     q2Placeholder: "+94 11 234 5678 / 077 123 4567",
-    q3Label: "3. Official Organization Email Address (Unique)",
+    q3Label: "Official Organization Email Address (Unique)",
     q3Help: "Primary verified email. Official registration confirmation and tracking reference will be dispatched to this address. Must be unique per supplier.",
     q3Placeholder: "e.g., supplier@organization.lk",
     emailUniqueNote: "Verified unique institutional email requirement enforced.",
+    locationAddressLabel: "Location Address",
+    locationAddressPlaceholder: "Physical address of manufacturing plant, quarry, or central distribution warehouse...",
+    provinceLabel: "Province",
+    provincePrompt: "— Select Province —",
+    districtLabel: "District",
+    districtPrompt: "— Select District —",
+
+    // Section 11: Matters for Discussion
+    sec11Title: "SECTION 11: MATTERS FOR DISCUSSION",
+    sec11Question: "Do you have any specific matters, concerns or suggestions that you would like to be discussed during the Early Market Engagement Workshop? (Optional)",
+    sec11Desc: "Please add each matter, concern, or suggestion separately below. Participants are encouraged to share topics relating to market conditions, technical requirements, procurement arrangements, implementation challenges, or other issues relevant to ICDP activities.",
+    matterBadgePrefix: "Matter / Suggestion #",
+    matterPlaceholderPrefix: "Enter specific matter, concern, or suggestion #",
+    addMatterBtn: "+ Add Another Matter / Suggestion",
+    addMatterHelp: "You can add multiple separate discussion matters as needed",
 
     // Section 2
     sec2Title: "2. Supplier Details",
@@ -150,18 +174,33 @@ const TRANSLATIONS = {
     instructions: "කරුණාකර සියලුම අනිවාර්ය ක්ෂේත්‍ර නිවැරදි ආයතනික තොරතුරු සහිතව පුරවන්න. ඉදිරිපත් කළ පසු ඔබගේ නිල ලියාපදිංචි යොමු අංකය වහාම නිකුත් කෙරේ.",
 
     // Section 1
-    sec1Title: "1. සැපයුම්කරු ආයතනික සහ සබඳතා තොරතුරු",
-    sec1Desc: "පහත දැක්වෙන සියලුම තොරතුරු අනිවාර්ය වේ. එක් එක් ආයතනය අනන්‍ය විද්‍යුත් තැපැල් ලිපිනයක් භාවිතා කළ යුතුය.",
-    q1Label: "1. සැපයුම්කරු ආයතනයේ / සමාගමේ නම",
+    sec1Title: "1. සැපයුම්කරු ආයතනික සහ ස්ථානීය තොරතුරු",
+    sec1Desc: "පහත දැක්වෙන සියලුම අනිවාර්ය තොරතුරු සම්පූර්ණ කළ යුතුය. එක් එක් ආයතනය අනන්‍ය විද්‍යුත් තැපැල් ලිපිනයක් භාවිතා කළ යුතුය.",
+    q1Label: "සමාගමේ නම",
     q1Help: "නිල වශයෙන් ලියාපදිංචි කළ ආයතනික හෝ වෙළඳ නාමය.",
-    q1Placeholder: "උදා: ලංකා ඇස්ෆෝල්ට් ඇන්ඩ් ඇග්‍රිගේට්ස් (පුද්) සමාගම",
-    q2Label: "2. ආයතනික දුරකථන / ජංගම දුරකථන අංකය",
+    q1Placeholder: "උදා: ලංකා රෙඩි-මික්ස් ඇන්ඩ් ඇස්ෆෝල්ට් ප්‍රොඩක්ට්ස් (පුද්) සමාගම",
+    q2Label: "ආයතනික දුරකථන / ජංගම දුරකථන අංකය",
     q2Help: "නිල ලිපිගනුදෙනු සඳහා වලංගු දුරකථන අංකය (උදා: +94 11 234 5678 හෝ 077 123 4567).",
     q2Placeholder: "+94 11 234 5678 / 077 123 4567",
-    q3Label: "3. නිල ආයතනික විද්‍යුත් තැපැල් ලිපිනය (අනන්‍ය)",
+    q3Label: "නිල ආයතනික විද්‍යුත් තැපැල් ලිපිනය (අනන්‍ය)",
     q3Help: "ප්‍රධාන විද්‍යුත් තැපැල් ලිපිනය. නිල ලියාපදිංචි කිරීමේ තහවුරු කිරීම සහ යොමු අංකය මෙම ලිපිනයට එවනු ලැබේ. එක් එක් සැපයුම්කරු සඳහා අනන්‍ය විය යුතුය.",
     q3Placeholder: "උදා: supplier@organization.lk",
     emailUniqueNote: "සත්‍යාපිත අනන්‍ය ආයතනික විද්‍යුත් තැපෑල අනිවාර්ය වේ.",
+    locationAddressLabel: "ස්ථානයේ ලිපිනය",
+    locationAddressPlaceholder: "නිෂ්පාදන බලාගාරයේ, ගල්වලේ, හෝ මධ්‍යම බෙදාහැරීමේ ගබඩාවේ භෞතික ලිපිනය...",
+    provinceLabel: "පළාත",
+    provincePrompt: "— පළාත තෝරන්න —",
+    districtLabel: "දිස්ත්‍රික්කය",
+    districtPrompt: "— දිස්ත්‍රික්කය තෝරන්න —",
+
+    // Section 11: Matters for Discussion
+    sec11Title: "11 වන කොටස: සාකච්ඡාව සඳහා වන කරුණු",
+    sec11Question: "මුල් වෙළඳපල සහභාගීත්ව වැඩමුළුවේදී සාකච්ඡා කිරීමට ඔබ කැමති කිසියම් විශේෂිත කරුණක්, ගැටලුවක් හෝ යෝජනාවක් තිබේද? (විකල්ප)",
+    sec11Desc: "කරුණාකර එක් එක් කරුණ, ගැටලුව හෝ යෝජනාව පහතින් වෙන වෙනම එක් කරන්න. වෙළඳපල තත්ත්වයන්, තාක්ෂණික අවශ්‍යතා, ප්‍රසම්පාදන විධිවිධාන, ක්‍රියාත්මක කිරීමේ අභියෝග හෝ ICDP ක්‍රියාකාරකම් වලට අදාළ වෙනත් කරුණු බෙදා ගැනීමට සහභාගිවන්නන් දිරිමත් කරනු ලැබේ.",
+    matterBadgePrefix: "කරුණ / යෝජනාව #",
+    matterPlaceholderPrefix: "විශේෂිත කරුණ, ගැටලුව හෝ යෝජනාව ඇතුළත් කරන්න #",
+    addMatterBtn: "+ තවත් කරුණක් / යෝජනාවක් එක් කරන්න",
+    addMatterHelp: "අවශ්‍ය පරිදි වෙන වෙනම සාකච්ඡා කරුණු කිහිපයක් එක් කළ හැක",
 
     // Section 2
     sec2Title: "2. සැපයුම්කරුගේ තොරතුරු",
@@ -260,18 +299,33 @@ const TRANSLATIONS = {
     instructions: "அனைத்து கட்டாய புலங்களையும் சரியான நிறுவன விபரங்களுடன் நிரப்பவும். சமர்ப்பித்தவுடன் உங்கள் பதிவு குறிப்பு எண் உடனடியாக வழங்கப்படும்.",
 
     // Section 1
-    sec1Title: "1. விநியோகஸ்தர் நிறுவனம் மற்றும் தொடர்பு விபரங்கள்",
-    sec1Desc: "கீழே உள்ள மூன்று புலங்களும் கட்டாயமாகும். ஒவ்வொரு நிறுவனமும் தனிப்பட்ட மின்னஞ்சல் முகவரியைப் பயன்படுத்த வேண்டும்.",
-    q1Label: "1. விநியோகஸ்தர் நிறுவனத்தின் / வர்த்தகப் பெயர்",
+    sec1Title: "1. விநியோகஸ்தர் நிறுவனம் மற்றும் அமைவிட விபரங்கள்",
+    sec1Desc: "கீழே உள்ள அனைத்து கட்டாய புலங்களும் நிரப்பப்பட வேண்டும். ஒவ்வொரு நிறுவனமும் தனித்துவமான மின்னஞ்சல் முகவரியைப் பயன்படுத்த வேண்டும்.",
+    q1Label: "நிறுவனத்தின் பெயர்",
     q1Help: "உத்தியோகபூர்வமாக பதிவு செய்யப்பட்ட நிறுவன அல்லது வர்த்தக பெயர்.",
-    q1Placeholder: "உதா: லங்கா அஸ்பால்ட் & அக்ரிகேட்ஸ் (பிரைவேட்) லிமிடெட்",
-    q2Label: "2. நிறுவன தொடர்பு தொலைபேசி / கைபேசி எண்",
+    q1Placeholder: "உதா: லங்கா ரெடி-மிக்ஸ் & அஸ்பால்ட் தயாரிப்புகள் (பிரைவேட்) லிமிடெட்",
+    q2Label: "நிறுவன தொடர்பு தொலைபேசி / கைபேசி எண்",
     q2Help: "உத்தியோகபூர்வ தொடர்புகளுக்கான தொலைபேசி எண் (உதா: +94 11 234 5678 அல்லது 077 123 4567).",
     q2Placeholder: "+94 11 234 5678 / 077 123 4567",
-    q3Label: "3. உத்தியோகபூர்வ மின்னஞ்சல் முகவரி (தனித்துவமானது)",
+    q3Label: "உத்தியோகபூர்வ மின்னஞ்சல் முகவரி (தனித்துவமானது)",
     q3Help: "முக்கிய மின்னஞ்சல் முகவரி. உத்தியோகபூர்வ உறுதிப்படுத்தல் மற்றும் குறிப்பு எண் இந்த முகவரிக்கு அனுப்பப்படும். ஒவ்வொரு விநியோகஸ்தருக்கும் தனித்துவமாக இருக்க வேண்டும்.",
     q3Placeholder: "உதா: supplier@organization.lk",
     emailUniqueNote: "சரிபார்க்கப்பட்ட தனித்துவமான நிறுவன மின்னஞ்சல் அவசியம்.",
+    locationAddressLabel: "அமைவிட முகவரி",
+    locationAddressPlaceholder: "உற்பத்தி ஆலை, குவாரி அல்லது மத்திய விநியோகக் கிடங்கின் முகவரி...",
+    provinceLabel: "மாகாணம்",
+    provincePrompt: "— மாகாணத்தைத் தேர்ந்தெடுக்கவும் —",
+    districtLabel: "மாவட்டம்",
+    districtPrompt: "— மாவட்டத்தைத் தேர்ந்தெடுக்கவும் —",
+
+    // Section 11: Matters for Discussion
+    sec11Title: "பிரிவு 11: கலந்துரையாடலுக்கான விடயங்கள்",
+    sec11Question: "ஆரம்ப சந்தை ஈடுபாட்டுப் பட்டறையின் போது கலந்துரையாட விரும்பும் ஏதேனும் குறிப்பிட்ட விடயங்கள், கவலைகள் அல்லது பரிந்துரைகள் உங்களிடம் உள்ளதா? (விருப்பமானது)",
+    sec11Desc: "தயவுசெய்து ஒவ்வொரு விடயம், கவலை அல்லது பரிந்துரையையும் தனித்தனியாக கீழே சேர்க்கவும். சந்தை நிலைமைகள், தொழில்நுட்ப தேவைகள், கொள்முதல் ஏற்பாடுகள், செயல்படுத்தல் சவால்கள் அல்லது ICDP நடவடிக்கைகளுக்கு தொடர்புடைய பிற விடயங்களை பகிர்ந்துகொள்ள ஊக்குவிக்கப்படுகிறீர்கள்.",
+    matterBadgePrefix: "விடயம் / பரிந்துரை #",
+    matterPlaceholderPrefix: "குறிப்பிட்ட விடயம், கவலை அல்லது பரிந்துரையை உள்ளிடவும் #",
+    addMatterBtn: "+ மற்றொரு விடயம் / பரிந்துரையைச் சேர்க்கவும்",
+    addMatterHelp: "தேவைக்கேற்ப பல தனித்தனி விவாத விடயங்களை நீங்கள் சேர்க்கலாம்",
 
     // Section 2
     sec2Title: "2. விநியோகஸ்தர் விபரங்கள்",
@@ -410,6 +464,12 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
     organizationName: "",
     contactNumber: "",
     email: "",
+    locationAddress: "",
+    latitude: "",
+    longitude: "",
+    province: "",
+    district: "",
+    mattersForDiscussionList: [""] as string[],
     supplierType: "",
     materialsSupplied: [] as string[],
     materialsOther: "",
@@ -419,6 +479,35 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
     equipmentList: [{ name: "", capacity: "", availableCity: "" }],
   });
   const [supplierMaterialsOtherList, setSupplierMaterialsOtherList] = useState<string[]>([""]);
+
+  const availableDistricts = formData.province
+    ? (PROVINCE_DISTRICT_MAP as Record<string, string[]>)[formData.province] || []
+    : [];
+
+  const handleMatterChange = (index: number, value: string) => {
+    setFormData((prev) => {
+      const list = [...(prev.mattersForDiscussionList || [""])];
+      list[index] = value;
+      return { ...prev, mattersForDiscussionList: list };
+    });
+  };
+
+  const handleAddMatter = () => {
+    setFormData((prev) => ({
+      ...prev,
+      mattersForDiscussionList: [...(prev.mattersForDiscussionList || [""]), ""],
+    }));
+  };
+
+  const handleRemoveMatter = (index: number) => {
+    setFormData((prev) => {
+      const list = (prev.mattersForDiscussionList || [""]).filter((_: any, idx: number) => idx !== index);
+      return {
+        ...prev,
+        mattersForDiscussionList: list.length > 0 ? list : [""],
+      };
+    });
+  };
 
   // Validation errors state
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -653,7 +742,23 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
       errors.email = emailUniqueError;
     }
 
-    // 4. Supplier Type
+    // 4. Location Address
+    const locAddress = (formData.locationAddress || "").trim();
+    if (!locAddress) {
+      errors.locationAddress = "Physical location address is required.";
+    }
+
+    // 5. Province
+    if (!formData.province || !String(formData.province).trim()) {
+      errors.province = "Please select a province.";
+    }
+
+    // 6. District
+    if (!formData.district || !String(formData.district).trim()) {
+      errors.district = "Please select a district.";
+    }
+
+    // 7. Supplier Type
     const supType = (formData.supplierType || "").trim();
     if (!supType) {
       errors.supplierType = "Supplier type is required. Please select Material, Labour, or Equipment.";
@@ -712,6 +817,13 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
         (eq: any) => eq.name && eq.name.trim().length > 0
       );
 
+      const cleanedMatters = (formData.mattersForDiscussionList || [])
+        .map((m: string) => m.trim())
+        .filter(Boolean);
+      const combinedMatters = cleanedMatters
+        .map((m: string, idx: number) => `${idx + 1}. ${m}`)
+        .join("\n\n");
+
       const payload = {
         businessName: formData.organizationName.trim(),
         formId: questionnaire?.code || "RDA-SUPPLIER-Q",
@@ -721,6 +833,13 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
           organizationName: formData.organizationName.trim(),
           contactNumber: formData.contactNumber.trim(),
           email: formData.email.trim().toLowerCase(),
+          locationAddress: formData.locationAddress?.trim() || "",
+          latitude: formData.latitude ? String(formData.latitude).trim() : "",
+          longitude: formData.longitude ? String(formData.longitude).trim() : "",
+          province: formData.province || "",
+          district: formData.district || "",
+          mattersForDiscussionList: cleanedMatters,
+          mattersForDiscussion: combinedMatters,
           supplierType: (formData.supplierType || "Material").trim(),
           materialsSupplied: formData.materialsSupplied || [],
           materialsOther: otherCombined || formData.materialsOther || "",
@@ -730,6 +849,11 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
           equipmentList: cleanedEquipmentList,
           supplierDetails: {
             companyName: formData.organizationName.trim(),
+            locationAddress: formData.locationAddress?.trim() || "",
+            latitude: formData.latitude ? String(formData.latitude).trim() : "",
+            longitude: formData.longitude ? String(formData.longitude).trim() : "",
+            province: formData.province || "",
+            district: formData.district || "",
             materialsSupplied: formData.materialsSupplied || [],
             materialsOther: otherCombined || formData.materialsOther || "",
             supplyCapacities: formData.supplyCapacities || {},
@@ -1017,6 +1141,12 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
                   organizationName: "",
                   contactNumber: "",
                   email: "",
+                  locationAddress: "",
+                  latitude: "",
+                  longitude: "",
+                  province: "",
+                  district: "",
+                  mattersForDiscussionList: [""],
                   supplierType: "",
                   materialsSupplied: [],
                   materialsOther: "",
@@ -1279,6 +1409,136 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
                   <span>{t.emailUniqueNote}</span>
                 </p>
               )}
+            </div>
+
+            {/* Location Address */}
+            <div className="space-y-1.5">
+              <label htmlFor="input-location-address" className="block font-bold text-slate-800">
+                {t.locationAddressLabel} <span className="text-rose-500">*</span>
+              </label>
+              <textarea
+                id="input-location-address"
+                rows={3}
+                placeholder={t.locationAddressPlaceholder}
+                value={formData.locationAddress}
+                onChange={(e) => handleChange("locationAddress", e.target.value)}
+                className={`w-full p-3 bg-slate-50 border rounded-xl font-medium focus:bg-white focus:outline-hidden focus:ring-2 transition-all ${
+                  fieldErrors.locationAddress
+                    ? "border-rose-400 focus:ring-rose-200 text-rose-950"
+                    : "border-slate-300 focus:ring-blue-900/30 text-slate-900"
+                }`}
+                required
+              />
+              {fieldErrors.locationAddress && (
+                <p className="text-xs text-rose-600 font-semibold flex items-center gap-1 mt-1">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>{fieldErrors.locationAddress}</span>
+                </p>
+              )}
+            </div>
+
+            {/* Map Location Picker */}
+            <LocationMapPicker
+              latitude={formData.latitude}
+              longitude={formData.longitude}
+              onChange={(lat, lng) => {
+                setFormData((prev) => ({
+                  ...prev,
+                  latitude: lat,
+                  longitude: lng,
+                }));
+              }}
+            />
+
+            {/* Province & District (Dependent Dropdown) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label htmlFor="input-province" className="block font-bold text-slate-800">
+                  {t.provinceLabel} <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  id="input-province"
+                  required
+                  value={formData.province || ""}
+                  onChange={(e) => {
+                    const newProv = e.target.value;
+                    setFormData((prev) => ({
+                      ...prev,
+                      province: newProv,
+                      district: "",
+                    }));
+                    if (fieldErrors.province) {
+                      setFieldErrors((prev) => {
+                        const copy = { ...prev };
+                        delete copy.province;
+                        return copy;
+                      });
+                    }
+                  }}
+                  className={`w-full p-2.5 rounded-xl font-medium text-slate-900 focus:bg-white focus:outline-hidden focus:ring-2 transition-all ${
+                    fieldErrors.province
+                      ? "bg-rose-50/30 border-2 border-rose-400 focus:ring-rose-200"
+                      : "bg-slate-50 border border-slate-300 focus:ring-blue-900/30"
+                  }`}
+                >
+                  <option value="">{t.provincePrompt}</option>
+                  {SRI_LANKA_PROVINCES.map((prov) => (
+                    <option key={prov} value={prov}>
+                      {prov}
+                    </option>
+                  ))}
+                </select>
+                {fieldErrors.province && (
+                  <p className="text-xs text-rose-600 font-semibold flex items-center gap-1 mt-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{fieldErrors.province}</span>
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <label htmlFor="input-district" className="block font-bold text-slate-800">
+                  {t.districtLabel} <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  id="input-district"
+                  required
+                  disabled={!formData.province}
+                  value={formData.district || ""}
+                  onChange={(e) => {
+                    const newDist = e.target.value;
+                    setFormData((prev) => ({
+                      ...prev,
+                      district: newDist,
+                    }));
+                    if (fieldErrors.district) {
+                      setFieldErrors((prev) => {
+                        const copy = { ...prev };
+                        delete copy.district;
+                        return copy;
+                      });
+                    }
+                  }}
+                  className={`w-full p-2.5 rounded-xl font-medium text-slate-900 focus:bg-white focus:outline-hidden focus:ring-2 disabled:opacity-50 transition-all ${
+                    fieldErrors.district
+                      ? "bg-rose-50/30 border-2 border-rose-400 focus:ring-rose-200"
+                      : "bg-slate-50 border border-slate-300 focus:ring-blue-900/30"
+                  }`}
+                >
+                  <option value="">{t.districtPrompt}</option>
+                  {availableDistricts.map((dist) => (
+                    <option key={dist} value={dist}>
+                      {dist}
+                    </option>
+                  ))}
+                </select>
+                {fieldErrors.district && (
+                  <p className="text-xs text-rose-600 font-semibold flex items-center gap-1 mt-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{fieldErrors.district}</span>
+                  </p>
+                )}
+              </div>
             </div>
           </div>
 
@@ -1840,6 +2100,83 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
                 </div>
               </div>
             )}
+            </div>
+          </div>
+
+          {/* SECTION 11: MATTERS FOR DISCUSSION */}
+          <div className="pt-6 border-t border-slate-200 space-y-4">
+            <div className="border-b border-slate-100 pb-3 flex items-center gap-2">
+              <FileText className="w-4 h-4 text-blue-900" />
+              <h2 className={`text-sm font-bold text-slate-900 ${lang === "en" ? "uppercase tracking-wide font-black" : "tracking-normal"}`}>
+                {t.sec11Title}
+              </h2>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block font-semibold text-slate-700">
+                  {t.sec11Question}
+                </label>
+                <p className="text-slate-500 text-[11px] leading-relaxed mt-0.5">
+                  {t.sec11Desc}
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                {(formData.mattersForDiscussionList && formData.mattersForDiscussionList.length > 0
+                  ? formData.mattersForDiscussionList
+                  : [""]
+                ).map((matter: string, idx: number) => (
+                  <div
+                    key={idx}
+                    className="flex items-start gap-2.5 p-3 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-slate-50 transition-colors focus-within:bg-white focus-within:border-blue-700 focus-within:ring-2 focus-within:ring-blue-800/10 shadow-xs"
+                  >
+                    <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-blue-900 text-white font-bold text-xs shrink-0 shadow-xs mt-0.5">
+                      #{idx + 1}
+                    </div>
+
+                    <div className="flex-1 space-y-1">
+                      <label className="text-[11px] font-bold text-slate-700 block">
+                        {t.matterBadgePrefix}{idx + 1}
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={matter}
+                        onChange={(e) => handleMatterChange(idx, e.target.value)}
+                        placeholder={`${t.matterPlaceholderPrefix}${idx + 1}...`}
+                        className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs focus:outline-hidden focus:ring-1 focus:ring-blue-800 placeholder:text-slate-400"
+                      />
+                    </div>
+
+                    <div className="pt-6 shrink-0">
+                      {(formData.mattersForDiscussionList || [""]).length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveMatter(idx)}
+                          className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                          title="Remove this matter"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="pt-1 flex flex-wrap items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={handleAddMatter}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-xs transition-all cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>{t.addMatterBtn}</span>
+                </button>
+                <span className="text-[10px] text-slate-400 italic">
+                  {t.addMatterHelp}
+                </span>
+              </div>
             </div>
           </div>
 
