@@ -1771,7 +1771,21 @@ function RegisterForm() {
 
     try {
       const orgName = formData.organizationName.trim() || formData.supplierDetails?.companyName?.trim();
-      const tokenToSubmit = currentDraftToken?.trim() || undefined;
+      let tokenToSubmit = currentDraftToken?.trim() || undefined;
+
+      // If token not in state, look it up in browser storage by candidate email or orgName
+      if (!tokenToSubmit && typeof window !== "undefined") {
+        const candidateEmail = (formData.participant1?.email || formData.email || (formData.supplierDetails as any)?.officialEmail || "").trim().toLowerCase();
+        const stored = getBrowserSavedDrafts();
+        const match = stored.find(
+          (d) =>
+            (candidateEmail && d.email?.trim().toLowerCase() === candidateEmail) ||
+            (orgName && d.organizationName?.trim().toLowerCase() === orgName.toLowerCase())
+        );
+        if (match?.token) {
+          tokenToSubmit = match.token;
+        }
+      }
 
       // AbortController timeout guard (60s) to prevent premature aborts during server compilation or network delays
       const controller = new AbortController();
@@ -1784,6 +1798,7 @@ function RegisterForm() {
         signal: controller.signal,
         body: JSON.stringify({
           resumeToken: tokenToSubmit,
+          reference: currentReference?.trim() || undefined,
           formId: "RDA-ICDP-CONTRACTOR-Q",
           formSlug: "contractor",
           questionnaireData: formData,

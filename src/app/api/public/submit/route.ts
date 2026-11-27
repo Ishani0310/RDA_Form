@@ -4,10 +4,13 @@ import {
   submitFinalDeclaration,
   submitDirectDeclaration,
   isValidTokenFormat,
+  generateResumeToken,
+  hashResumeToken,
 } from "@/lib/draft-service";
 import { sendRegistrationConfirmationEmail } from "@/lib/email-service";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Submission } from "@/models/Submission";
+import { DraftToken } from "@/models/DraftToken";
 
 export const dynamic = "force-dynamic";
 
@@ -83,8 +86,73 @@ export async function POST(request: NextRequest) {
     const tokenFromHeader = request.headers.get("x-resume-token") || "";
     const tokenFromBody = body.resumeToken || body.token || "";
     let token = (tokenFromHeader || tokenFromBody).trim();
+    const referenceFromBody = (body.reference || body.submissionReference || "").trim();
     const customConfirmationEmail = (body.confirmationEmail || "").trim();
     const latestQData = body.questionnaireData || body.data;
+
+    // If no direct token provided, attempt to recover draft token by reference, email or organization
+    if (!token) {
+      await connectToDatabase();
+      const candidateEmail = (
+        customConfirmationEmail ||
+        latestQData?.email ||
+        latestQData?.participant1?.email ||
+        latestQData?.supplierDetails?.officialEmail ||
+        body.contactOfficer?.email ||
+        ""
+      ).trim().toLowerCase();
+
+      const candidateOrg = (
+        body.businessName ||
+        body.organizationName ||
+        latestQData?.organizationName ||
+        latestQData?.supplierDetails?.companyName ||
+        ""
+      ).trim();
+
+      const draftLookupConditions: any[] = [];
+      if (referenceFromBody) {
+        draftLookupConditions.push({ submissionReference: referenceFromBody });
+      }
+      if (candidateEmail && candidateEmail !== "contact@rda.gov.lk") {
+        const escapedEmail = candidateEmail.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+        const emailRegex = { $regex: `^${escapedEmail}$`, $options: "i" };
+        draftLookupConditions.push(
+          { "questionnaireData.email": emailRegex },
+          { "questionnaireData.participant1.email": emailRegex },
+          { "questionnaireData.supplierDetails.officialEmail": emailRegex }
+        );
+      }
+      if (candidateOrg && candidateOrg !== "New Registration Draft" && candidateOrg !== "Registered Organization") {
+        const escapedOrg = candidateOrg.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+        draftLookupConditions.push(
+          { "questionnaireData.organizationName": { $regex: `^${escapedOrg}$`, $options: "i" } },
+          { "questionnaireData.supplierDetails.companyName": { $regex: `^${escapedOrg}$`, $options: "i" } }
+        );
+      }
+
+      if (draftLookupConditions.length > 0) {
+        const foundDraft = await Submission.findOne({
+          status: "Draft",
+          $or: draftLookupConditions,
+        }).sort({ updatedAt: -1, createdAt: -1 });
+
+        if (foundDraft) {
+          // Check for active token or create an immediate token to promote this exact draft
+          const foundTokenDoc = await DraftToken.findOne({
+            submission: foundDraft._id,
+            isRevoked: false,
+          }).sort({ createdAt: -1 });
+
+          if (foundTokenDoc) {
+            const raw = generateResumeToken();
+            foundTokenDoc.tokenHash = hashResumeToken(raw);
+            await foundTokenDoc.save();
+            token = raw;
+          }
+        }
+      }
+    }
 
     const buildDirectPayload = () => {
       const effectiveBusinessName = (

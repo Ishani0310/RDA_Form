@@ -1248,46 +1248,135 @@ export async function submitDirectDeclaration(
   }
 
   const submittedAt = new Date();
-  const contractorId = new mongoose.Types.ObjectId();
 
-  // Create both Contractor and Submission simultaneously in a single parallel batch write
-  await Promise.all([
-    Contractor.create({
-      _id: contractorId,
-      registrationNumber,
-      businessName,
-      businessRegistrationNumber: payload.businessRegistrationNumber?.trim() || "",
-      cidaGrade: cidaGrade as any,
-      primarySpeciality,
-      province: province as any,
-      district,
-      contactOfficer,
-      status: "Pending_Review",
-      metadata: {
+  // CHECK: If an existing Draft submission already exists for this candidateEmail or organization,
+  // PROMOTE that same draft into "Submitted" rather than creating a brand-new submission!
+  const draftLookupConditions: any[] = [];
+  if (candidateEmail && candidateEmail !== "contact@rda.gov.lk") {
+    const escapedEmail = candidateEmail.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+    const emailRegex = { $regex: `^${escapedEmail}$`, $options: "i" };
+    draftLookupConditions.push(
+      { "questionnaireData.email": emailRegex },
+      { "questionnaireData.participant1.email": emailRegex },
+      { "questionnaireData.supplierDetails.officialEmail": emailRegex }
+    );
+  }
+  if (businessName && businessName !== "Registered Organization" && businessName !== "New Registration Draft") {
+    const escapedOrg = businessName.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+    draftLookupConditions.push(
+      { "questionnaireData.organizationName": { $regex: `^${escapedOrg}$`, $options: "i" } },
+      { "questionnaireData.supplierDetails.companyName": { $regex: `^${escapedOrg}$`, $options: "i" } }
+    );
+  }
+
+  let existingDraftToPromote = null;
+  if (draftLookupConditions.length > 0) {
+    existingDraftToPromote = await Submission.findOne({
+      status: "Draft",
+      $or: draftLookupConditions,
+    }).sort({ updatedAt: -1, createdAt: -1 });
+  }
+
+  let finalRef = permanentRef;
+
+  if (existingDraftToPromote) {
+    // Reuse the exact existing draft submission record and reference
+    finalRef = existingDraftToPromote.submissionReference || permanentRef;
+    let contractor = await Contractor.findById(existingDraftToPromote.contractor);
+
+    if (!contractor) {
+      contractor = await Contractor.create({
+        registrationNumber: registrationNumber || `REG-${Date.now().toString().slice(-6)}`,
+        businessName,
+        businessRegistrationNumber: payload.businessRegistrationNumber?.trim() || "",
+        cidaGrade: cidaGrade as any,
+        primarySpeciality,
+        province: province as any,
+        district,
+        contactOfficer,
+        status: "Pending_Review",
+        metadata: {
+          formId: isNewForm2 ? "RDA-SUPPLIER-Q" : "RDA-ICDP-CONTRACTOR-Q",
+          formSlug: isNewForm2 ? "supplier" : "contractor",
+          isNewSupplierForm: isNewForm2,
+        },
+        isDemoRecord: false,
+      });
+      existingDraftToPromote.contractor = contractor._id;
+    } else {
+      contractor.businessName = businessName;
+      if (registrationNumber && !registrationNumber.startsWith("REG-") && !registrationNumber.startsWith("DFT-")) {
+        contractor.registrationNumber = registrationNumber;
+      }
+      contractor.status = "Pending_Review";
+      contractor.cidaGrade = cidaGrade as any;
+      if (primarySpeciality) contractor.primarySpeciality = primarySpeciality;
+      contractor.province = province as any;
+      if (district) contractor.district = district;
+      contractor.contactOfficer = contactOfficer;
+      contractor.updatedAt = submittedAt;
+    }
+
+    existingDraftToPromote.status = "Submitted";
+    existingDraftToPromote.submittedAt = submittedAt;
+    existingDraftToPromote.updatedAt = submittedAt;
+    existingDraftToPromote.createdAt = submittedAt;
+    existingDraftToPromote.provincialOffice = province;
+    existingDraftToPromote.questionnaireData = normalizedQ as unknown as Record<string, unknown>;
+    existingDraftToPromote.isViewed = false;
+    existingDraftToPromote.editRequested = false;
+    existingDraftToPromote.editRequestReason = undefined;
+    existingDraftToPromote.editRequestedAt = undefined;
+
+    await Promise.all([
+      contractor.save(),
+      existingDraftToPromote.save(),
+      DraftToken.updateMany(
+        { submission: existingDraftToPromote._id },
+        { $set: { isRevoked: true, revokedAt: submittedAt } }
+      ),
+    ]);
+  } else {
+    // No prior draft found: create both Contractor and Submission simultaneously
+    const contractorId = new mongoose.Types.ObjectId();
+    await Promise.all([
+      Contractor.create({
+        _id: contractorId,
+        registrationNumber,
+        businessName,
+        businessRegistrationNumber: payload.businessRegistrationNumber?.trim() || "",
+        cidaGrade: cidaGrade as any,
+        primarySpeciality,
+        province: province as any,
+        district,
+        contactOfficer,
+        status: "Pending_Review",
+        metadata: {
+          formId: isNewForm2 ? "RDA-SUPPLIER-Q" : "RDA-ICDP-CONTRACTOR-Q",
+          formSlug: isNewForm2 ? "supplier" : "contractor",
+          isNewSupplierForm: isNewForm2,
+        },
+        isDemoRecord: false,
+      }),
+      Submission.create({
+        submissionReference: permanentRef,
+        contractor: contractorId,
+        submissionType: "Annual_Capacity_Declaration",
+        provincialOffice: province,
+        status: "Submitted",
+        submittedAt,
+        schemaVersion: isNewForm2 ? "1.0.0-supplier-form" : (activePublished?.version || "2.0.0-official-form"),
         formId: isNewForm2 ? "RDA-SUPPLIER-Q" : "RDA-ICDP-CONTRACTOR-Q",
         formSlug: isNewForm2 ? "supplier" : "contractor",
-        isNewSupplierForm: isNewForm2,
-      },
-      isDemoRecord: false,
-    }),
-    Submission.create({
-      submissionReference: permanentRef,
-      contractor: contractorId,
-      submissionType: "Annual_Capacity_Declaration",
-      provincialOffice: province,
-      status: "Submitted",
-      submittedAt,
-      schemaVersion: isNewForm2 ? "1.0.0-supplier-form" : (activePublished?.version || "2.0.0-official-form"),
-      formId: isNewForm2 ? "RDA-SUPPLIER-Q" : "RDA-ICDP-CONTRACTOR-Q",
-      formSlug: isNewForm2 ? "supplier" : "contractor",
-      questionnaireId: activePublished?._id,
-      questionnaireVersion: activePublished?.version,
-      questionnaireData: normalizedQ as unknown as Record<string, unknown>,
-      attachments: [],
-      isDemoRecord: false,
-      isViewed: false,
-    }),
-  ]);
+        questionnaireId: activePublished?._id,
+        questionnaireVersion: activePublished?.version,
+        questionnaireData: normalizedQ as unknown as Record<string, unknown>,
+        attachments: [],
+        isDemoRecord: false,
+        isViewed: false,
+      }),
+    ]);
+  }
 
   // Clean up any remaining draft submissions with this same email to prevent duplicates in admin account
   if (candidateEmail && candidateEmail !== "contact@rda.gov.lk") {
@@ -1316,13 +1405,13 @@ export async function submitDirectDeclaration(
     performerName: contactOfficer.name || businessName,
     performerRole: "CONTRACTOR",
     targetType: "Submission",
-    targetId: permanentRef,
+    targetId: finalRef,
     description: `Official direct contractor submission received from ${businessName} (${registrationNumber})`,
     province: province,
     ipAddress: clientIp || "web-portal",
     metadata: {
       registrationNumber,
-      submissionReference: permanentRef,
+      submissionReference: finalRef,
       cidaGrade,
     },
   }).catch((err) => console.error("Non-blocking audit log error:", err));
@@ -1331,19 +1420,19 @@ export async function submitDirectDeclaration(
   createNotification({
     type: "SUBMISSION",
     title: "New Registration Submitted",
-    message: `${businessName || "Stakeholder"} has submitted official registration (${permanentRef})`,
-    reference: permanentRef,
-    link: `/submissions?ref=${encodeURIComponent(permanentRef)}`,
+    message: `${businessName || "Stakeholder"} has submitted official registration (${finalRef})`,
+    reference: finalRef,
+    link: `/submissions?ref=${encodeURIComponent(finalRef)}`,
     metadata: {
       registrationNumber,
-      submissionReference: permanentRef,
+      submissionReference: finalRef,
       category: payload.questionnaireData?.participantCategory || "Contractor",
       attendance: payload.questionnaireData?.willParticipate || "Yes",
     },
   }).catch(() => { });
 
   return {
-    submissionReference: permanentRef,
+    submissionReference: finalRef,
     businessName,
     submittedAt: submittedAt.toISOString(),
     provincialOffice: province,
