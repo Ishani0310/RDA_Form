@@ -5,6 +5,7 @@ import { Contractor, IContractor } from "@/models/Contractor";
 import { Submission } from "@/models/Submission";
 import { DraftToken } from "@/models/DraftToken";
 import { recordActivityLog } from "@/lib/audit";
+import { deduplicateDraftSubmissions } from "@/lib/draft-service";
 
 // Whitelisted CIDA grades from gazetted standards
 const VALID_CIDA_GRADES = [
@@ -81,6 +82,7 @@ export async function GET(request: NextRequest) {
 
     // 3. Connect to Database
     await connectToDatabase();
+    await deduplicateDraftSubmissions().catch(() => {});
 
     // 4. Build Filter Query with Strict Whitelist
     const query: Record<string, unknown> = {};

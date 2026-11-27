@@ -5,7 +5,7 @@ import { Submission } from "@/models/Submission";
 import { Contractor } from "@/models/Contractor";
 import { DraftToken } from "@/models/DraftToken";
 import { QRToken } from "@/models/QRToken";
-import { generateResumeToken, hashResumeToken } from "@/lib/draft-service";
+import { generateResumeToken, hashResumeToken, deduplicateDraftSubmissions } from "@/lib/draft-service";
 import { recordActivityLog } from "@/lib/audit";
 import "@/models/User";
 
@@ -50,6 +50,7 @@ export async function GET(request: NextRequest) {
 
     // Prevent duplicate draft records & clean up demo records
     try {
+      await deduplicateDraftSubmissions().catch(() => {});
       await Promise.all([
         Submission.deleteMany({
           $or: [

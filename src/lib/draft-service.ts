@@ -185,6 +185,8 @@ export async function saveOrUpdateDraft(
     ""
   ).trim();
   const rawReg = (payload.registrationNumber || qData.ictadRegistrationNumber || "").trim();
+  const effectiveBusinessName = businessName || "New Registration Draft";
+  const effectiveRegNo = (rawReg || `DFT-${Date.now().toString().slice(-6)}`).toUpperCase();
 
   // If an existing token is provided, verify and update
   if (existingToken && isValidTokenFormat(existingToken)) {
@@ -194,10 +196,23 @@ export async function saveOrUpdateDraft(
     // If token exists, is not revoked, and has not expired, update existing record
     if (draftTokenDoc && !draftTokenDoc.isRevoked && new Date() <= draftTokenDoc.expiresAt) {
       // Fetch associated contractor and submission concurrently
-      const [contractor, submission] = await Promise.all([
+      let [contractor, submission] = await Promise.all([
         Contractor.findById(draftTokenDoc.contractor),
         Submission.findById(draftTokenDoc.submission),
       ]);
+
+      if (submission && !contractor) {
+        contractor = await Contractor.create({
+          registrationNumber: effectiveRegNo,
+          businessName: effectiveBusinessName,
+          province: (province || "Western Province") as any,
+          district: district,
+          status: "Draft",
+          isDemoRecord: false,
+        });
+        submission.contractor = contractor._id;
+        draftTokenDoc.contractor = contractor._id;
+      }
 
       if (contractor && submission) {
         if (businessName) contractor.businessName = businessName;
@@ -303,10 +318,7 @@ export async function saveOrUpdateDraft(
     // seamlessly fall through to initialize a fresh valid draft session so the user never encounters errors!
   }
 
-  // Creating a new draft session
-  const effectiveBusinessName = businessName || "New Registration Draft";
-  const effectiveRegNo = (rawReg || `DFT-${Date.now().toString().slice(-6)}`).toUpperCase();
-
+  // Creating or resuming draft session
   // Enforce one submission per email address
   const candidateEmail = ((payload as any).email || qData.email || payload.contactOfficer?.email || "").trim().toLowerCase();
   if (candidateEmail) {
@@ -338,13 +350,19 @@ export async function saveOrUpdateDraft(
     );
   }
 
-  // Check if an existing unsubmitted Draft session already exists for this organization/contractor or email
+  // Check if an existing unsubmitted Draft session already exists for this candidateEmail, organization, or CIDA reg
   let existingDraftSub = null;
   const draftQueryConditions: any[] = [];
 
   if (candidateEmail && candidateEmail !== "contact@rda.gov.lk" && candidateEmail !== "contact@contractor.lk") {
-    draftQueryConditions.push({ "questionnaireData.email": candidateEmail });
-    draftQueryConditions.push({ "questionnaireData.participant1.email": candidateEmail });
+    const escapedEmail = candidateEmail.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+    const emailRegex = { $regex: `^${escapedEmail}$`, $options: "i" };
+    draftQueryConditions.push(
+      { "questionnaireData.email": emailRegex },
+      { "questionnaireData.participant1.email": emailRegex },
+      { "questionnaireData.supplierDetails.officialEmail": emailRegex },
+      { "questionnaireData.contactOfficer.email": emailRegex }
+    );
   }
 
   if (effectiveBusinessName && effectiveBusinessName !== "New Registration Draft") {
@@ -370,7 +388,32 @@ export async function saveOrUpdateDraft(
       isRevoked: false,
     }).sort({ createdAt: -1 });
 
-    const contractor = await Contractor.findById(existingDraftSub.contractor);
+    let contractor = await Contractor.findById(existingDraftSub.contractor);
+
+    // Auto-heal contractor if missing so we NEVER abandon existingDraftSub
+    if (!contractor) {
+      contractor = await Contractor.findOne({ registrationNumber: effectiveRegNo, status: "Draft" });
+      if (!contractor) {
+        contractor = await Contractor.create({
+          registrationNumber: effectiveRegNo,
+          businessName: effectiveBusinessName,
+          businessRegistrationNumber: payload.businessRegistrationNumber?.trim() || "",
+          cidaGrade: ((payload.cidaGrade || qData.cidaGrade) as any) || "Pending",
+          primarySpeciality: payload.primarySpeciality?.trim() || "",
+          province: (province || "Western Province") as any,
+          district: district || payload.district?.trim() || "",
+          contactOfficer: {
+            name: payload.contactOfficer?.name?.trim() || qData.participant1?.fullName?.trim() || "Authorized Representative",
+            designation: payload.contactOfficer?.designation?.trim() || qData.participant1?.designation?.trim() || "Authorized Officer",
+            phone: payload.contactOfficer?.phone?.trim() || qData.contactNumber?.trim() || "",
+            email: candidateEmail || "",
+          },
+          status: "Draft",
+          isDemoRecord: false,
+        });
+      }
+      existingDraftSub.contractor = contractor._id;
+    }
 
     if (contractor) {
       if (businessName) contractor.businessName = businessName;
@@ -382,12 +425,12 @@ export async function saveOrUpdateDraft(
       if (payload.primarySpeciality) contractor.primarySpeciality = payload.primarySpeciality.trim();
       if (province) contractor.province = province as any;
       if (district) contractor.district = district;
-      if (payload.contactOfficer || qData.contactNumber || qData.email) {
+      if (payload.contactOfficer || qData.contactNumber || candidateEmail) {
         contractor.contactOfficer = {
           name: payload.contactOfficer?.name?.trim() || qData.participant1?.fullName?.trim() || contractor.contactOfficer?.name || "Authorized Representative",
           designation: payload.contactOfficer?.designation?.trim() || qData.participant1?.designation?.trim() || contractor.contactOfficer?.designation || "Authorized Officer",
           phone: payload.contactOfficer?.phone?.trim() || qData.contactNumber?.trim() || contractor.contactOfficer?.phone || "",
-          email: payload.contactOfficer?.email?.trim().toLowerCase() || qData.email?.trim().toLowerCase() || contractor.contactOfficer?.email || "",
+          email: candidateEmail || contractor.contactOfficer?.email || "",
         };
       }
 
@@ -424,25 +467,42 @@ export async function saveOrUpdateDraft(
         draftTokenDoc.save(),
       ]);
 
-      // Clean up any older duplicate draft submissions for this exact organization name
+      // Clean up any older duplicate draft submissions for this exact email OR organization name
+      const dupConditions: any[] = [];
+      if (candidateEmail && candidateEmail !== "contact@rda.gov.lk" && candidateEmail !== "contact@contractor.lk") {
+        const escapedEmail = candidateEmail.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+        const emailRegex = { $regex: `^${escapedEmail}$`, $options: "i" };
+        dupConditions.push(
+          { "questionnaireData.email": emailRegex },
+          { "questionnaireData.participant1.email": emailRegex },
+          { "questionnaireData.supplierDetails.officialEmail": emailRegex }
+        );
+      }
       if (effectiveBusinessName && effectiveBusinessName !== "New Registration Draft") {
         const escaped = effectiveBusinessName.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+        dupConditions.push(
+          { "questionnaireData.organizationName": { $regex: `^${escaped}$`, $options: "i" } },
+          { "questionnaireData.supplierDetails.companyName": { $regex: `^${escaped}$`, $options: "i" } }
+        );
+      }
+
+      if (dupConditions.length > 0) {
         const dupDrafts = await Submission.find({
           _id: { $ne: existingDraftSub._id },
           status: "Draft",
-          $or: [
-            { "questionnaireData.organizationName": { $regex: `^${escaped}$`, $options: "i" } },
-            { "questionnaireData.supplierDetails.companyName": { $regex: `^${escaped}$`, $options: "i" } },
-          ],
+          $or: dupConditions,
         }).select("_id contractor").lean();
 
         if (dupDrafts.length > 0) {
           const dupSubIds = dupDrafts.map((d: any) => d._id);
-          const dupContractorIds = dupDrafts.map((d: any) => d.contractor).filter(Boolean);
+          // Only delete contractors that are NOT linked to our retained existingDraftSub!
+          const dupContractorIds = dupDrafts
+            .map((d: any) => d.contractor)
+            .filter((cId: any) => cId && cId.toString() !== contractor._id.toString());
           await Promise.all([
             Submission.deleteMany({ _id: { $in: dupSubIds } }),
             DraftToken.deleteMany({ submission: { $in: dupSubIds } }),
-            Contractor.deleteMany({ _id: { $in: dupContractorIds } }),
+            Contractor.deleteMany({ _id: { $in: dupContractorIds }, status: "Draft" }),
           ]).catch(() => { });
         }
       }
@@ -536,6 +596,45 @@ export async function saveOrUpdateDraft(
     lastAccessedAt: new Date(),
     ipAddress: clientIp || "web-portal",
   });
+
+  // Clean up any older duplicate draft submissions for this candidateEmail OR organization name
+  const postCreateDupConditions: any[] = [];
+  if (candidateEmail && candidateEmail !== "contact@rda.gov.lk" && candidateEmail !== "contact@contractor.lk") {
+    const escapedEmail = candidateEmail.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+    const emailRegex = { $regex: `^${escapedEmail}$`, $options: "i" };
+    postCreateDupConditions.push(
+      { "questionnaireData.email": emailRegex },
+      { "questionnaireData.participant1.email": emailRegex },
+      { "questionnaireData.supplierDetails.officialEmail": emailRegex }
+    );
+  }
+  if (effectiveBusinessName && effectiveBusinessName !== "New Registration Draft") {
+    const escaped = effectiveBusinessName.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+    postCreateDupConditions.push(
+      { "questionnaireData.organizationName": { $regex: `^${escaped}$`, $options: "i" } },
+      { "questionnaireData.supplierDetails.companyName": { $regex: `^${escaped}$`, $options: "i" } }
+    );
+  }
+
+  if (postCreateDupConditions.length > 0) {
+    const olderDupDrafts = await Submission.find({
+      _id: { $ne: submission._id },
+      status: "Draft",
+      $or: postCreateDupConditions,
+    }).select("_id contractor").lean();
+
+    if (olderDupDrafts.length > 0) {
+      const olderSubIds = olderDupDrafts.map((d: any) => d._id);
+      const olderContractorIds = olderDupDrafts
+        .map((d: any) => d.contractor)
+        .filter((cId: any) => cId && cId.toString() !== contractor._id.toString());
+      await Promise.all([
+        Submission.deleteMany({ _id: { $in: olderSubIds } }),
+        DraftToken.deleteMany({ submission: { $in: olderSubIds } }),
+        Contractor.deleteMany({ _id: { $in: olderContractorIds }, status: "Draft" }),
+      ]).catch(() => { });
+    }
+  }
 
   // Real-time alert: contractor started filling registration form
   createNotification({
@@ -1359,4 +1458,84 @@ export async function requestEditPermission(
     message: "Edit permission request submitted to RDA Administrator successfully.",
     editRequestedAt: submission.editRequestedAt.toISOString(),
   };
+}
+
+/**
+ * Deduplicate all existing unsubmitted Draft submissions in the system.
+ * Groups Draft submissions by normalized email (or organization name if no email),
+ * retains the single newest draft for each unique entity, and safely removes stale duplicates.
+ */
+export async function deduplicateDraftSubmissions(): Promise<number> {
+  await connectToDatabase();
+
+  const allDrafts = await Submission.find({ status: "Draft" })
+    .select("_id submissionReference contractor questionnaireData createdAt updatedAt")
+    .sort({ updatedAt: -1, createdAt: -1 })
+    .lean();
+
+  if (!allDrafts || allDrafts.length <= 1) {
+    return 0;
+  }
+
+  const seenEntities = new Set<string>();
+  const dupSubIds: any[] = [];
+  const dupContractorIds: any[] = [];
+  const keptContractorIds = new Set<string>();
+
+  for (const draft of allDrafts) {
+    const q = (draft.questionnaireData || {}) as Record<string, any>;
+    const email = (
+      q.email ||
+      q.participant1?.email ||
+      q.supplierDetails?.officialEmail ||
+      ""
+    ).trim().toLowerCase();
+
+    const org = (
+      q.organizationName ||
+      q.supplierDetails?.companyName ||
+      ""
+    ).trim().toLowerCase();
+
+    const contractorIdStr = draft.contractor ? draft.contractor.toString() : "";
+
+    // Determine uniqueness key: prioritize email, fallback to org name if both present
+    let key = "";
+    if (email && email !== "contact@rda.gov.lk" && email !== "contact@contractor.lk") {
+      key = `email:${email}`;
+    } else if (org && org !== "new registration draft") {
+      key = `org:${org}`;
+    }
+
+    if (key) {
+      if (seenEntities.has(key)) {
+        // This is an older duplicate draft for the same entity
+        dupSubIds.push(draft._id);
+        if (contractorIdStr) {
+          dupContractorIds.push(draft.contractor);
+        }
+      } else {
+        // This is the newest/primary draft to keep
+        seenEntities.add(key);
+        if (contractorIdStr) {
+          keptContractorIds.add(contractorIdStr);
+        }
+      }
+    }
+  }
+
+  if (dupSubIds.length > 0) {
+    // Only delete contractor records that aren't used by the kept drafts
+    const contractorsToDelete = dupContractorIds.filter(
+      (cId) => !keptContractorIds.has(cId.toString())
+    );
+
+    await Promise.all([
+      Submission.deleteMany({ _id: { $in: dupSubIds } }),
+      DraftToken.deleteMany({ submission: { $in: dupSubIds } }),
+      Contractor.deleteMany({ _id: { $in: contractorsToDelete }, status: "Draft" }),
+    ]).catch(() => { });
+  }
+
+  return dupSubIds.length;
 }

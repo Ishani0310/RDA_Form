@@ -42,8 +42,10 @@ import {
   Send,
   Copy,
   Search,
+  Download,
 } from "lucide-react";
 import Link from "next/link";
+import { generateSubmissionHtml } from "@/lib/submission-html";
 import { evaluateConditionalRule } from "@/components/dynamic-form/DynamicFormRenderer";
 import {
   validateQuestionnaireSubmission,
@@ -86,6 +88,7 @@ export interface BrowserSavedDraft {
   token: string;
   reference: string;
   organizationName: string;
+  email?: string;
   category?: string;
   status?: string;
   lastSavedAt: string;
@@ -1371,12 +1374,17 @@ function RegisterForm() {
     }
 
     try {
+      const candidateEmail = (formData.participant1?.email || formData.email || (formData.supplierDetails as any)?.officialEmail || "").trim().toLowerCase();
+
       // Synchronously retrieve latest token from ref, state, or browser saved drafts
       let tokenToUse = (currentDraftTokenRef.current || currentDraftToken || "").trim();
       if (!tokenToUse && typeof window !== "undefined") {
         const stored = getBrowserSavedDrafts();
+        // Match by candidate email first, then fall back to organization name
         const match = stored.find(
-          (d) => d.organizationName?.trim().toLowerCase() === orgName.toLowerCase()
+          (d) =>
+            (candidateEmail && d.email?.trim().toLowerCase() === candidateEmail) ||
+            d.organizationName?.trim().toLowerCase() === orgName.toLowerCase()
         );
         if (match?.token) {
           tokenToUse = match.token;
@@ -1388,6 +1396,7 @@ function RegisterForm() {
       const payload: Record<string, unknown> = {
         questionnaireData: formData,
         businessName: orgName,
+        email: candidateEmail || undefined,
         registrationNumber: formData.ictadRegistrationNumber?.trim() || undefined,
         cidaGrade: formData.cidaGrade?.trim() || undefined,
         province: formData.supplierDetails?.province?.trim() || "Western Province",
@@ -1395,7 +1404,7 @@ function RegisterForm() {
         contactOfficer: {
           name: formData.participant1?.fullName?.trim() || "Authorized Representative",
           phone: formData.participant1?.mobileNumber?.trim() || formData.contactNumber?.trim() || "",
-          email: formData.participant1?.email?.trim() || formData.email?.trim() || "",
+          email: candidateEmail || "",
         },
       };
 
@@ -1433,6 +1442,7 @@ function RegisterForm() {
           token: data.token,
           reference: assignedRef || "RDA-DRAFT",
           organizationName: orgName,
+          email: candidateEmail || undefined,
           category:
             formData.participantCategory ||
             (formData.willParticipate === "No" ? "Non-Attendee" : "General"),
@@ -1538,6 +1548,36 @@ function RegisterForm() {
       }
     };
   }, [formData]);
+
+  const handleDownloadFormPdf = (customRef?: string) => {
+    const orgName = (formData.organizationName || formData.supplierDetails?.companyName || "Stakeholder").trim();
+    const effectiveRef = customRef || currentReference || "RDA-ICDP-2026-RECORD";
+    const subObj = {
+      id: effectiveRef,
+      ref: effectiveRef,
+      contractor: orgName,
+      regNo: formData.ictadRegistrationNumber || "N/A",
+      grade: formData.cidaGrade || "Pending",
+      provincialOffice: formData.supplierDetails?.province || "Western Province",
+      status: submissionStatus || (isReadOnly ? "Submitted" : "Draft"),
+      category: formData.participantCategory || "General",
+      questionnaireData: formData,
+      submittedAt: new Date().toLocaleDateString("en-GB"),
+      reviewedBy: "Road Development Authority",
+      reviewNotes: null,
+    };
+
+    const html = generateSubmissionHtml(subObj);
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const tab = window.open(url, "_blank");
+    if (!tab) {
+      alert("Please allow pop-ups in your browser to view or print the submission form.");
+      URL.revokeObjectURL(url);
+      return;
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  };
 
   const handleStartNewRegistration = () => {
     const orgName = (formData.organizationName || formData.supplierDetails?.companyName || "").trim();
@@ -2429,6 +2469,15 @@ function RegisterForm() {
           <div className="pt-2 flex flex-col sm:flex-row gap-2.5 justify-center flex-wrap">
             <button
               type="button"
+              onClick={() => handleDownloadFormPdf(submissionSuccess.reference)}
+              className="min-h-[44px] px-5 py-2.5 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-xl shadow-md transition-all inline-flex items-center justify-center gap-2"
+            >
+              <Download className="w-4 h-4 text-emerald-200" />
+              <span>Download Form Structure (PDF)</span>
+            </button>
+
+            <button
+              type="button"
               onClick={() => {
                 const targetRef = submissionSuccess.reference;
                 setSubmissionSuccess(null);
@@ -3094,6 +3143,17 @@ function RegisterForm() {
 
             {/* Right: Quick actions */}
             <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
+              {/* Download Form (PDF / Print) */}
+              <button
+                type="button"
+                onClick={() => handleDownloadFormPdf()}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs shadow-sm transition-all"
+                title="Download or Print filled form structure as official document"
+              >
+                <Download className="w-3.5 h-3.5 text-emerald-700" />
+                <span>Download Form (PDF)</span>
+              </button>
+
               {/* If read-only and no request yet, show Request Edit Permission button */}
               {isReadOnly && !isEditRequested && (
                 <button
@@ -6391,20 +6451,30 @@ function RegisterForm() {
                           <Lock className="w-4 h-4 text-amber-600 shrink-0" />
                           <span>This official registration is currently submitted and locked (Read-Only).</span>
                         </div>
-                        {!isEditRequested ? (
+                        <div className="flex items-center gap-2 flex-wrap">
                           <button
                             type="button"
-                            onClick={() => setShowEditRequestModal(true)}
-                            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md transition-all shrink-0"
+                            onClick={() => handleDownloadFormPdf()}
+                            className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs shadow transition-all shrink-0"
                           >
-                            <KeyRound className="w-4 h-4" />
-                            <span>Request Edit Permission from Admin</span>
+                            <Download className="w-4 h-4 text-emerald-200" />
+                            <span>Download Form (PDF)</span>
                           </button>
-                        ) : (
-                          <span className="text-xs font-bold text-blue-900 bg-blue-100 px-3 py-1.5 rounded-lg border border-blue-200">
-                            Edit Request Pending Admin Review
-                          </span>
-                        )}
+                          {!isEditRequested ? (
+                            <button
+                              type="button"
+                              onClick={() => setShowEditRequestModal(true)}
+                              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md transition-all shrink-0"
+                            >
+                              <KeyRound className="w-4 h-4" />
+                              <span>Request Edit Permission from Admin</span>
+                            </button>
+                          ) : (
+                            <span className="text-xs font-bold text-blue-900 bg-blue-100 px-3 py-1.5 rounded-lg border border-blue-200">
+                              Edit Request Pending Admin Review
+                            </span>
+                          )}
+                        </div>
                       </div>
                     ) : (
                       <>
