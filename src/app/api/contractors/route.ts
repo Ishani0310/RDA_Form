@@ -3,6 +3,7 @@ import { getCurrentOfficerSession } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Contractor, IContractor } from "@/models/Contractor";
 import { Submission } from "@/models/Submission";
+import { DraftToken } from "@/models/DraftToken";
 import { recordActivityLog } from "@/lib/audit";
 
 // Whitelisted CIDA grades from gazetted standards
@@ -93,9 +94,26 @@ export async function GET(request: NextRequest) {
       .lean();
 
     const excludedContractorIds = newForm2Subs.map((s) => s.contractor).filter(Boolean);
-    if (excludedContractorIds.length > 0) {
-      query._id = { $nin: excludedContractorIds };
-    }
+
+    // Only contractors who have an active submission/draft are valid in the registry
+    const allValidContractorIds = await Submission.distinct("contractor");
+    const validCIds = allValidContractorIds.filter(Boolean);
+
+    // Clean up any legacy orphaned contractor records where the submission/draft was deleted in the past
+    try {
+      if (validCIds.length > 0) {
+        await Contractor.deleteMany({
+          _id: { $nin: validCIds },
+          isDemoRecord: false,
+        }).catch(() => {});
+      }
+    } catch {}
+
+    const allowedContractorIds = validCIds.filter(
+      (id) => !excludedContractorIds.some((ex) => ex.toString() === id.toString())
+    );
+
+    query._id = { $in: allowedContractorIds };
 
     if (province && VALID_PROVINCES.includes(province)) {
       query.province = province;
@@ -323,5 +341,71 @@ export async function GET(request: NextRequest) {
       { success: false, message: "Internal registry service error. Please try again later." },
       { status: 500 }
     );
+  }
+}
+
+/**
+ * DELETE /api/contractors
+ * Delete a contractor record from the registry and cascade delete any associated submissions/drafts.
+ */
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getCurrentOfficerSession();
+
+    if (!session) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized. Official RDA officer authentication required." },
+        { status: 401 }
+      );
+    }
+
+    const { searchParams } = new URL(request.url);
+    const body = await request.json().catch(() => ({}));
+    const id = body.id || searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, message: "Contractor ID is required for deletion." },
+        { status: 400 }
+      );
+    }
+
+    await connectToDatabase();
+
+    const contractor = await Contractor.findById(id);
+    if (!contractor) {
+      return NextResponse.json(
+        { success: false, message: "Contractor record not found in the national registry." },
+        { status: 404 }
+      );
+    }
+
+    const regNo = contractor.registrationNumber;
+
+    // Cascade delete all submissions, draft tokens, and contractor record
+    await Promise.all([
+      Submission.deleteMany({ contractor: id }),
+      DraftToken.deleteMany({ contractor: id }),
+      Contractor.deleteOne({ _id: id }),
+      regNo ? Submission.deleteMany({ submissionReference: regNo }) : Promise.resolve(),
+      regNo ? Contractor.deleteMany({ registrationNumber: regNo }) : Promise.resolve(),
+    ]);
+
+    await recordActivityLog({
+      action: "CONTRACTOR_DELETED",
+      session,
+      targetType: "Contractor",
+      targetId: id.toString(),
+      description: `Contractor ${contractor.businessName} (${regNo}) was permanently deleted from registry by ${session.fullName || "RDA Officer"}.`,
+      metadata: { registrationNumber: regNo, businessName: contractor.businessName },
+    }).catch(() => {});
+
+    return NextResponse.json({
+      success: true,
+      message: `Contractor "${contractor.businessName}" was permanently deleted from the registry.`,
+    });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Failed to delete contractor record.";
+    return NextResponse.json({ success: false, message }, { status: 500 });
   }
 }

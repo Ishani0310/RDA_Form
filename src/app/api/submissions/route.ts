@@ -4,6 +4,7 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { Submission } from "@/models/Submission";
 import { Contractor } from "@/models/Contractor";
 import { DraftToken } from "@/models/DraftToken";
+import { QRToken } from "@/models/QRToken";
 import { generateResumeToken, hashResumeToken } from "@/lib/draft-service";
 import { recordActivityLog } from "@/lib/audit";
 import "@/models/User";
@@ -124,7 +125,7 @@ export async function GET(request: NextRequest) {
         await Promise.all([
           Submission.deleteMany({ _id: { $in: dupDraftSubIds } }),
           DraftToken.deleteMany({ submission: { $in: dupDraftSubIds } }),
-          Contractor.deleteMany({ _id: { $in: dupContractorIds }, status: "Draft" }),
+          Contractor.deleteMany({ _id: { $in: dupContractorIds } }),
         ]).catch(() => {});
       }
     } catch {
@@ -686,18 +687,86 @@ export async function DELETE(request: NextRequest) {
     const submissionId = submission._id;
     const subRef = submission.submissionReference;
     const contractorId = submission.contractor;
+    const qData = ((submission.questionnaireData || {}) as Record<string, any>);
+    const ictadReg = qData.ictadRegistrationNumber?.trim();
+    const subEmail = (qData.email || qData.participant1?.email || "").trim().toLowerCase();
+    const subOrgName = (qData.organizationName || qData.supplierDetails?.companyName || "").trim();
 
-    // Remove associated DraftToken documents
-    await DraftToken.deleteMany({ submission: submissionId }).catch(() => {});
+    // 1. Identify all Contractor records linked to this submission
+    const contractorQuery: Record<string, unknown>[] = [];
+    if (contractorId) {
+      contractorQuery.push({ _id: contractorId });
+    }
+    if (subRef) {
+      contractorQuery.push({ registrationNumber: subRef });
+    }
+    if (ictadReg) {
+      contractorQuery.push({ registrationNumber: ictadReg });
+    }
+    if (subEmail && subEmail !== "contact@rda.gov.lk") {
+      contractorQuery.push({ "contactOfficer.email": subEmail });
+    }
+    if (subOrgName) {
+      contractorQuery.push({ businessName: subOrgName });
+    }
 
-    // Delete submission
+    const linkedContractors = contractorQuery.length > 0
+      ? await Contractor.find({ $or: contractorQuery }).select("_id registrationNumber").lean()
+      : [];
+
+    const contractorIdsToDelete: any[] = linkedContractors.map((c) => c._id);
+    if (contractorId && !contractorIdsToDelete.some((cid) => cid.toString() === contractorId.toString())) {
+      contractorIdsToDelete.push(contractorId);
+    }
+
+    // 2. Remove associated DraftToken and QRToken documents
+    await Promise.all([
+      DraftToken.deleteMany({
+        $or: [
+          { submission: submissionId },
+          ...(contractorIdsToDelete.length > 0 ? [{ contractor: { $in: contractorIdsToDelete } }] : []),
+        ],
+      }),
+      QRToken.deleteMany({
+        $or: [
+          { submission: submissionId },
+          ...(contractorIdsToDelete.length > 0 ? [{ contractor: { $in: contractorIdsToDelete } }] : []),
+        ],
+      }),
+    ]).catch(() => {});
+
+    // 3. Delete submission permanently
     await Submission.deleteOne({ _id: submissionId });
 
-    // If contractor has no remaining submissions and was in Draft status, clean up
-    if (contractorId) {
-      const remainingSubs = await Submission.countDocuments({ contractor: contractorId });
+    // 4. Automatically delete from Contractor Registry (Contractor collection)
+    for (const cId of contractorIdsToDelete) {
+      const remainingSubs = await Submission.countDocuments({
+        _id: { $ne: submissionId },
+        contractor: cId,
+      });
       if (remainingSubs === 0) {
-        await Contractor.deleteOne({ _id: contractorId, status: "Draft" }).catch(() => {});
+        await Contractor.deleteOne({ _id: cId }).catch(() => {});
+      }
+    }
+
+    // Also clean up by registrationNumber if no other submissions use it
+    if (subRef) {
+      const remainingWithRef = await Submission.countDocuments({
+        _id: { $ne: submissionId },
+        submissionReference: subRef,
+      });
+      if (remainingWithRef === 0) {
+        await Contractor.deleteMany({ registrationNumber: subRef }).catch(() => {});
+      }
+    }
+
+    if (ictadReg) {
+      const remainingWithIctad = await Submission.countDocuments({
+        _id: { $ne: submissionId },
+        "questionnaireData.ictadRegistrationNumber": ictadReg,
+      });
+      if (remainingWithIctad === 0) {
+        await Contractor.deleteMany({ registrationNumber: ictadReg }).catch(() => {});
       }
     }
 

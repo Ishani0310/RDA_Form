@@ -26,6 +26,7 @@ import {
   Briefcase,
   Printer,
   Scale,
+  Trash2,
 } from "lucide-react";
 
 interface ContractorItem {
@@ -106,6 +107,38 @@ export default function ContractorsPage() {
   // Modal Profile View
   const [selectedContractor, setSelectedContractor] = useState<ContractorItem | null>(null);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
+
+  // Delete State
+  const [contractorToDelete, setContractorToDelete] = useState<ContractorItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteAlert, setDeleteAlert] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  const handleConfirmDelete = async () => {
+    if (!contractorToDelete) return;
+    try {
+      setIsDeleting(true);
+      setDeleteAlert(null);
+      const res = await fetch(`/api/contractors?id=${encodeURIComponent(contractorToDelete.id)}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setContractors((prev) => prev.filter((c) => c.id !== contractorToDelete.id));
+        if (selectedContractor?.id === contractorToDelete.id) {
+          setProfileModalOpen(false);
+          setSelectedContractor(null);
+        }
+        setContractorToDelete(null);
+        fetchContractors();
+      } else {
+        setDeleteAlert({ type: "error", message: data.message || "Failed to delete contractor." });
+      }
+    } catch {
+      setDeleteAlert({ type: "error", message: "Network error occurred while deleting contractor." });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   // Debounce search input
   useEffect(() => {
@@ -944,20 +977,34 @@ export default function ContractorsPage() {
                           )}
                         </td>
 
-                        {/* 5. Actions (View Details) */}
+                        {/* 5. Actions (View Details & Delete) */}
                         <td className="px-5 py-3.5 text-right">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedContractor(c);
-                              setProfileModalOpen(true);
-                            }}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-900 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition-all shadow-sm"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                            <span>View Details</span>
-                          </button>
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedContractor(c);
+                                setProfileModalOpen(true);
+                              }}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-900 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition-all shadow-sm"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>View Details</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setContractorToDelete(c);
+                                setDeleteAlert(null);
+                              }}
+                              className="inline-flex items-center p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg border border-transparent hover:border-rose-200 transition-all cursor-pointer"
+                              title="Delete from Registry"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -1742,20 +1789,36 @@ export default function ContractorsPage() {
               </div>
 
               {/* Footer */}
-              <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
-                <button
-                  type="button"
-                  onClick={() => handleDownloadProfile(selectedContractor)}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-sm transition-all"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Download / Print PDF Record</span>
-                </button>
+              <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <button
+                    type="button"
+                    onClick={() => handleDownloadProfile(selectedContractor)}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-sm transition-all"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download / Print PDF Record</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (selectedContractor) {
+                        setContractorToDelete(selectedContractor);
+                        setDeleteAlert(null);
+                      }
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition-all cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete Record</span>
+                  </button>
+                </div>
 
                 <button
                   type="button"
                   onClick={() => setProfileModalOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-100 transition-colors shadow-sm"
+                  className="w-full sm:w-auto px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-100 transition-colors shadow-sm"
                 >
                   Close Profile
                 </button>
@@ -1764,6 +1827,63 @@ export default function ContractorsPage() {
           </div>
         );
       })()}
+
+      {/* Delete Confirmation Modal */}
+      {contractorToDelete && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="w-12 h-12 rounded-xl bg-rose-100 flex items-center justify-center text-rose-600">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+
+            <div>
+              <h3 className="text-base font-bold text-slate-900">
+                Delete Contractor from Registry?
+              </h3>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                Are you sure you want to permanently delete{" "}
+                <strong className="text-slate-800">{contractorToDelete.businessName}</strong>{" "}
+                ({contractorToDelete.registrationNumber})? This will also remove any associated questionnaire submissions and draft records.
+              </p>
+            </div>
+
+            {deleteAlert && (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700">
+                {deleteAlert.message}
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => setContractorToDelete(null)}
+                className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={handleConfirmDelete}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-sm transition-all disabled:opacity-50 cursor-pointer"
+              >
+                {isDeleting ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Confirm Delete</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

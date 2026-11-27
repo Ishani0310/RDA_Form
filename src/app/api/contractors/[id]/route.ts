@@ -4,6 +4,8 @@ import { getCurrentOfficerSession } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Contractor } from "@/models/Contractor";
 import { Submission } from "@/models/Submission";
+import { DraftToken } from "@/models/DraftToken";
+import { recordActivityLog } from "@/lib/audit";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -144,5 +146,69 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       { success: false, message: "Internal server error while retrieving contractor profile." },
       { status: 500 }
     );
+  }
+}
+
+/**
+ * DELETE /api/contractors/[id]
+ * Permanently delete a contractor record from the registry and cascade delete any associated submissions/drafts.
+ */
+export async function DELETE(request: NextRequest, { params }: RouteParams) {
+  try {
+    const session = await getCurrentOfficerSession();
+
+    if (!session) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized. Official RDA officer authentication required." },
+        { status: 401 }
+      );
+    }
+
+    const { id } = await params;
+
+    if (!id || !mongoose.isValidObjectId(id)) {
+      return NextResponse.json(
+        { success: false, message: "Invalid contractor record identifier format." },
+        { status: 400 }
+      );
+    }
+
+    await connectToDatabase();
+
+    const contractor = await Contractor.findById(id);
+    if (!contractor) {
+      return NextResponse.json(
+        { success: false, message: "Contractor record not found in the national registry." },
+        { status: 404 }
+      );
+    }
+
+    const regNo = contractor.registrationNumber;
+
+    // Cascade delete submissions, draft tokens, and contractor
+    await Promise.all([
+      Submission.deleteMany({ contractor: id }),
+      DraftToken.deleteMany({ contractor: id }),
+      Contractor.deleteOne({ _id: id }),
+      regNo ? Submission.deleteMany({ submissionReference: regNo }) : Promise.resolve(),
+      regNo ? Contractor.deleteMany({ registrationNumber: regNo }) : Promise.resolve(),
+    ]);
+
+    await recordActivityLog({
+      action: "CONTRACTOR_DELETED",
+      session,
+      targetType: "Contractor",
+      targetId: id,
+      description: `Contractor ${contractor.businessName} (${regNo}) was permanently deleted from registry by ${session.fullName || "RDA Officer"}.`,
+      metadata: { registrationNumber: regNo, businessName: contractor.businessName },
+    }).catch(() => {});
+
+    return NextResponse.json({
+      success: true,
+      message: `Contractor "${contractor.businessName}" was permanently deleted from the registry.`,
+    });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Failed to delete contractor record.";
+    return NextResponse.json({ success: false, message }, { status: 500 });
   }
 }

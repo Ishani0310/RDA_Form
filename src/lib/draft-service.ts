@@ -442,7 +442,7 @@ export async function saveOrUpdateDraft(
           await Promise.all([
             Submission.deleteMany({ _id: { $in: dupSubIds } }),
             DraftToken.deleteMany({ submission: { $in: dupSubIds } }),
-            Contractor.deleteMany({ _id: { $in: dupContractorIds }, status: "Draft" }),
+            Contractor.deleteMany({ _id: { $in: dupContractorIds } }),
           ]).catch(() => { });
         }
       }
@@ -958,7 +958,7 @@ export async function submitFinalDeclaration(
       await Promise.all([
         Submission.deleteMany({ _id: { $in: draftIds } }),
         DraftToken.deleteMany({ submission: { $in: draftIds } }),
-        Contractor.deleteMany({ _id: { $in: draftContractorIds }, status: "Draft" }),
+        Contractor.deleteMany({ _id: { $in: draftContractorIds } }),
       ]).catch(() => { });
     }
   }
@@ -1206,7 +1206,7 @@ export async function submitDirectDeclaration(
       await Promise.all([
         Submission.deleteMany({ _id: { $in: draftIds } }),
         DraftToken.deleteMany({ submission: { $in: draftIds } }),
-        Contractor.deleteMany({ _id: { $in: draftContractorIds }, status: "Draft" }),
+        Contractor.deleteMany({ _id: { $in: draftContractorIds } }),
       ]).catch(() => { });
     }
   }
