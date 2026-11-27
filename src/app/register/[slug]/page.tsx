@@ -68,8 +68,8 @@ const TRANSLATIONS = {
     districtLabel: "District",
     districtPrompt: "— Select District —",
 
-    // Section 11: Matters for Discussion
-    sec11Title: "SECTION 11: MATTERS FOR DISCUSSION",
+    // Section 3: Matters for Discussion
+    sec11Title: "3. Matters for Discussion",
     sec11Question: "Do you have any specific matters, concerns or suggestions that you would like to be discussed during the Early Market Engagement Workshop? (Optional)",
     sec11Desc: "Please add each matter, concern, or suggestion separately below. Participants are encouraged to share topics relating to market conditions, technical requirements, procurement arrangements, implementation challenges, or other issues relevant to ICDP activities.",
     matterBadgePrefix: "Matter / Suggestion #",
@@ -193,8 +193,8 @@ const TRANSLATIONS = {
     districtLabel: "දිස්ත්‍රික්කය",
     districtPrompt: "— දිස්ත්‍රික්කය තෝරන්න —",
 
-    // Section 11: Matters for Discussion
-    sec11Title: "11 වන කොටස: සාකච්ඡාව සඳහා වන කරුණු",
+    // Section 3: Matters for Discussion
+    sec11Title: "3. සාකච්ඡාව සඳහා වන කරුණු",
     sec11Question: "මුල් වෙළඳපල සහභාගීත්ව වැඩමුළුවේදී සාකච්ඡා කිරීමට ඔබ කැමති කිසියම් විශේෂිත කරුණක්, ගැටලුවක් හෝ යෝජනාවක් තිබේද? (විකල්ප)",
     sec11Desc: "කරුණාකර එක් එක් කරුණ, ගැටලුව හෝ යෝජනාව පහතින් වෙන වෙනම එක් කරන්න. වෙළඳපල තත්ත්වයන්, තාක්ෂණික අවශ්‍යතා, ප්‍රසම්පාදන විධිවිධාන, ක්‍රියාත්මක කිරීමේ අභියෝග හෝ ICDP ක්‍රියාකාරකම් වලට අදාළ වෙනත් කරුණු බෙදා ගැනීමට සහභාගිවන්නන් දිරිමත් කරනු ලැබේ.",
     matterBadgePrefix: "කරුණ / යෝජනාව #",
@@ -318,8 +318,8 @@ const TRANSLATIONS = {
     districtLabel: "மாவட்டம்",
     districtPrompt: "— மாவட்டத்தைத் தேர்ந்தெடுக்கவும் —",
 
-    // Section 11: Matters for Discussion
-    sec11Title: "பிரிவு 11: கலந்துரையாடலுக்கான விடயங்கள்",
+    // Section 3: Matters for Discussion
+    sec11Title: "3. கலந்துரையாடலுக்கான விடயங்கள்",
     sec11Question: "ஆரம்ப சந்தை ஈடுபாட்டுப் பட்டறையின் போது கலந்துரையாட விரும்பும் ஏதேனும் குறிப்பிட்ட விடயங்கள், கவலைகள் அல்லது பரிந்துரைகள் உங்களிடம் உள்ளதா? (விருப்பமானது)",
     sec11Desc: "தயவுசெய்து ஒவ்வொரு விடயம், கவலை அல்லது பரிந்துரையையும் தனித்தனியாக கீழே சேர்க்கவும். சந்தை நிலைமைகள், தொழில்நுட்ப தேவைகள், கொள்முதல் ஏற்பாடுகள், செயல்படுத்தல் சவால்கள் அல்லது ICDP நடவடிக்கைகளுக்கு தொடர்புடைய பிற விடயங்களை பகிர்ந்துகொள்ள ஊக்குவிக்கப்படுகிறீர்கள்.",
     matterBadgePrefix: "விடயம் / பரிந்துரை #",
@@ -2103,7 +2103,7 @@ function CustomFormRegistrationPortal({ slug }: { slug: string }) {
             </div>
           </div>
 
-          {/* SECTION 11: MATTERS FOR DISCUSSION */}
+          {/* SECTION 3: MATTERS FOR DISCUSSION */}
           <div className="pt-6 border-t border-slate-200 space-y-4">
             <div className="border-b border-slate-100 pb-3 flex items-center gap-2">
               <FileText className="w-4 h-4 text-blue-900" />
