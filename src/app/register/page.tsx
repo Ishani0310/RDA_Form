@@ -569,8 +569,8 @@ function RegisterForm() {
     };
 
     return (
-      <div key={domId}>
-        <label htmlFor={domId} className="block font-semibold text-slate-700 mb-1">
+      <div key={domId} className="min-w-0">
+        <label htmlFor={domId} className="block font-semibold text-slate-700 mb-1 truncate" title={label}>
           {label} {isRequired && <span className="text-rose-500">*</span>}
         </label>
         <input
@@ -582,7 +582,7 @@ function RegisterForm() {
           placeholder={placeholder}
           aria-invalid={Boolean(errorMsg)}
           aria-describedby={errorMsg ? `error-${errorKey}` : undefined}
-          className={`w-full p-2.5 rounded-lg text-slate-900 text-xs focus:outline-none transition-all ${type === "tel" ? "font-mono" : ""
+          className={`w-full min-w-0 p-2.5 rounded-lg text-slate-900 text-xs focus:outline-none transition-all ${type === "tel" ? "font-mono" : ""
             } ${errorMsg
               ? "bg-rose-50/30 border-2 border-rose-500 focus:ring-2 focus:ring-rose-200"
               : "bg-white border border-slate-300 focus:ring-2 focus:ring-blue-800"
@@ -2472,7 +2472,7 @@ function RegisterForm() {
   }
 
   return (
-    <div className="w-full max-w-4xl mx-auto my-4 sm:my-8 lg:my-12 px-3 sm:px-4 lg:px-6 space-y-4 sm:space-y-6 overflow-x-hidden">
+    <div className="w-full max-w-4xl mx-auto my-4 sm:my-8 lg:my-12 px-3 sm:px-4 lg:px-6 space-y-4 sm:space-y-6 min-w-0">
       {/* Header Banner */}
       <div className="bg-gradient-to-br from-[#07162c] via-[#0b1f3a] to-[#0f294d] text-white p-4 pl-3 sm:p-6 sm:pl-4 lg:p-7 lg:pl-4.5 rounded-2xl shadow-xl border border-white/10 relative overflow-hidden">
         {/* Left Vibrant Green Accent Bar (Snug to letters) */}
@@ -3214,7 +3214,7 @@ function RegisterForm() {
               </div>
             )}
 
-            <fieldset disabled={isReadOnly} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6 lg:p-8 space-y-8 border-0 m-0 block disabled:opacity-95">
+            <fieldset disabled={isReadOnly} className="min-w-0 w-full max-w-full bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6 lg:p-8 space-y-8 m-0 block disabled:opacity-95">
               {/* SECTION 1: BASIC INFORMATION */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
@@ -3575,7 +3575,7 @@ function RegisterForm() {
                           <span className="text-[11px] font-bold text-blue-900 uppercase">
                             Participant 1 (Required)
                           </span>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 min-w-0">
                             {renderParticipantField(1, "fullName", "Full Name", "e.g. Eng. Sunil Perera", true)}
                             {renderParticipantField(1, "mobileNumber", "Mobile Number", "e.g. 0771234567", true, "tel")}
                             {renderParticipantField(1, "email", "Email Address", "e.g. sunil@example.com", true, "email")}
@@ -3588,7 +3588,7 @@ function RegisterForm() {
                           <span className="text-[11px] font-bold text-slate-600 uppercase">
                             Participant 2 (Optional)
                           </span>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 min-w-0">
                             {renderParticipantField(2, "fullName", "Full Name", "Second attendee name", false)}
                             {renderParticipantField(2, "mobileNumber", "Mobile Number", "e.g. 0719876543", false, "tel")}
                             {renderParticipantField(2, "email", "Email Address", "e.g. attendee2@example.com", false, "email")}
@@ -3617,7 +3617,7 @@ function RegisterForm() {
                           <span className="text-[11px] font-bold text-blue-900 uppercase">
                             Representative Details (Required)
                           </span>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 min-w-0">
                             {renderParticipantField(1, "fullName", "Full Name", "e.g. K. L. Wickramasinghe", true)}
                             {renderParticipantField(1, "mobileNumber", "Mobile Number", "e.g. 0779876543", true, "tel")}
                             {renderParticipantField(1, "email", "Email Address", "e.g. supplier@example.com", true, "email")}
@@ -4085,7 +4085,7 @@ function RegisterForm() {
                             <span className="text-[11px] font-bold text-blue-900 uppercase">
                               Participant 1 (Required)
                             </span>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 min-w-0">
                               {renderParticipantField(1, "fullName", "Full Name", "e.g. Eng. Sunil Perera", true)}
                               {renderParticipantField(1, "mobileNumber", "Mobile Number", "e.g. 0771234567", true, "tel")}
                               {renderParticipantField(1, "email", "Email Address", "e.g. sunil@example.com", true, "email")}
@@ -4098,7 +4098,7 @@ function RegisterForm() {
                             <span className="text-[11px] font-bold text-slate-600 uppercase">
                               Participant 2 (Optional)
                             </span>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 min-w-0">
                               {renderParticipantField(2, "fullName", "Full Name", "Second attendee name", false)}
                               {renderParticipantField(2, "mobileNumber", "Mobile Number", "e.g. 0719876543", false, "tel")}
                               {renderParticipantField(2, "email", "Email Address", "e.g. attendee2@example.com", false, "email")}
@@ -4471,8 +4471,8 @@ function RegisterForm() {
                         <p className="text-[11px] text-slate-400 text-right italic sm:hidden mb-1">
                           ← Scroll to see all years →
                         </p>
-                        <div className="border border-slate-200 rounded-xl bg-white shadow-sm">
-                          <div className="overflow-x-auto rounded-xl" style={{ WebkitOverflowScrolling: "touch" }}>
+                        <div className="w-full max-w-full min-w-0 border border-slate-200 rounded-xl bg-white shadow-sm overflow-hidden">
+                          <div className="w-full max-w-full min-w-0 overflow-x-auto rounded-xl" style={{ WebkitOverflowScrolling: "touch" }}>
                             <table className="w-full min-w-[700px] text-xs border-collapse">
                               <thead>
                                 <tr className="bg-slate-100/90 border-b border-slate-200 text-slate-700">
@@ -4730,7 +4730,7 @@ function RegisterForm() {
                                   </span>
                                 </div>
 
-                                <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+                                <div className="w-full max-w-full min-w-0 overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm" style={{ WebkitOverflowScrolling: "touch" }}>
                                   <table className="w-full min-w-[980px] text-left border-collapse text-xs">
                                     <thead>
                                       <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-700 font-bold uppercase text-[10px] tracking-wider">
@@ -5028,7 +5028,7 @@ function RegisterForm() {
                               </p>
                             </div>
 
-                            <div className="overflow-x-auto rounded-xl border border-slate-200 shadow-sm">
+                            <div className="w-full max-w-full min-w-0 overflow-x-auto rounded-xl border border-slate-200 shadow-sm" style={{ WebkitOverflowScrolling: "touch" }}>
                               <table className="w-full text-left border-collapse text-xs">
                                 <thead>
                                   <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
@@ -5212,7 +5212,7 @@ function RegisterForm() {
                         </div>
 
                         <div className="space-y-3">
-                          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+                          <div className="w-full max-w-full min-w-0 overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm" style={{ WebkitOverflowScrolling: "touch" }}>
                             <table className="w-full min-w-[960px] text-left border-collapse text-xs">
                               <thead>
                                 <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-700 font-bold uppercase text-[10px] tracking-wider">

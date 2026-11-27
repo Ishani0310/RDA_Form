@@ -25,6 +25,12 @@ body {
   line-height: 1.55;
 }
 
+/* Fix browser default min-inline-size: min-content on fieldsets causing layout blowouts */
+fieldset {
+  min-inline-size: 0;
+  min-width: 0;
+}
+
 /* Indic script legibility optimization */
 .lang-si,
 .font-sinhala {
