@@ -84,6 +84,44 @@ export async function GET(request: NextRequest) {
     await connectToDatabase();
     await deduplicateDraftSubmissions().catch(() => {});
 
+    // Auto-heal: Ensure all active non-demo submissions have an associated Contractor record
+    try {
+      const activeSubs = await Submission.find({
+        status: { $in: ["Submitted", "Under_Review", "Verified"] },
+        isDemoRecord: false,
+      })
+        .select("_id contractor submissionReference provincialOffice questionnaireData createdAt updatedAt")
+        .lean();
+
+      for (const s of activeSubs as any[]) {
+        if (!s.contractor) continue;
+        const exists = await Contractor.exists({ _id: s.contractor });
+        if (!exists) {
+          const q = (s.questionnaireData || {}) as Record<string, any>;
+          const reg = q.ictadRegistrationNumber || (s.submissionReference ? `REG-${s.submissionReference.slice(-6)}` : `REG-${Date.now().toString().slice(-6)}`);
+          const name = q.organizationName || q.supplierDetails?.companyName || "Registered Stakeholder";
+          await Contractor.create({
+            _id: s.contractor,
+            registrationNumber: reg,
+            businessName: name,
+            status: "Pending_Review",
+            cidaGrade: q.cidaGrade || "Pending",
+            primarySpeciality: q.participantCategory === "Supplier" ? "Supplier" : (q.willParticipate === "No" ? "Non-Attendee" : (q.areasOfSpecialty?.[0] || "Civil Construction")),
+            province: (s.provincialOffice || "Western Province") as any,
+            district: q.supplierDetails?.district || "",
+            contactOfficer: {
+              name: q.participant1?.fullName || "Authorized Representative",
+              phone: q.participant1?.mobileNumber || q.contactNumber || "",
+              email: q.participant1?.email || q.email || "",
+            },
+            createdAt: s.createdAt || new Date(),
+            updatedAt: s.updatedAt || new Date(),
+            isDemoRecord: false,
+          }).catch(() => {});
+        }
+      }
+    } catch {}
+
     // 4. Build Filter Query with Strict Whitelist
     const query: Record<string, unknown> = {};
 

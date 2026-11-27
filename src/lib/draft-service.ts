@@ -1053,11 +1053,13 @@ export async function submitFinalDeclaration(
 
     if (staleDrafts.length > 0) {
       const draftIds = staleDrafts.map((d) => d._id);
-      const draftContractorIds = staleDrafts.map((d) => d.contractor).filter(Boolean);
+      const draftContractorIds = staleDrafts
+        .map((d) => d.contractor)
+        .filter((cId: any) => cId && cId.toString() !== contractor._id.toString());
       await Promise.all([
         Submission.deleteMany({ _id: { $in: draftIds } }),
         DraftToken.deleteMany({ submission: { $in: draftIds } }),
-        Contractor.deleteMany({ _id: { $in: draftContractorIds } }),
+        Contractor.deleteMany({ _id: { $in: draftContractorIds }, status: "Draft" }),
       ]).catch(() => { });
     }
   }
@@ -1279,6 +1281,8 @@ export async function submitDirectDeclaration(
 
   let finalRef = permanentRef;
 
+  let activeContractorId: any = null;
+
   if (existingDraftToPromote) {
     // Reuse the exact existing draft submission record and reference
     finalRef = existingDraftToPromote.submissionReference || permanentRef;
@@ -1317,6 +1321,8 @@ export async function submitDirectDeclaration(
       contractor.updatedAt = submittedAt;
     }
 
+    activeContractorId = contractor._id;
+
     existingDraftToPromote.status = "Submitted";
     existingDraftToPromote.submittedAt = submittedAt;
     existingDraftToPromote.updatedAt = submittedAt;
@@ -1339,6 +1345,7 @@ export async function submitDirectDeclaration(
   } else {
     // No prior draft found: create both Contractor and Submission simultaneously
     const contractorId = new mongoose.Types.ObjectId();
+    activeContractorId = contractorId;
     await Promise.all([
       Contractor.create({
         _id: contractorId,
@@ -1390,11 +1397,13 @@ export async function submitDirectDeclaration(
 
     if (staleDrafts.length > 0) {
       const draftIds = staleDrafts.map((d) => d._id);
-      const draftContractorIds = staleDrafts.map((d) => d.contractor).filter(Boolean);
+      const draftContractorIds = staleDrafts
+        .map((d: any) => d.contractor)
+        .filter((cId: any) => cId && (!activeContractorId || cId.toString() !== activeContractorId.toString()));
       await Promise.all([
         Submission.deleteMany({ _id: { $in: draftIds } }),
         DraftToken.deleteMany({ submission: { $in: draftIds } }),
-        Contractor.deleteMany({ _id: { $in: draftContractorIds } }),
+        Contractor.deleteMany({ _id: { $in: draftContractorIds }, status: "Draft" }),
       ]).catch(() => { });
     }
   }
