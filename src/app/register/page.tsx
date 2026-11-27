@@ -2595,43 +2595,88 @@ function RegisterForm() {
         <button
           type="button"
           onClick={() => setShowWorkshopInfo(!showWorkshopInfo)}
-          className="w-full p-3.5 sm:p-4 flex items-start sm:items-center justify-between gap-3 bg-slate-50 hover:bg-slate-100 transition-colors text-left"
+          className="w-full p-3 sm:p-4 bg-slate-50 hover:bg-slate-100 transition-colors text-left block"
         >
-          <div className="flex items-start sm:items-center gap-2.5 min-w-0">
-            <div className="w-7 h-7 rounded-lg bg-blue-100/70 text-blue-900 flex items-center justify-center shrink-0 mt-0.5 sm:mt-0">
-              <Info className="w-4 h-4 text-blue-900" />
-            </div>
-            <div className="min-w-0">
-              <span className="font-bold text-slate-900 block text-xs sm:text-sm leading-snug">
-                About the Workshop &amp; Registration Instructions
-              </span>
-              <div className="flex items-center gap-2 flex-wrap text-[11px] text-slate-600 mt-1">
-                <span className="inline-flex items-center gap-1 font-semibold text-slate-800">
-                  <Calendar className="w-3 h-3 text-blue-900 shrink-0" />
-                  <span>07 Dec 2026</span>
-                  <span className="font-normal text-slate-500">(8.30 AM)</span>
-                </span>
-                <span className="text-slate-300 hidden sm:inline">&bull;</span>
-                <span className="inline-flex items-center gap-1 font-semibold text-slate-800">
-                  <MapPin className="w-3 h-3 text-emerald-700 shrink-0" />
-                  <span>Waters Edge (The Pavilion), Battaramulla</span>
-                </span>
+          {/* Mobile Layout (< sm / < 640px) */}
+          <div className="sm:hidden space-y-2">
+            <div className="flex items-start justify-between gap-2.5">
+              <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                <div className="w-6 h-6 rounded-lg bg-blue-100/70 text-blue-900 flex items-center justify-center shrink-0 mt-0.5">
+                  <Info className="w-3.5 h-3.5 text-blue-900" />
+                </div>
+                <div className="min-w-0">
+                  <span className="font-bold text-slate-900 block text-xs leading-snug">
+                    About the Workshop &amp; Instructions
+                  </span>
+                  <div className="flex items-center gap-1.5 text-[11px] text-slate-600 mt-0.5 flex-wrap">
+                    <span className="inline-flex items-center gap-1">
+                      <Calendar className="w-3 h-3 text-blue-900 shrink-0" />
+                      <span className="font-semibold text-slate-800">07 Dec 2026</span>
+                      <span className="text-slate-500">(8.30 AM)</span>
+                    </span>
+                    <span className="text-slate-300">&bull;</span>
+                    <span className="inline-flex items-center gap-1">
+                      <MapPin className="w-3 h-3 text-emerald-700 shrink-0" />
+                      <span className="truncate">Waters Edge, Battaramulla</span>
+                    </span>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-          <div className="shrink-0 flex items-center gap-2 sm:gap-2.5 text-[11px] text-slate-500 mt-0.5 sm:mt-0">
-            <span className="inline-flex items-center gap-1 font-bold text-rose-700 bg-rose-50 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg border border-rose-200/80 shadow-2xs">
-              <Clock className="w-3 h-3 text-rose-600 shrink-0" />
-              <span>Deadline: 03 Dec 2026 (Before 11.00 PM)</span>
-            </span>
-            <div className="flex items-center gap-1">
-              <span className="hidden md:inline font-medium">{showWorkshopInfo ? "Hide Details" : "View Details"}</span>
-              <div className="p-1 rounded-md bg-white border border-slate-200 shadow-2xs">
+              <div className="p-1 rounded-md bg-white border border-slate-200 shadow-2xs shrink-0 mt-0.5">
                 {showWorkshopInfo ? (
                   <ChevronUp className="w-4 h-4 text-slate-700" />
                 ) : (
                   <ChevronDown className="w-4 h-4 text-slate-700" />
                 )}
+              </div>
+            </div>
+
+            <div className="pl-8.5">
+              <span className="inline-flex items-center gap-1 font-bold text-[10.5px] text-rose-700 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200/80 shadow-2xs">
+                <Clock className="w-3 h-3 text-rose-600 shrink-0" />
+                <span>Deadline: 03 Dec 2026 (Before 11.00 PM)</span>
+              </span>
+            </div>
+          </div>
+
+          {/* Tablet & Desktop Layout (>= sm / >= 640px) */}
+          <div className="hidden sm:flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-7 h-7 rounded-lg bg-blue-100/70 text-blue-900 flex items-center justify-center shrink-0">
+                <Info className="w-4 h-4 text-blue-900" />
+              </div>
+              <div className="min-w-0">
+                <span className="font-bold text-slate-900 block text-sm leading-snug">
+                  About the Workshop &amp; Registration Instructions
+                </span>
+                <div className="flex items-center gap-2 text-[11px] text-slate-600 mt-0.5">
+                  <span className="inline-flex items-center gap-1 font-semibold text-slate-800">
+                    <Calendar className="w-3 h-3 text-blue-900 shrink-0" />
+                    <span>07 Dec 2026</span>
+                    <span className="font-normal text-slate-500">(8.30 AM)</span>
+                  </span>
+                  <span className="text-slate-300">&bull;</span>
+                  <span className="inline-flex items-center gap-1 font-semibold text-slate-800">
+                    <MapPin className="w-3 h-3 text-emerald-700 shrink-0" />
+                    <span>Waters Edge (The Pavilion), Battaramulla</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="shrink-0 flex items-center gap-2.5 text-[11px] text-slate-500">
+              <span className="inline-flex items-center gap-1 font-bold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200/80 shadow-2xs">
+                <Clock className="w-3 h-3 text-rose-600 shrink-0" />
+                <span>Deadline: 03 Dec 2026 (Before 11.00 PM)</span>
+              </span>
+              <div className="flex items-center gap-1">
+                <span className="hidden md:inline font-medium text-slate-600">{showWorkshopInfo ? "Hide Details" : "View Details"}</span>
+                <div className="p-1 rounded-md bg-white border border-slate-200 shadow-2xs">
+                  {showWorkshopInfo ? (
+                    <ChevronUp className="w-4 h-4 text-slate-700" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-slate-700" />
+                  )}
+                </div>
               </div>
             </div>
           </div>
