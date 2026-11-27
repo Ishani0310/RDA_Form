@@ -264,6 +264,16 @@ const QUESTIONNAIRE_FIELD_ORDER = [
   "ictadRegistrationNumber",
   "areasOfSpecialty",
   "specialtyOther",
+  // Section 5: Financial Capability & Section 6: Loan Commitments
+  ...FINANCIAL_YEARS.flatMap((y) => [
+    `financialStatements.${y}.totalAssets`,
+    `financialStatements.${y}.totalLiabilities`,
+    `financialStatements.${y}.currentAssets`,
+    `financialStatements.${y}.currentLiabilities`,
+    `financialStatements.${y}.totalRevenue`,
+    `financialStatements.${y}.profitBeforeTax`,
+  ]),
+  "loanCommitments.twoYearRepaymentsDue2026To2028",
   // Section 7 & 8: Work Commitments
   "hasOngoingContracts",
   "totalOutstandingValueLkrMillion",
@@ -298,6 +308,9 @@ const getDomIdForField = (fieldKey: string): string => {
   if (fieldKey.startsWith("dynamic.")) {
     return `input-dynamic-${fieldKey.replace("dynamic.", "")}`;
   }
+  if (fieldKey.startsWith("financialStatements.")) {
+    return `input-${fieldKey.replace(/\//g, "-").replace(/\./g, "-")}`;
+  }
   if (fieldKey === "similarWorks.descending") {
     return "section-10-container";
   }
@@ -329,6 +342,12 @@ function mapServerErrorMessageToField(message: string): { key: string; message: 
   }
   if (/CIDA grade/i.test(clean)) return { key: "cidaGrade", message: clean };
   if (/area.*specialty/i.test(clean)) return { key: "areasOfSpecialty", message: clean };
+  if (/total assets|liabilities|current assets|working capital|total revenue|profit before tax|financial indicator/i.test(clean)) {
+    return { key: "financialStatements.2020/2021.totalAssets", message: clean };
+  }
+  if (/loan repayment/i.test(clean)) {
+    return { key: "loanCommitments.twoYearRepaymentsDue2026To2028", message: clean };
+  }
   if (/general experience/i.test(clean)) return { key: "generalExperience", message: clean };
   if (/rda.*icdp|icdp.*rda|worked in the past/i.test(clean)) return { key: "hasRdaOrIcdpExperience", message: clean };
   if (/contract 1/i.test(clean) || /similar work/i.test(clean)) return { key: "similarWorks.0.contractName", message: clean };
@@ -4454,7 +4473,7 @@ function RegisterForm() {
                           <div className="flex items-center gap-2">
                             <Calendar className="w-4 h-4 text-blue-900" />
                             <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
-                              Section 5: Financial Capability &amp; Section 6: Loan Commitments
+                              Section 5: Financial Capability &amp; Section 6: Loan Commitments <span className="text-rose-500">*</span>
                             </h2>
                           </div>
                         </div>
@@ -4463,7 +4482,7 @@ function RegisterForm() {
                           <p className="leading-relaxed">
                             <strong>Official Instruction:</strong> All financial amounts must be entered as the <strong>full total amount in Sri Lankan Rupees (LKR)</strong>.
                             For example, for <strong>1 Lakh (LKR 100,000)</strong> enter <strong>100000</strong> (not 1 or 1 Lakh); for <strong>10 Million</strong> enter <strong>10000000</strong>.
-                            You may enter <strong>0</strong> or leave blank if information is unrecorded. <em>Profit Before Tax may be negative if incurring a loss.</em>
+                            <strong> All fields in this section are mandatory (enter 0 if none or unrecorded). Blank fields are not permitted.</strong> <em>Profit Before Tax may be negative if incurring a loss.</em>
                           </p>
                         </div>
 
@@ -4488,29 +4507,30 @@ function RegisterForm() {
                               </thead>
                               <tbody className="divide-y divide-slate-200/70">
                                 {[
-                                  { key: "totalAssets" as const, label: "Total Assets" },
-                                  { key: "totalLiabilities" as const, label: "Total Liabilities" },
+                                  { key: "totalAssets" as const, label: "Total Assets", isRequired: true },
+                                  { key: "totalLiabilities" as const, label: "Total Liabilities", isRequired: true },
                                   {
                                     key: "totalEquity" as const,
                                     label: "Total Equity",
                                     hint: "Auto: Total Assets − Liabilities",
                                     readOnly: true,
                                   },
-                                  { key: "currentAssets" as const, label: "Current Assets" },
-                                  { key: "currentLiabilities" as const, label: "Current Liabilities" },
+                                  { key: "currentAssets" as const, label: "Current Assets", isRequired: true },
+                                  { key: "currentLiabilities" as const, label: "Current Liabilities", isRequired: true },
                                   {
                                     key: "workingCapital" as const,
                                     label: "Working Capital",
                                     hint: "Auto: Current Assets − Liabilities",
                                     readOnly: true,
                                   },
-                                  { key: "totalRevenue" as const, label: "Total Revenue" },
+                                  { key: "totalRevenue" as const, label: "Total Revenue", isRequired: true },
                                   {
                                     key: "profitBeforeTax" as const,
                                     label: "Profit Before Tax",
                                     hint: "May be negative",
+                                    isRequired: true,
                                   },
-                                ].map(({ key, label, hint, readOnly }) => (
+                                ].map(({ key, label, hint, readOnly, isRequired }) => (
                                   <tr
                                     key={key}
                                     className={
@@ -4521,7 +4541,9 @@ function RegisterForm() {
                                   >
                                     <td className="py-2 px-3 text-slate-800 font-medium">
                                       <div className="flex items-center gap-1.5 flex-wrap">
-                                        <span className={readOnly ? "font-semibold text-blue-950" : ""}>{label}</span>
+                                        <span className={readOnly ? "font-semibold text-blue-950" : ""}>
+                                          {label} {isRequired && <span className="text-rose-500 font-bold">*</span>}
+                                        </span>
                                         {hint && (
                                           <span
                                             className={`text-[10px] px-1.5 py-0.5 rounded font-normal ${readOnly
@@ -4540,18 +4562,31 @@ function RegisterForm() {
                                         createEmptyFinancialIndicators();
                                       const val = yrData[key];
                                       const isNegative = val !== null && val !== undefined && val < 0;
+                                      const fieldKey = `financialStatements.${year}.${key}`;
+                                      const hasError = !readOnly && Boolean(fieldErrors[fieldKey]);
+                                      const domId = getDomIdForField(fieldKey);
 
                                       return (
                                         <td key={year} className="py-1.5 px-2">
                                           <input
+                                            id={domId}
                                             type={readOnly ? "text" : "number"}
                                             readOnly={readOnly}
                                             tabIndex={readOnly ? -1 : 0}
                                             value={val !== null && val !== undefined ? val : ""}
-                                            onChange={(e) => !readOnly && handleFinancialChange(year, key, e.target.value)}
+                                            placeholder={readOnly ? undefined : "0"}
+                                            onChange={(e) => {
+                                              if (!readOnly) {
+                                                handleFinancialChange(year, key, e.target.value);
+                                                if (fieldErrors[fieldKey]) clearFieldError(fieldKey);
+                                              }
+                                            }}
+                                            aria-invalid={hasError}
                                             className={`w-full p-2 border rounded font-mono text-xs text-right transition-colors ${readOnly
                                               ? `bg-slate-100/90 border-slate-300 font-semibold cursor-not-allowed select-none ${isNegative ? "text-rose-600 font-bold" : "text-slate-800"
                                               }`
+                                              : hasError
+                                              ? "bg-rose-50/50 border-2 border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200"
                                               : `bg-slate-50 border-slate-300 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-800 ${isNegative ? "text-rose-600 font-bold" : ""
                                               }`
                                               }`}
@@ -4567,7 +4602,7 @@ function RegisterForm() {
                                   <td className="py-3 px-3 text-slate-900 align-middle">
                                     <div>
                                       <span className="font-bold text-blue-950 block">
-                                        Total Loan Repayments Due (01 Dec 2026 – 01 Dec 2028)
+                                        Total Loan Repayments Due (01 Dec 2026 – 01 Dec 2028) <span className="text-rose-500">*</span>
                                       </span>
                                       <span className="text-[11px] font-normal text-slate-500 block leading-tight mt-0.5">
                                         Total loan repayments due within the next two years. Enter full total amount in LKR (e.g. for 1 Lakh enter 100000, not 1 Lakh. Enter 0 if none).
@@ -4577,8 +4612,10 @@ function RegisterForm() {
                                   <td colSpan={5} className="py-2.5 px-3">
                                     <div className="relative">
                                       <input
+                                        id={getDomIdForField("loanCommitments.twoYearRepaymentsDue2026To2028")}
                                         type="number"
                                         value={formData.loanCommitments?.twoYearRepaymentsDue2026To2028 ?? ""}
+                                        placeholder="0"
                                         onChange={(e) => {
                                           const val = e.target.value.trim();
                                           const num = val === "" ? null : Number(val);
@@ -4588,9 +4625,23 @@ function RegisterForm() {
                                               twoYearRepaymentsDue2026To2028: val === "" ? null : isNaN(num as number) ? null : num,
                                             },
                                           });
+                                          if (fieldErrors["loanCommitments.twoYearRepaymentsDue2026To2028"]) {
+                                            clearFieldError("loanCommitments.twoYearRepaymentsDue2026To2028");
+                                          }
                                         }}
-                                        className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-800 font-mono text-xs"
+                                        aria-invalid={Boolean(fieldErrors["loanCommitments.twoYearRepaymentsDue2026To2028"])}
+                                        className={`w-full p-2.5 bg-white border rounded-lg text-slate-900 focus:outline-none font-mono text-xs transition-all ${
+                                          fieldErrors["loanCommitments.twoYearRepaymentsDue2026To2028"]
+                                            ? "border-2 border-rose-500 focus:ring-2 focus:ring-rose-200 bg-rose-50/40"
+                                            : "border-slate-300 focus:ring-2 focus:ring-blue-800"
+                                        }`}
                                       />
+                                      {fieldErrors["loanCommitments.twoYearRepaymentsDue2026To2028"] && (
+                                        <div className="flex items-center gap-1.5 mt-1.5 text-xs font-semibold text-rose-600 animate-fadeIn">
+                                          <AlertCircle className="w-3.5 h-3.5 shrink-0 text-rose-500" />
+                                          <span>{fieldErrors["loanCommitments.twoYearRepaymentsDue2026To2028"]}</span>
+                                        </div>
+                                      )}
                                       {formData.loanCommitments?.twoYearRepaymentsDue2026To2028 !== null &&
                                         formData.loanCommitments?.twoYearRepaymentsDue2026To2028 !== undefined && (
                                           <span className="text-[11px] font-mono font-semibold text-blue-900 bg-blue-100/70 px-2 py-0.5 rounded inline-block mt-1">
@@ -4604,6 +4655,13 @@ function RegisterForm() {
                             </table>
                           </div>
                         </div>
+
+                        {Object.keys(fieldErrors).some((k) => k.startsWith("financialStatements.")) && (
+                          <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2 text-xs font-semibold text-rose-700 animate-fadeIn">
+                            <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+                            <span>All 5 years of financial capability indicators are mandatory. Please fill in all highlighted cells (enter 0 if none or unrecorded).</span>
+                          </div>
+                        )}
                       </div>
 
                       {/* SECTION 7: CURRENT WORK COMMITMENTS */}

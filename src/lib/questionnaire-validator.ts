@@ -190,42 +190,42 @@ export function validateQuestionnaireSubmission(
     }
   }
 
-  // Section 5 & 6: Financial Statements (40 Fields) & Loan Commitments
-  // In accordance with official instructions, blank/0 is permitted if unavailable.
-  // We strictly validate non-NaN numeric validity when entered.
-  if (data.financialStatements) {
-    for (const year of FINANCIAL_YEARS) {
-      const yrData = data.financialStatements[year];
-      if (yrData) {
-        const keys = [
-          "totalAssets",
-          "totalLiabilities",
-          "totalEquity",
-          "currentAssets",
-          "currentLiabilities",
-          "workingCapital",
-          "totalRevenue",
-          "profitBeforeTax",
-        ] as const;
+  // Section 5 & 6: Financial Statements (5 Years x 6 Editable Indicators) & Loan Commitments (Mandatory)
+  const EDITABLE_FINANCIAL_KEYS = [
+    { key: "totalAssets", label: "Total Assets" },
+    { key: "totalLiabilities", label: "Total Liabilities" },
+    { key: "currentAssets", label: "Current Assets" },
+    { key: "currentLiabilities", label: "Current Liabilities" },
+    { key: "totalRevenue", label: "Total Revenue" },
+    { key: "profitBeforeTax", label: "Profit Before Tax" },
+  ] as const;
 
-        for (const k of keys) {
-          const val = yrData[k] as unknown;
-          if (val !== null && val !== undefined && val !== "") {
-            const num = Number(val);
-            if (isNaN(num)) {
-              errors[`financialStatements.${year}.${k}`] = `Invalid numeric value for ${k} in FY ${year}.`;
-            }
-          }
+  for (const year of FINANCIAL_YEARS) {
+    const yrData = data.financialStatements?.[year];
+    for (const { key, label } of EDITABLE_FINANCIAL_KEYS) {
+      const val = yrData ? (yrData as any)[key] : undefined;
+      if (val === null || val === undefined || val === "" || (typeof val === "string" && (val as string).trim() === "")) {
+        errors[`financialStatements.${year}.${key}`] = `${label} for FY ${year} is required (enter 0 if none).`;
+      } else {
+        const num = Number(val);
+        if (isNaN(num)) {
+          errors[`financialStatements.${year}.${key}`] = `Invalid numeric value for ${label} in FY ${year}.`;
+        } else if (key !== "profitBeforeTax" && num < 0) {
+          errors[`financialStatements.${year}.${key}`] = `${label} for FY ${year} cannot be negative.`;
         }
       }
     }
   }
 
-  if (data.loanCommitments?.twoYearRepaymentsDue2026To2028 !== null &&
-      data.loanCommitments?.twoYearRepaymentsDue2026To2028 !== undefined) {
-    const loanVal = data.loanCommitments.twoYearRepaymentsDue2026To2028 as unknown;
-    if (loanVal !== "" && isNaN(Number(loanVal))) {
+  const loanVal = data.loanCommitments?.twoYearRepaymentsDue2026To2028 as unknown;
+  if (loanVal === null || loanVal === undefined || loanVal === "" || (typeof loanVal === "string" && (loanVal as string).trim() === "")) {
+    errors["loanCommitments.twoYearRepaymentsDue2026To2028"] = "Total loan repayments due (01 Dec 2026 – 01 Dec 2028) is required (enter 0 if none).";
+  } else {
+    const num = Number(loanVal);
+    if (isNaN(num)) {
       errors["loanCommitments.twoYearRepaymentsDue2026To2028"] = "Loan repayments must be a valid number.";
+    } else if (num < 0) {
+      errors["loanCommitments.twoYearRepaymentsDue2026To2028"] = "Loan repayments cannot be negative.";
     }
   }
 
