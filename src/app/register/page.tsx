@@ -368,6 +368,8 @@ function RegisterForm() {
   const searchParams = useSearchParams();
   const tokenFromUrl = searchParams.get("token") || "";
   const refFromUrl = searchParams.get("ref") || searchParams.get("reference") || "";
+  const isAdminParam = searchParams.get("admin") === "true" || searchParams.get("mode") === "admin";
+  const isEmbedParam = searchParams.get("embed") === "true";
   const initialKey = refFromUrl || tokenFromUrl;
 
   // Draft session credentials & identifiers
@@ -873,11 +875,11 @@ function RegisterForm() {
     const initialKey = refFromUrl || tokenFromUrl;
     if (initialKey) {
       loadDraft(initialKey);
-    } else if (stored.length > 0) {
+    } else if (stored.length > 0 && !isEmbedParam) {
       setShowRecoveryPrompt(true);
     }
     setHasCheckedDrafts(true);
-  }, [tokenFromUrl, refFromUrl]);
+  }, [tokenFromUrl, refFromUrl, isEmbedParam]);
 
   // Load active published questionnaire schema & pre-warm database connection
   useEffect(() => {
@@ -1134,7 +1136,8 @@ function RegisterForm() {
     setLoading(true);
     setFormAlert(null);
     try {
-      const res = await fetch(`/api/public/draft?token=${encodeURIComponent(clean)}`);
+      const adminQuery = isAdminParam ? "&admin=true" : "";
+      const res = await fetch(`/api/public/draft?token=${encodeURIComponent(clean)}${adminQuery}`);
       const data = await res.json();
       if (res.ok && data.success && data.draft) {
         const q = data.draft.questionnaireData || {};
@@ -1230,7 +1233,7 @@ function RegisterForm() {
         setSpecialtyOtherList(parseOtherSpecialties(restoredData.specialtyOther));
         setSupplierMaterialsOtherList(parseOtherSpecialties(restoredData.supplierDetails?.materialsOther));
         setCidaGradeOtherList(parseOtherSpecialties(restoredData.cidaGradeOther));
-        const isReadOnlyMode = Boolean(data.draft.isReadOnly);
+        const isReadOnlyMode = isAdminParam ? false : Boolean(data.draft.isReadOnly);
         setIsReadOnly(isReadOnlyMode);
         setIsEditRequested(Boolean(data.draft.editRequested));
         setEditRequestReason(data.draft.editRequestReason || "");
@@ -1343,7 +1346,7 @@ function RegisterForm() {
   };
 
   const performDraftSave = async (isAutoSave = false): Promise<boolean> => {
-    if (isReadOnly) {
+    if (isReadOnly && !isAdminParam) {
       if (!isAutoSave) {
         setFormAlert({
           type: "error",
@@ -1455,11 +1458,40 @@ function RegisterForm() {
         setAutoSaveStatus("saved");
         setLastSavedTime(new Date());
 
+        // In Administrator Edit Mode, immediately synchronize updates directly to official submission
+        if (isAdminParam) {
+          const effectiveRef = assignedRef || currentReferenceRef.current || currentReference || refFromUrl;
+          if (effectiveRef) {
+            await fetch("/api/submissions", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                ref: effectiveRef,
+                updates: {
+                  organizationName: orgName,
+                  provincialOffice: formData.supplierDetails?.province || "Western Province",
+                  contactNumber: formData.contactNumber || formData.participant1?.mobileNumber,
+                  email: candidateEmail,
+                  participantCategory: formData.participantCategory,
+                  willParticipate: formData.willParticipate,
+                  ictadRegistrationNumber: formData.ictadRegistrationNumber,
+                  cidaGrade: formData.cidaGrade,
+                  participant1: formData.participant1,
+                  participant2: formData.participant2,
+                  supplierDetails: formData.supplierDetails,
+                  questionnaireData: formData,
+                },
+              }),
+            }).catch(() => {});
+          }
+        }
+
         if (!isAutoSave) {
           setFormAlert({
             type: "success",
-            message: `Draft successfully saved! Permanent Reference: ${assignedRef || "Assigned"
-              }. You can close this browser anytime and continue when you return.`,
+            message: isAdminParam
+              ? `Changes saved to official registry successfully! Reference: ${assignedRef || currentReference || "Updated"}.`
+              : `Draft successfully saved! Permanent Reference: ${assignedRef || "Assigned"}. You can close this browser anytime and continue when you return.`,
           });
         }
         return true;
@@ -2555,9 +2587,76 @@ function RegisterForm() {
   }
 
   return (
-    <div className="w-full max-w-4xl mx-auto my-4 sm:my-8 lg:my-12 px-3 sm:px-4 lg:px-6 space-y-4 sm:space-y-6 min-w-0">
-      {/* Header Banner */}
-      <div className="bg-gradient-to-br from-[#07162c] via-[#0b1f3a] to-[#0f294d] text-white p-4 pl-3 sm:p-6 sm:pl-4 lg:p-7 lg:pl-4.5 rounded-2xl shadow-xl border border-white/10 relative overflow-hidden">
+    <div className={`w-full ${isEmbedParam ? "max-w-full my-2 px-2 sm:px-4" : "max-w-4xl mx-auto my-4 sm:my-8 lg:my-12 px-3 sm:px-4 lg:px-6"} space-y-4 sm:space-y-6 min-w-0`}>
+      {/* Administrator Edit Mode Top Action Bar */}
+      {isAdminParam && (
+        <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white p-3.5 sm:p-4 rounded-2xl shadow-lg border border-blue-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fadeIn">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-amber-400 text-blue-950 flex items-center justify-center font-bold shrink-0 shadow-xs">
+              <ShieldCheck className="w-5 h-5 text-blue-950" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-extrabold text-sm sm:text-base text-white">
+                  Administrator Edit Mode
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-amber-400 text-blue-950">
+                  Public Form 1
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-white/10 text-blue-200 border border-white/20">
+                  Status: {submissionStatus}
+                </span>
+              </div>
+              <p className="text-xs text-blue-200 truncate">
+                Editing official record: <strong className="font-mono text-white">{currentReference || refFromUrl || "Filing"}</strong> &bull; All changes save directly to the official registry.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+            {!isEmbedParam && (
+              <Link
+                href="/submissions"
+                className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/20 transition-all"
+              >
+                &larr; Back to Submissions
+              </Link>
+            )}
+            <button
+              type="button"
+              onClick={() => handleDownloadFormPdf()}
+              className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>PDF</span>
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                const ok = await performDraftSave(false);
+                if (ok) {
+                  setFormAlert({
+                    type: "success",
+                    message: `Official submission (${currentReference || refFromUrl}) changes saved to registry successfully!`,
+                  });
+                  if (typeof window !== "undefined" && window.parent) {
+                    window.parent.postMessage({ type: "RDA_SUBMISSION_UPDATED", ref: currentReference || refFromUrl }, "*");
+                  }
+                }
+              }}
+              disabled={loading}
+              className="px-4 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-blue-950 text-xs font-black flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+            >
+              {loading ? <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-950" /> : <Save className="w-3.5 h-3.5 text-blue-950" />}
+              <span>Save Changes</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Header Banner & Workshop Info - Only render if not embedded */}
+      {!isEmbedParam && (
+        <>
+          <div className="bg-gradient-to-br from-[#07162c] via-[#0b1f3a] to-[#0f294d] text-white p-4 pl-3 sm:p-6 sm:pl-4 lg:p-7 lg:pl-4.5 rounded-2xl shadow-xl border border-white/10 relative overflow-hidden">
         {/* Left Vibrant Green Accent Bar (Snug to letters) */}
         <div className="absolute left-0 top-0 bottom-0 w-1 sm:w-1.25 bg-gradient-to-b from-emerald-400 via-green-400 to-emerald-500 shadow-[0_0_12px_rgba(34,197,94,0.65)] z-20" />
 
@@ -2836,6 +2935,8 @@ function RegisterForm() {
           </div>
         )}
       </div>
+        </>
+      )}
 
       {/* Conditional Flow: Draft Check & Recovery */}
       {!hasCheckedDrafts ? (
@@ -6460,7 +6561,55 @@ function RegisterForm() {
 
                   {/* ACTION BAR */}
                   <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
-                    {isReadOnly ? (
+                    {isAdminParam ? (
+                      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-xl bg-gradient-to-r from-blue-900 to-indigo-900 border border-blue-700 w-full shadow-md text-white">
+                        <div className="flex items-center gap-2.5">
+                          <ShieldCheck className="w-5 h-5 text-amber-400 shrink-0" />
+                          <div>
+                            <div className="font-extrabold text-xs text-white">
+                              Administrator Live Edit Mode &bull; {currentReference || refFromUrl}
+                            </div>
+                            <p className="text-[11px] text-blue-200">
+                              All modifications will synchronize directly to the official contractor registry.
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadFormPdf()}
+                            className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 shadow-xs transition-all shrink-0 cursor-pointer"
+                          >
+                            <Download className="w-4 h-4 text-emerald-300" />
+                            <span>Download PDF</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              const ok = await performDraftSave(false);
+                              if (ok) {
+                                setFormAlert({
+                                  type: "success",
+                                  message: `Official submission (${currentReference || refFromUrl}) saved and updated in registry successfully!`,
+                                });
+                                if (typeof window !== "undefined" && window.parent) {
+                                  window.parent.postMessage({ type: "RDA_SUBMISSION_UPDATED", ref: currentReference || refFromUrl }, "*");
+                                }
+                              }
+                            }}
+                            disabled={loading}
+                            className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-blue-950 font-black text-xs shadow-lg transition-all shrink-0 cursor-pointer"
+                          >
+                            {loading ? (
+                              <RefreshCw className="w-4 h-4 animate-spin text-blue-950" />
+                            ) : (
+                              <Save className="w-4 h-4 text-blue-950" />
+                            )}
+                            <span>Save Changes to Registry</span>
+                          </button>
+                        </div>
+                      </div>
+                    ) : isReadOnly ? (
                       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-xl bg-amber-50 border border-amber-200 w-full">
                         <div className="flex items-center gap-2 text-amber-950 font-bold text-xs">
                           <Lock className="w-4 h-4 text-amber-600 shrink-0" />

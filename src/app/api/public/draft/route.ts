@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limiter";
+import { getCurrentOfficerSession } from "@/lib/auth";
 import {
   saveOrUpdateDraft,
   getDraftByToken,
@@ -30,6 +31,9 @@ export async function GET(request: NextRequest) {
     const tokenFromHeader = request.headers.get("x-resume-token") || "";
     const tokenFromQuery = searchParams.get("token") || "";
     const refFromQuery = searchParams.get("ref") || searchParams.get("reference") || "";
+    const adminParam = searchParams.get("admin") === "true" || searchParams.get("mode") === "admin";
+    const session = await getCurrentOfficerSession();
+    const isAdmin = Boolean(adminParam || session);
     const identifier = (refFromQuery || tokenFromHeader || tokenFromQuery).trim();
 
     if (!identifier) {
@@ -39,7 +43,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const draft = await getDraftByToken(identifier);
+    const draft = await getDraftByToken(identifier, isAdmin);
 
     return NextResponse.json({
       success: true,

@@ -34,6 +34,7 @@ import {
   Save,
   AlertOctagon,
   RotateCcw,
+  ExternalLink,
 } from "lucide-react";
 import { DynamicFormRenderer } from "@/components/dynamic-form/DynamicFormRenderer";
 import { generateSubmissionHtml } from "@/lib/submission-html";
@@ -738,9 +739,18 @@ function SubmissionsContent() {
     };
     window.addEventListener("focus", handleFocus);
 
+    // Refresh immediately when embedded form signals an update
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data?.type === "RDA_SUBMISSION_UPDATED") {
+        fetchSubmissions();
+      }
+    };
+    window.addEventListener("message", handleMessage);
+
     return () => {
       clearInterval(pollInterval);
       window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("message", handleMessage);
     };
   }, [fetchSubmissions]);
 
@@ -2698,242 +2708,66 @@ function SubmissionsContent() {
         </div>
       )}
 
-      {/* Edit Submission Modal (Full Schema-Driven Dynamic Form) */}
+      {/* Edit Submission Modal (Public Form 1 Live Editor) */}
       {subToEdit && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-          <div className="relative w-full max-w-5xl max-h-[94vh] bg-slate-100 rounded-2xl shadow-2xl border border-slate-300 flex flex-col my-auto overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/75 backdrop-blur-xs overflow-hidden animate-fadeIn">
+          <div className="relative w-full max-w-6xl h-[95vh] bg-white rounded-2xl shadow-2xl border border-slate-300 flex flex-col my-auto overflow-hidden">
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between shrink-0 bg-white">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-amber-800 shrink-0">
-                  <Pencil className="w-5 h-5" />
+            <div className="px-5 py-3 border-b border-slate-200 flex items-center justify-between shrink-0 bg-white">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center text-amber-800 shrink-0">
+                  <Pencil className="w-4 h-4" />
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-base font-extrabold text-slate-900">
-                      Edit Official Submission: <span className="font-mono text-blue-950">{subToEdit.ref}</span>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-sm sm:text-base font-extrabold text-slate-900 truncate">
+                      Edit Official Submission: <span className="font-mono text-blue-900">{subToEdit.ref}</span>
                     </h3>
-                    <span
-                      className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                        editFormData.participantCategory === "Supplier"
-                          ? "bg-purple-100 text-purple-800 border border-purple-200"
-                          : editFormData.participantCategory === "Government Officer"
-                          ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
-                          : "bg-blue-100 text-blue-900 border border-blue-200"
-                      }`}
-                    >
-                      {editFormData.participantCategory || "Contractor"}
+                    <span className="px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-blue-100 text-blue-900">
+                      {subToEdit.contractor || "Contractor"}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-amber-100 text-amber-900 border border-amber-200">
+                      Public Form 1
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500">
-                    Full interactive questionnaire editor • Category changes automatically adjust sections and technical capabilities
+                  <p className="text-[11px] text-slate-500 truncate">
+                    Live Public Form 1 editor &bull; All changes save directly to the official contractor registry
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setSubToEdit(null)}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all"
-                title="Close"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            {/* Modal Body */}
-            <div className="p-4 sm:p-6 lg:p-8 overflow-y-auto space-y-6 flex-1 text-xs">
-              {editAlert && (
-                <div
-                  className={`p-4 rounded-xl border text-xs font-semibold ${
-                    editAlert.type === "success"
-                      ? "bg-emerald-50 border-emerald-300 text-emerald-900"
-                      : "bg-rose-50 border-rose-300 text-rose-900"
-                  }`}
+              <div className="flex items-center gap-2 shrink-0">
+                <a
+                  href={`/register?ref=${encodeURIComponent(subToEdit.ref)}&admin=true`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 text-xs font-bold text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg flex items-center gap-1.5 transition-all shadow-2xs"
+                  title="Open Public Form 1 in full new browser tab"
                 >
-                  {editAlert.message}
-                </div>
-              )}
-
-              {/* Administrative Controls Card */}
-              <div className="p-4 sm:p-5 rounded-2xl border border-blue-200/80 bg-blue-50/50 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-blue-200/60 pb-3">
-                  <div className="flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-blue-900" />
-                    <span className="font-bold text-blue-950 uppercase text-[11px] tracking-wide">
-                      Administrative Control &amp; Official Review Settings
-                    </span>
-                  </div>
-                  <span className="text-[11px] text-blue-800 bg-blue-100 px-2 py-0.5 rounded-full font-medium">
-                    Internal RDA Management
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block font-bold text-slate-800 mb-1">
-                      Official Review / Filing Status
-                    </label>
-                    <select
-                      value={editFormData.status || "Submitted"}
-                      onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
-                      className="w-full p-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900 font-semibold text-xs"
-                    >
-                      <option value="Submitted">Submitted (Pending Review)</option>
-                      <option value="Under_Review">Under Review</option>
-                      <option value="Verified">Verified / Approved</option>
-                      <option value="Action_Required">Action Required (Needs Correction)</option>
-                      <option value="Rejected">Rejected</option>
-                      <option value="Draft">Draft (Incomplete)</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block font-bold text-slate-800 mb-1">
-                      Assigned Provincial Office
-                    </label>
-                    <select
-                      value={editFormData.provincialOffice || "Western Province"}
-                      onChange={(e) => setEditFormData({ ...editFormData, provincialOffice: e.target.value })}
-                      className="w-full p-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900 font-semibold text-xs"
-                    >
-                      <option value="Western Province">Western Province</option>
-                      <option value="Central Province">Central Province</option>
-                      <option value="Southern Province">Southern Province</option>
-                      <option value="Northern Province">Northern Province</option>
-                      <option value="Eastern Province">Eastern Province</option>
-                      <option value="North Western Province">North Western Province</option>
-                      <option value="North Central Province">North Central Province</option>
-                      <option value="Uva Province">Uva Province</option>
-                      <option value="Sabaragamuwa Province">Sabaragamuwa Province</option>
-                    </select>
-                  </div>
-
-                  <div className="sm:col-span-2">
-                    <label className="block font-bold text-slate-800 mb-1">
-                      Administrative Review Observations &amp; Internal Notes
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={editFormData.reviewNotes || ""}
-                      onChange={(e) => setEditFormData({ ...editFormData, reviewNotes: e.target.value })}
-                      className="w-full p-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900 text-xs"
-                      placeholder="Add administrative review observations, field audit remarks, or verification notes..."
-                    />
-                  </div>
-
-                  {editFormData.status === "Draft" && (
-                    <div className="sm:col-span-2 p-3.5 bg-amber-50 rounded-xl border border-amber-300 text-amber-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-xs text-amber-900">Contractor Form Resumption Link:</span>
-                          <span className="font-mono text-xs px-2 py-0.5 bg-white border border-amber-300 rounded font-bold text-blue-950">
-                            /register?ref={subToEdit.ref}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-amber-800">
-                          Because this submission is saved in <strong>Draft</strong> status, the contractor can use this link to access and edit their live registration form.
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const url = `${window.location.origin}/register?ref=${encodeURIComponent(subToEdit.ref)}`;
-                            navigator.clipboard.writeText(url);
-                            alert(`Resumption link copied to clipboard:\n${url}`);
-                          }}
-                          className="px-3 py-1.5 bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer"
-                        >
-                          Copy Edit Link
-                        </button>
-                        <a
-                          href={`/register?ref=${encodeURIComponent(subToEdit.ref)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="px-3 py-1.5 bg-amber-700 hover:bg-amber-800 text-white rounded-lg text-xs font-bold transition-all shadow-xs"
-                        >
-                          Open Form &rarr;
-                        </a>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="p-3 bg-white/80 rounded-xl border border-blue-200/60 flex items-start gap-2.5 text-[11px] text-blue-900">
-                  <FileCheck2 className="w-4 h-4 text-blue-700 shrink-0 mt-0.5" />
-                  <span>
-                    <strong>Interactive Category Switching:</strong> Changing the Participant Category below (Section 2) dynamically converts this submission between <strong>Contractor</strong> (CIDA grading, financial turnover matrix, ongoing contracts, similar works, peak production rates) and <strong>Supplier</strong> (material types, supply capacities, and factory/quarry GPS map coordinates).
-                  </span>
-                </div>
+                  <span className="hidden sm:inline">Open in Tab</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSubToEdit(null);
+                    fetchSubmissions();
+                  }}
+                  className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                  title="Close Form Editor"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-
-              {/* Full Dynamic Questionnaire Form */}
-              {isLoadingSchema && !questionnaireSchema ? (
-                <div className="py-24 flex flex-col items-center justify-center gap-3 text-slate-500 bg-white rounded-2xl border border-slate-200">
-                  <RefreshCw className="w-8 h-8 animate-spin text-blue-900" />
-                  <span className="text-sm font-semibold text-slate-700">Loading Full Form Questionnaire Schema...</span>
-                </div>
-              ) : questionnaireSchema ? (
-                <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 lg:p-8 shadow-xs">
-                  <DynamicFormRenderer
-                    questionnaire={questionnaireSchema}
-                    values={editFormData}
-                    onChange={handleFieldChange}
-                    disabled={false}
-                    previewMode={false}
-                  />
-                </div>
-              ) : (
-                <div className="p-8 text-center text-rose-700 bg-rose-50 rounded-2xl border border-rose-200">
-                  <p className="font-bold text-sm">Failed to load official questionnaire schema.</p>
-                  <p className="text-xs text-rose-600 mt-1">Please check your network connection and retry.</p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsLoadingSchema(true);
-                      fetch("/api/public/questionnaire")
-                        .then((r) => r.json())
-                        .then((d) => {
-                          if (d.success && d.questionnaire) setQuestionnaireSchema(d.questionnaire);
-                        })
-                        .finally(() => setIsLoadingSchema(false));
-                    }}
-                    className="mt-3 px-4 py-2 bg-rose-600 text-white text-xs font-semibold rounded-lg hover:bg-rose-700 transition-colors"
-                  >
-                    Retry Loading Form
-                  </button>
-                </div>
-              )}
             </div>
 
-            {/* Modal Footer */}
-            <div className="px-6 py-4 border-t border-slate-200 bg-white flex items-center justify-end gap-3 rounded-b-2xl shrink-0">
-              <button
-                type="button"
-                disabled={isSavingEdit}
-                onClick={() => setSubToEdit(null)}
-                className="px-5 py-2.5 text-xs font-bold text-slate-700 bg-white border border-slate-300 hover:bg-slate-100 rounded-xl transition-all"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={isSavingEdit}
-                onClick={handleSaveEdit}
-                className="inline-flex items-center gap-2 px-6 py-2.5 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-xl shadow-md transition-all disabled:opacity-60"
-              >
-                {isSavingEdit ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Saving Changes...</span>
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4" />
-                    <span>Save All Changes</span>
-                  </>
-                )}
-              </button>
+            {/* Modal Body: Embedded Public Form 1 */}
+            <div className="flex-1 w-full bg-slate-50 relative overflow-hidden">
+              <iframe
+                src={`/register?ref=${encodeURIComponent(subToEdit.ref)}&admin=true&embed=true`}
+                className="w-full h-full border-0"
+                title={`Public Form 1 - ${subToEdit.ref}`}
+              />
             </div>
           </div>
         </div>

@@ -245,7 +245,7 @@ export async function saveOrUpdateDraft(
         if (payload.questionnaireData) {
           submission.questionnaireData = normalizeQuestionnaireData(payload.questionnaireData) as unknown as Record<string, unknown>;
         }
-        if (submission.status !== "Submitted") {
+        if (!["Submitted", "Under_Review", "Verified", "Approved", "Action_Required"].includes(submission.status)) {
           submission.status = "Draft";
         }
 
@@ -674,7 +674,10 @@ export async function saveOrUpdateDraft(
  * Retrieve draft data using a secure plain-text resume token OR an official Reference Number (e.g. RDA-ICDP-2026-00004 or DFT-...)
  * If a submission has been reverted to "Draft" by an administrator, this automatically restores/issues an active resume token.
  */
-export async function getDraftByToken(rawTokenOrRef: string): Promise<{
+export async function getDraftByToken(
+  rawTokenOrRef: string,
+  adminMode = false
+): Promise<{
   submissionReference: string;
   resumeToken: string;
   status: string;
@@ -771,10 +774,11 @@ export async function getDraftByToken(rawTokenOrRef: string): Promise<{
   }
 
   // Check if form is editable or read-only:
+  // If adminMode is true, the form is editable for authorized RDA officers.
   // If status is "Draft" or "Action_Required", the contractor can edit.
   // If status is "Submitted", "Under_Review", "Verified", etc., the contractor can only view (read-only)
   // unless an admin reverts the submission to "Draft".
-  const isReadOnly = submission.status !== "Draft" && submission.status !== "Action_Required";
+  const isReadOnly = adminMode ? false : (submission.status !== "Draft" && submission.status !== "Action_Required");
 
   if (!isReadOnly) {
     // Ensure active, un-revoked DraftToken exists with a valid token
@@ -887,16 +891,18 @@ export async function submitFinalDeclaration(
   }
 
   if (draftTokenDoc.isRevoked || submission.status === "Submitted") {
-    // If this declaration was already submitted for this session (e.g. client retried or had a timeout delay),
-    // idempotently return the successful submission data so the user receives their confirmation screen.
-    return {
-      submissionReference: submission.submissionReference,
-      businessName: contractor.businessName || (submission.questionnaireData as any)?.organizationName || "RDA Participant",
-      submittedAt: submission.submittedAt ? submission.submittedAt.toISOString() : new Date().toISOString(),
-      provincialOffice: submission.provincialOffice || "Western Province",
-      questionnaireData: (submission.questionnaireData as Record<string, any>) || latestQuestionnaireData,
-      contactOfficer: contractor.contactOfficer,
-    };
+    // If this declaration was already submitted and no new questionnaire updates provided,
+    // idempotently return the successful submission data.
+    if (!latestQuestionnaireData || Object.keys(latestQuestionnaireData).length === 0) {
+      return {
+        submissionReference: submission.submissionReference,
+        businessName: contractor.businessName || (submission.questionnaireData as any)?.organizationName || "RDA Participant",
+        submittedAt: submission.submittedAt ? submission.submittedAt.toISOString() : new Date().toISOString(),
+        provincialOffice: submission.provincialOffice || "Western Province",
+        questionnaireData: (submission.questionnaireData as Record<string, any>) || latestQuestionnaireData,
+        contactOfficer: contractor.contactOfficer,
+      };
+    }
   }
 
   const targetFormCode = submission.formId || DEFAULT_QUESTIONNAIRE_CODE;
