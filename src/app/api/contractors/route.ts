@@ -68,9 +68,10 @@ export async function GET(request: NextRequest) {
     // 1. Sanitize and validate pagination parameters
     const pageParam = parseInt(searchParams.get("page") || "1", 10);
     const limitParam = parseInt(searchParams.get("limit") || "10", 10);
+    const isAll = searchParams.get("all") === "true";
     const page = Math.max(1, isNaN(pageParam) ? 1 : pageParam);
-    const limit = Math.min(100, Math.max(1, isNaN(limitParam) ? 10 : limitParam));
-    const skip = (page - 1) * limit;
+    const limit = isAll ? 5000 : Math.min(100, Math.max(1, isNaN(limitParam) ? 10 : limitParam));
+    const skip = isAll ? 0 : (page - 1) * limit;
 
     // 2. Sanitize and validate filter parameters
     const search = (searchParams.get("search") || "").trim();
@@ -267,18 +268,23 @@ export async function GET(request: NextRequest) {
 
     const contractorIds = contractors.map((c) => c._id);
     const submissions = await Submission.find({ contractor: { $in: contractorIds } })
-      .select("contractor questionnaireData")
+      .select("contractor status questionnaireData")
       .lean();
 
     const subMap = new Map<string, any>();
+    const subStatusMap = new Map<string, string>();
     for (const s of submissions) {
       if (s.contractor) {
         subMap.set(s.contractor.toString(), s.questionnaireData || {});
+        if (s.status) {
+          subStatusMap.set(s.contractor.toString(), s.status);
+        }
       }
     }
 
     const formattedContractors = contractors.map((c) => {
       const q = subMap.get(c._id.toString()) || {};
+      const submissionStatus = subStatusMap.get(c._id.toString()) || (c.status === "Draft" ? "Draft" : "Submitted");
       const willParticipateRaw =
         q.willParticipate ||
         ((c.metadata as any)?.willParticipate as string) ||
@@ -339,6 +345,7 @@ export async function GET(request: NextRequest) {
               : ""),
           email:
             q.email ||
+            q.participant1?.email ||
             q.participant1?.emailAddress ||
             (c.contactOfficer?.email &&
             c.contactOfficer.email !== "contact@contractor.lk" &&
@@ -351,6 +358,7 @@ export async function GET(request: NextRequest) {
         participantCategory,
         questionnaireData: q,
         status: c.status,
+        submissionStatus,
         isDemoRecord: c.isDemoRecord,
         createdAt: c.createdAt ? c.createdAt.toISOString() : null,
         updatedAt: c.updatedAt ? c.updatedAt.toISOString() : null,

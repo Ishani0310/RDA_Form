@@ -116,6 +116,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
               : ""),
           email:
             q.email ||
+            q.participant1?.email ||
             q.participant1?.emailAddress ||
             (contractor.contactOfficer?.email &&
             contractor.contactOfficer.email !== "contact@contractor.lk" &&

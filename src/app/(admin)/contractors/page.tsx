@@ -48,6 +48,7 @@ interface ContractorItem {
   participantCategory?: string;
   questionnaireData?: Record<string, any>;
   status: "Draft" | "Pending_Review" | "Verified" | "Action_Required" | "Suspended";
+  submissionStatus?: string;
   createdAt: string | null;
   updatedAt: string | null;
 }
@@ -112,6 +113,9 @@ export default function ContractorsPage() {
   const [contractorToDelete, setContractorToDelete] = useState<ContractorItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteAlert, setDeleteAlert] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  // PDF Export State
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
 
   const handleConfirmDelete = async () => {
     if (!contractorToDelete) return;
@@ -722,6 +726,215 @@ export default function ContractorsPage() {
     window.open(url, "_blank");
   };
 
+  const handleExportRegistryPdf = async () => {
+    try {
+      setIsExportingPdf(true);
+      const params = new URLSearchParams();
+      params.set("all", "true");
+      if (debouncedSearch) params.set("search", debouncedSearch);
+      if (selectedAttendance) params.set("attendance", selectedAttendance);
+      if (selectedCategory) params.set("category", selectedCategory);
+      if (selectedStatus) params.set("status", selectedStatus);
+
+      const res = await fetch(`/api/contractors?${params.toString()}`);
+      const result = await res.json();
+      const list: ContractorItem[] = res.ok && result.success && Array.isArray(result.data) ? result.data : contractors;
+
+      const escapeHtml = (str: string | number | null | undefined): string => {
+        if (str === null || str === undefined) return "";
+        return String(str)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      };
+
+      const rowsHtml = list
+        .map((c, index) => {
+          const isParticipating =
+            c.willParticipate === "Yes" ||
+            (c.willParticipate !== "No" && c.primarySpeciality !== "Non-Attendee");
+
+          const isDraft =
+            c.submissionStatus === "Draft" ||
+            c.status === "Draft" ||
+            c.registrationNumber?.startsWith("DFT-");
+
+          const phone =
+            c.contactOfficer?.phone &&
+            c.contactOfficer.phone !== "+94 11 000 0000" &&
+            c.contactOfficer.phone !== "N/A"
+              ? c.contactOfficer.phone
+              : "—";
+
+          const email =
+            c.contactOfficer?.email &&
+            c.contactOfficer.email !== "contact@contractor.lk" &&
+            c.contactOfficer.email !== "contact@rda.gov.lk" &&
+            c.contactOfficer.email !== "N/A"
+              ? c.contactOfficer.email
+              : "—";
+
+          const regStr =
+            c.registrationNumber &&
+            !c.registrationNumber.startsWith("DFT-") &&
+            !c.registrationNumber.startsWith("REG-") &&
+            c.registrationNumber !== "Not Registered"
+              ? `<div style="font-size:7.5pt; color:#64748b; font-family:monospace; margin-top:2px;">Reg: ${escapeHtml(c.registrationNumber)}</div>`
+              : "";
+
+          return `
+            <tr style="border-bottom: 1px solid #e2e8f0; background: ${index % 2 === 0 ? "#ffffff" : "#f8fafc"};">
+              <td style="padding: 7px 10px; text-align: center; font-weight: bold; color: #475569; width: 40px;">${index + 1}</td>
+              <td style="padding: 7px 10px; font-weight: bold; color: #0f172a;">
+                ${escapeHtml(c.businessName)}
+                ${regStr}
+              </td>
+              <td style="padding: 7px 10px; font-family: monospace; color: #334155; white-space: nowrap;">${escapeHtml(phone)}</td>
+              <td style="padding: 7px 10px; font-family: monospace; color: #1e293b;">${escapeHtml(email)}</td>
+              <td style="padding: 7px 10px; text-align: center;">
+                ${
+                  isParticipating
+                    ? `<span style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 2px 8px; border-radius: 12px; font-weight: 700; font-size: 8pt;">Yes</span>`
+                    : `<span style="background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; padding: 2px 8px; border-radius: 12px; font-weight: 700; font-size: 8pt;">No</span>`
+                }
+              </td>
+              <td style="padding: 7px 10px; text-align: center;">
+                ${
+                  isDraft
+                    ? `<span style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; padding: 2px 8px; border-radius: 12px; font-weight: 700; font-size: 8pt;">DRAFT</span>`
+                    : `<span style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 2px 8px; border-radius: 12px; font-weight: 700; font-size: 8pt;">SUBMITTED</span>`
+                }
+              </td>
+            </tr>
+          `;
+        })
+        .join("");
+
+      const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>RDA Contractor &amp; Stakeholder Directory - Official PDF Report</title>
+  <style>
+    @page { size: A4 landscape; margin: 12mm 15mm; }
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color: #0f172a; margin: 0; padding: 0; background: #fff; font-size: 8.5pt; line-height: 1.4; }
+    .print-bar { background: #0b1f3a; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+    .print-btn { background: #d97706; color: white; border: none; padding: 7px 18px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; }
+    .print-btn:hover { background: #b45309; }
+    .close-btn { background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 7px 14px; border-radius: 6px; cursor: pointer; font-size: 11px; margin-left: 8px; }
+    .report-container { max-width: 100%; margin: 15px auto; padding: 10px 25px; }
+    .header-box { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0b1f3a; padding-bottom: 12px; margin-bottom: 14px; }
+    .brand-title { font-size: 15pt; font-weight: 800; color: #0b1f3a; margin: 0; letter-spacing: -0.02em; }
+    .brand-sub { font-size: 9pt; color: #475569; margin-top: 3px; font-weight: 600; }
+    .report-meta { text-align: right; font-size: 8pt; color: #475569; }
+    .summary-cards { display: flex; gap: 12px; margin-bottom: 14px; }
+    .card { flex: 1; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; }
+    .card-title { font-size: 7.5pt; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
+    .card-val { font-size: 14pt; font-weight: 800; color: #0b1f3a; margin-top: 2px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    th { background: #0b1f3a; color: #ffffff; padding: 8px 10px; font-size: 8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; text-align: left; }
+    th.center { text-align: center; }
+    .footer-stamp { margin-top: 20px; padding-top: 8px; border-top: 1px solid #e2e8f0; font-size: 7.5pt; color: #64748b; display: flex; justify-content: space-between; }
+    @media print {
+      .print-bar { display: none !important; }
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+  <div class="print-bar">
+    <div>
+      <strong style="font-size: 11pt;">ROAD DEVELOPMENT AUTHORITY &bull; OFFICIAL STAKEHOLDER DIRECTORY</strong>
+      <span style="opacity: 0.8; font-size: 9.5pt; margin-left: 10px;">Total Records: ${list.length}</span>
+    </div>
+    <div>
+      <button class="print-btn" onclick="window.print()">Print / Save as PDF</button>
+      <button class="close-btn" onclick="window.close()">Close Window</button>
+    </div>
+  </div>
+
+  <div class="report-container">
+    <div class="header-box">
+      <div>
+        <div style="font-size: 8pt; font-weight: 700; color: #b45309; text-transform: uppercase; letter-spacing: 0.05em;">Government of Sri Lanka &bull; Ministry of Transport and Highways</div>
+        <h1 class="brand-title">Road Development Authority (RDA)</h1>
+        <div class="brand-sub">Inclusive Connectivity and Development Project (ICDP) &bull; National Contractor &amp; Stakeholder Registry</div>
+      </div>
+      <div class="report-meta">
+        <div><strong>Report Generated:</strong> ${new Date().toLocaleString("en-GB")}</div>
+        <div><strong>Total Organizations Listed:</strong> ${list.length}</div>
+        <div><strong>Status Filter:</strong> ${escapeHtml(selectedStatus || "All Records")}</div>
+      </div>
+    </div>
+
+    <div class="summary-cards">
+      <div class="card">
+        <div class="card-title">Total Registered Organizations</div>
+        <div class="card-val">${list.length}</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Participating in Workshop</div>
+        <div class="card-val" style="color: #15803d;">
+          ${list.filter((c) => c.willParticipate === "Yes" || (c.willParticipate !== "No" && c.primarySpeciality !== "Non-Attendee")).length}
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Non-Attendees</div>
+        <div class="card-val" style="color: #b91c1c;">
+          ${list.filter((c) => c.willParticipate === "No" || c.primarySpeciality === "Non-Attendee").length}
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Officially Submitted</div>
+        <div class="card-val" style="color: #1d4ed8;">
+          ${list.filter((c) => c.submissionStatus !== "Draft" && c.status !== "Draft" && !c.registrationNumber?.startsWith("DFT-")).length}
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Incomplete Drafts</div>
+        <div class="card-val" style="color: #b45309;">
+          ${list.filter((c) => c.submissionStatus === "Draft" || c.status === "Draft" || c.registrationNumber?.startsWith("DFT-")).length}
+        </div>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 35px; text-align: center;">#</th>
+          <th>Organization / Company / Institution Name</th>
+          <th style="width: 140px;">Contact Number</th>
+          <th style="width: 220px;">Email Address</th>
+          <th class="center" style="width: 120px;">Participate or Not</th>
+          <th class="center" style="width: 110px;">Draft / Submit</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rowsHtml}
+      </tbody>
+    </table>
+
+    <div class="footer-stamp">
+      <span>Database Authority: Sri Lanka National Central Registry &bull; RDA Early Market Engagement &amp; Procurement Directorate</span>
+      <span>Official Government Record &bull; Generated from live database</span>
+    </div>
+  </div>
+</body>
+</html>`;
+
+      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+    } catch {
+      alert("Failed to compile official PDF document. Please try again.");
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -752,13 +965,13 @@ export default function ContractorsPage() {
 
           <button
             type="button"
-            onClick={() => {
-              alert("Export functionality: Will export the filtered contractor registry once official report parameters are requested.");
-            }}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 shadow-sm transition-all"
+            onClick={handleExportRegistryPdf}
+            disabled={isExportingPdf}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-sm transition-all disabled:opacity-50"
+            title="Download organizations list as PDF document with phone, email, participation, and submission status"
           >
-            <Download className="w-3.5 h-3.5 text-slate-500" />
-            <span>Export Registry</span>
+            <Download className={`w-3.5 h-3.5 ${isExportingPdf ? "animate-bounce" : ""}`} />
+            <span>{isExportingPdf ? "Generating PDF..." : "Download Registry PDF"}</span>
           </button>
         </div>
       </div>
@@ -904,6 +1117,7 @@ export default function ContractorsPage() {
                     <th className="px-5 py-3">Contact Number</th>
                     <th className="px-5 py-3">Email Address</th>
                     <th className="px-5 py-3 text-center">Participate or Not</th>
+                    <th className="px-5 py-3 text-center">Draft / Submit</th>
                     <th className="px-5 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
@@ -977,7 +1191,22 @@ export default function ContractorsPage() {
                           )}
                         </td>
 
-                        {/* 5. Actions (View Details & Delete) */}
+                        {/* 5. Draft or Submit */}
+                        <td className="px-5 py-3.5 text-center">
+                          {c.submissionStatus === "Draft" ||
+                          c.status === "Draft" ||
+                          c.registrationNumber?.startsWith("DFT-") ? (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                              Draft
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                              Submitted
+                            </span>
+                          )}
+                        </td>
+
+                        {/* 6. Actions (View Details & Delete) */}
                         <td className="px-5 py-3.5 text-right">
                           <div className="flex items-center justify-end gap-1.5">
                             <button
