@@ -85,13 +85,13 @@ export async function GET(request: NextRequest) {
     await connectToDatabase();
     await deduplicateDraftSubmissions().catch(() => {});
 
-    // Auto-heal: Ensure all active non-demo submissions have an associated Contractor record
+    // Auto-heal: Ensure all active non-demo submissions (Submitted or Draft) have an associated Contractor record
     try {
       const activeSubs = await Submission.find({
-        status: { $in: ["Submitted", "Under_Review", "Verified"] },
+        status: { $in: ["Submitted", "Under_Review", "Verified", "Draft"] },
         isDemoRecord: false,
       })
-        .select("_id contractor submissionReference provincialOffice questionnaireData createdAt updatedAt")
+        .select("_id contractor status submissionReference provincialOffice questionnaireData createdAt updatedAt")
         .lean();
 
       for (const s of activeSubs as any[]) {
@@ -99,13 +99,14 @@ export async function GET(request: NextRequest) {
         const exists = await Contractor.exists({ _id: s.contractor });
         if (!exists) {
           const q = (s.questionnaireData || {}) as Record<string, any>;
-          const reg = q.ictadRegistrationNumber || (s.submissionReference ? `REG-${s.submissionReference.slice(-6)}` : `REG-${Date.now().toString().slice(-6)}`);
-          const name = q.organizationName || q.supplierDetails?.companyName || "Registered Stakeholder";
+          const isDraftSub = s.status === "Draft";
+          const reg = q.ictadRegistrationNumber || (isDraftSub ? `DFT-${Date.now().toString().slice(-6)}` : (s.submissionReference ? `REG-${s.submissionReference.slice(-6)}` : `REG-${Date.now().toString().slice(-6)}`));
+          const name = q.organizationName || q.supplierDetails?.companyName || (isDraftSub ? "Incomplete Draft" : "Registered Stakeholder");
           await Contractor.create({
             _id: s.contractor,
             registrationNumber: reg,
             businessName: name,
-            status: "Pending_Review",
+            status: isDraftSub ? "Draft" : "Pending_Review",
             cidaGrade: q.cidaGrade || "Pending",
             primarySpeciality: q.participantCategory === "Supplier" ? "Supplier" : (q.willParticipate === "No" ? "Non-Attendee" : (q.areasOfSpecialty?.[0] || "Civil Construction")),
             province: (s.provincialOffice || "Western Province") as any,
