@@ -52,18 +52,8 @@ export async function GET(request: NextRequest) {
     try {
       await deduplicateDraftSubmissions().catch(() => {});
       await Promise.all([
-        Submission.deleteMany({
-          $or: [
-            { isDemoRecord: true },
-            { submissionReference: /^DFT-/ },
-          ],
-        }),
-        Contractor.deleteMany({
-          $or: [
-            { isDemoRecord: true },
-            { registrationNumber: /^DFT-/ },
-          ],
-        }),
+        Submission.deleteMany({ isDemoRecord: true }),
+        Contractor.deleteMany({ isDemoRecord: true }),
       ]).catch(() => {});
     } catch {}
 
@@ -126,7 +116,7 @@ export async function GET(request: NextRequest) {
         await Promise.all([
           Submission.deleteMany({ _id: { $in: dupDraftSubIds } }),
           DraftToken.deleteMany({ submission: { $in: dupDraftSubIds } }),
-          Contractor.deleteMany({ _id: { $in: dupContractorIds } }),
+          Contractor.deleteMany({ _id: { $in: dupContractorIds }, status: "Draft" }),
         ]).catch(() => {});
       }
     } catch {
