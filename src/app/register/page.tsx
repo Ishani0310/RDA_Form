@@ -2606,6 +2606,16 @@ function RegisterForm() {
                 <span className="px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-white/10 text-blue-200 border border-white/20">
                   Status: {submissionStatus}
                 </span>
+                {autoSaveStatus === "saving" && (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-300">
+                    <RefreshCw className="w-3 h-3 animate-spin" /> Auto-saving...
+                  </span>
+                )}
+                {autoSaveStatus === "saved" && (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-300">
+                    <CheckCircle2 className="w-3 h-3" /> All changes saved
+                  </span>
+                )}
               </div>
               <p className="text-xs text-blue-200 truncate">
                 Editing official record: <strong className="font-mono text-white">{currentReference || refFromUrl || "Filing"}</strong> &bull; All changes save directly to the official registry.
@@ -3137,8 +3147,10 @@ function RegisterForm() {
         </div>
       ) : (
         <>
-          {/* Dual-Card Action Section: New Registration + Find Existing */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Dual-Card Action Section: New Registration + Find Existing (Hidden in Edit Area) */}
+          {!isAdminParam && !isEmbedParam && (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Card 1: Start New Registration */}
             <button
               type="button"
@@ -3330,6 +3342,8 @@ function RegisterForm() {
               </button>
             </div>
           </div>
+            </>
+          )}
 
           {/* Prominent Read-Only & Edit Permission Notice Banner */}
           {isReadOnly && (
